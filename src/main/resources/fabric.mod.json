@@ -3,14 +3,13 @@
   "id": "sfcr",
   "version": "1.0.0",
 
-  "name": "Super Fancy Clouds Refabricated",
-  "description": "The fabric port of Super Fancy Clouds from Ami",
+  "name": "SuperFancyClouds: Refabricated",
+  "description": "The fabric port of SuperFancyClouds mod.",
   "authors": [
     "Rimo"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "sources": "https://github.com/Rivmun/SuperFancyCloudsRefabricated"
   },
 
   "license": "MIT",

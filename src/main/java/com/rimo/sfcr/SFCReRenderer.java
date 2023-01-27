@@ -5,7 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.client.MinecraftClient;
-//import net.minecraft.client.render.BackgroundRenderer;
+import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Shader;
@@ -118,7 +118,7 @@ public class SFCReRenderer {
 					//Setup shader
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 					RenderSystem.setShaderTexture(0, whiteTexture);
-					//BackgroundRenderer.setShaderFogColor();
+					BackgroundRenderer.clearFog();
 					RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * 2);
 					RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 4);
 

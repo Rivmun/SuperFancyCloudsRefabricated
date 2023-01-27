@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "sfcr",
+  "version": "1.0.0",
+
+  "name": "Super Fancy Clouds Refabricated",
+  "description": "The fabric port of Super Fancy Clouds from Ami",
+  "authors": [
+    "Rimo"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "MIT",
+  "icon": "assets/sfcr/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.rimo.sfcr.SFCReMod"
+    ]
+  },
+  "mixins": [
+    "sfcr.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.14.11",
+    "fabric-api": "*",
+    "minecraft": "~1.19.2",
+    "java": ">=17"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

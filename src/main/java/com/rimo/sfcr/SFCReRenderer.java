@@ -79,7 +79,7 @@ public class SFCReRenderer {
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-		float f = 192f;
+		float f = world.getDimensionEffects().getCloudsHeight();
 
 		if (!Float.isNaN(f)) {
 			//Setup render system
@@ -118,7 +118,7 @@ public class SFCReRenderer {
 					//Setup shader
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 					RenderSystem.setShaderTexture(0, whiteTexture);
-					BackgroundRenderer.clearFog();
+					BackgroundRenderer.setFogBlack();
 					RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * 2);
 					RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 4);
 

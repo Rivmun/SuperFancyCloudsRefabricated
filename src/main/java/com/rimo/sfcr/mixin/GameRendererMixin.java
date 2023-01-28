@@ -12,6 +12,6 @@ public abstract class GameRendererMixin {
 	//Prevent cloud be culled
 	@Inject(method = "method_32796", at = @At("RETURN"), cancellable = true)
 	private void extend_distance(CallbackInfoReturnable<Float> cir) {
-		cir.setReturnValue((float) (cir.getReturnValue() * 4));
+		cir.setReturnValue(cir.getReturnValue() * 2f);
 	}
 }

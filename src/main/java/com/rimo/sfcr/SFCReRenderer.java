@@ -119,7 +119,7 @@ public class SFCReRenderer {
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 					RenderSystem.setShaderTexture(0, whiteTexture);
 					BackgroundRenderer.setFogBlack();
-					RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * 2);
+					RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * 2);	//Fog
 					RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 4);
 
 					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);

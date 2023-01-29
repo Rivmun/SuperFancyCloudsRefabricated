@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
@@ -24,6 +25,8 @@ import net.minecraft.util.math.ColorHelper;
 public class SFCReRenderer {
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
+	
+	private final SFCReConfig config = AutoConfig.getConfigHolder(SFCReConfig.class).getConfig();
 
 	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(net.minecraft.util.math.random.Random.create());
 
@@ -57,6 +60,9 @@ public class SFCReRenderer {
 
 		if (MinecraftClient.getInstance().player == null)
 			return;
+		
+		//if (!config.enableMod)
+		//	return;
 
 		//If already processing, don't start up again.
 		if (isProcessingData)
@@ -79,7 +85,10 @@ public class SFCReRenderer {
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-		float f = world.getDimensionEffects().getCloudsHeight();
+		//if (!config.enableMod)
+		//	return;
+		
+		float f = config.cloudHeight;
 
 		if (!Float.isNaN(f)) {
 			//Setup render system
@@ -118,9 +127,13 @@ public class SFCReRenderer {
 					//Setup shader
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 					RenderSystem.setShaderTexture(0, whiteTexture);
-					BackgroundRenderer.setFogBlack();
-					RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * 2);	//Fog
-					RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 4);
+					if (config.enableFog) {
+						BackgroundRenderer.setFogBlack();
+						RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.fogDistance);
+						RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 2 * config.fogDistance);
+					} else {
+						BackgroundRenderer.clearFog();
+					}
 
 					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 
@@ -371,6 +384,13 @@ public class SFCReRenderer {
 		}
 
 		return builder.end();
+	}
+	
+	public int getFogDistance() {
+		if (config.enableFog) {
+			return config.fogDistance;
+		}
+		return config.getMaxFogDistance();
 	}
 
 }

@@ -1,0 +1,16 @@
+{ 
+	"text.autoconfig.sfcr.title": "SuperFancyClouds: Refabricated",
+	"text.autoconfig.sfcr.option.enableMod": "Enable Mod",
+	"text.autoconfig.sfcr.option.enableMod.@Tooltip": "Enable to overwrite vanilla cloud.",
+	"text.autoconfig.sfcr.option.enableFog": "Enable Fog",
+	"text.autoconfig.sfcr.option.enableFog.@Tooltip": "Use fog to transition cloud to view boundary.",
+	"text.autoconfig.sfcr.option.fogDistance": "Fog Distance",
+	"text.autoconfig.sfcr.option.fogDistance.@Tooltip": "The distance from fog to player. Higher and farther.",
+	"text.autoconfig.sfcr.option.cloudHeight": "Cloud Height",
+	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nIt will invalid when other mod which modify cloud height are installed (such as Sodium-Extra).",
+	"text.autoconfig.sfcr.option.cloudLayerThickness.@PrefixText": "§o§4- - Following option may cause weird issue if set too high - -§r",
+	"text.autoconfig.sfcr.option.cloudLayerThickness": "Cloud Thickness",
+	"text.autoconfig.sfcr.option.cloudRenderDistance": "Cloud Render Distance",
+	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView": "Cloud Render Distance Fit to View",
+	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "(WIP) \"Cloud Render Distance\" will be ignore when enable it."
+}

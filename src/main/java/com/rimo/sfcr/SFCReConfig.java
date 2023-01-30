@@ -7,8 +7,8 @@ import me.shedaniel.autoconfig.annotation.ConfigEntry;
 @Config(name = "sfcr")
 public class SFCReConfig implements ConfigData {
 
-	//@ConfigEntry.Gui.Tooltip
-	//public boolean enableMod = true;
+	@ConfigEntry.Gui.Tooltip
+	public boolean enableMod = true;
 	
 	@ConfigEntry.Gui.Tooltip
 	public boolean enableFog = true;

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import me.shedaniel.autoconfig.AutoConfig;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
@@ -27,6 +28,8 @@ public class SFCReRenderer {
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 	
 	private final SFCReConfig config = AutoConfig.getConfigHolder(SFCReConfig.class).getConfig();
+	
+	private static final boolean hasCloudsHeightModifier = FabricLoader.getInstance().isModLoaded("sodiumextra")||FabricLoader.getInstance().isModLoaded("raisedclouds");
 
 	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(net.minecraft.util.math.random.Random.create());
 
@@ -61,8 +64,8 @@ public class SFCReRenderer {
 		if (MinecraftClient.getInstance().player == null)
 			return;
 		
-		//if (!config.enableMod)
-		//	return;
+		if (!config.enableMod)
+			return;
 
 		//If already processing, don't start up again.
 		if (isProcessingData)
@@ -85,10 +88,15 @@ public class SFCReRenderer {
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-		//if (!config.enableMod)
+		//if (!config.enableMod)	//Already checked by mixin.
 		//	return;
 		
-		float f = config.cloudHeight;
+		float f = 192f;
+		if (!hasCloudsHeightModifier) {
+			f = config.cloudHeight;
+		} else {
+			f = world.getDimensionEffects().getCloudsHeight();
+		}
 
 		if (!Float.isNaN(f)) {
 			//Setup render system
@@ -391,6 +399,10 @@ public class SFCReRenderer {
 			return config.fogDistance;
 		}
 		return config.getMaxFogDistance();
+	}
+	
+	public boolean getModEnabled() {
+		return config.enableMod;
 	}
 
 }

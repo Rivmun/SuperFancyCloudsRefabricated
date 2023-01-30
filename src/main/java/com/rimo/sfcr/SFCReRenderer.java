@@ -28,6 +28,8 @@ public class SFCReRenderer {
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 	
 	private final SFCReConfig config = AutoConfig.getConfigHolder(SFCReConfig.class).getConfig();
+	private int cloudRenderDistance = config.cloudRenderDistance;
+	private int cloudLayerThickness = config.cloudLayerThickness;
 	
 	private static final boolean hasCloudsHeightModifier = FabricLoader.getInstance().isModLoaded("sodiumextra")||FabricLoader.getInstance().isModLoaded("raisedclouds");
 
@@ -35,7 +37,7 @@ public class SFCReRenderer {
 
 	public VertexBuffer cloudBuffer;
 
-	public boolean[][][] _cloudData = new boolean[96][32][96];
+	public boolean[][][] _cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
 
 	public Thread dataProcessThread;
 	public boolean isProcessingData = false;
@@ -43,6 +45,7 @@ public class SFCReRenderer {
 	public int moveTimer = 40;
 	public double partialOffset = 0;
 	public double partialOffsetSecondary = 0;
+	public int cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;	//Idk why "*16" but it work fine.
 
 	public double time;
 
@@ -88,16 +91,11 @@ public class SFCReRenderer {
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-		//if (!config.enableMod)	//Already checked by mixin.
-		//	return;
 		
-		float f = 192f;
-		if (!hasCloudsHeightModifier) {
+		float f = world.getDimensionEffects().getCloudsHeight();
+		if (!hasCloudsHeightModifier)
 			f = config.cloudHeight;
-		} else {
-			f = world.getDimensionEffects().getCloudsHeight();
-		}
-
+		
 		if (!Float.isNaN(f)) {
 			//Setup render system
 			RenderSystem.disableCull();
@@ -130,7 +128,6 @@ public class SFCReRenderer {
 					VertexBuffer.unbind();
 				}
 
-
 				if (cb != null) {
 					//Setup shader
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
@@ -147,7 +144,7 @@ public class SFCReRenderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll, f, zScroll + partialOffset);
+					matrices.translate(xScroll - cloudRenderDistanceOffset, f - 15, zScroll + partialOffset - cloudRenderDistanceOffset);
 					cb.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -210,7 +207,14 @@ public class SFCReRenderer {
 	}
 
 	private void collectCloudData(double scrollX, double scrollZ) {
-
+		//Updating RenderDistance and Thickness if they changed.
+		if (cloudRenderDistance != config.cloudRenderDistance || cloudLayerThickness != config.cloudLayerThickness) {
+			cloudRenderDistance = config.cloudRenderDistance;
+			cloudLayerThickness = config.cloudLayerThickness;
+			_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
+			//Fix offset causing by cloudRenderDistance changed.
+			cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
+		}
 
 		try {
 			double startX = scrollX / 16;
@@ -224,7 +228,7 @@ public class SFCReRenderer {
 					fullOffset++;
 				}
 			}
-
+			
 			float baseFreq = 0.05f;
 			float baseTimeFactor = 0.01f;
 
@@ -234,9 +238,9 @@ public class SFCReRenderer {
 			float l2Freq = 0.001f;
 			float l2TimeFactor = 0.1f;
 
-			for (int cx = 0; cx < 96; cx++) {
-				for (int cy = 0; cy < 32; cy++) {
-					for (int cz = 0; cz < 96; cz++) {
+			for (int cx = 0; cx < cloudRenderDistance; cx++) {
+				for (int cy = 0; cy < cloudLayerThickness; cy++) {
+					for (int cz = 0; cz < cloudRenderDistance; cz++) {
 						double cloudVal = cloudNoise.sample(
 								(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 								(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
@@ -297,14 +301,14 @@ public class SFCReRenderer {
 		vertexList.clear();
 		normalList.clear();
 
-		for (int cx = 0; cx < 96; cx++) {
-			for (int cy = 0; cy < 32; cy++) {
-				for (int cz = 0; cz < 96; cz++) {
+		for (int cx = 0; cx < cloudRenderDistance; cx++) {
+			for (int cy = 0; cy < cloudLayerThickness; cy++) {
+				for (int cz = 0; cz < cloudRenderDistance; cz++) {
 					if (!_cloudData[cx][cy][cz])
 						continue;
 
 					//Right
-					if (cx == 95 || !_cloudData[cx + 1][cy][cz]) {
+					if (cx == cloudRenderDistance - 1 || !_cloudData[cx + 1][cy][cz]) {
 						addVertex(cx + 1, cy, cz);
 						addVertex(cx + 1, cy, cz + 1);
 						addVertex(cx + 1, cy + 1, cz + 1);
@@ -324,7 +328,7 @@ public class SFCReRenderer {
 					}
 
 					//Up....
-					if (cy == 31 || !_cloudData[cx][cy + 1][cz]) {
+					if (cy == cloudLayerThickness - 1 || !_cloudData[cx][cy + 1][cz]) {
 						addVertex(cx, cy + 1, cz);
 						addVertex(cx + 1, cy + 1, cz);
 						addVertex(cx + 1, cy + 1, cz + 1);
@@ -345,7 +349,7 @@ public class SFCReRenderer {
 
 
 					//Forward....
-					if (cz == 95 || !_cloudData[cx][cy][cz + 1]) {
+					if (cz == cloudRenderDistance - 1 || !_cloudData[cx][cy][cz + 1]) {
 						addVertex(cx, cy, cz + 1);
 						addVertex(cx + 1, cy, cz + 1);
 						addVertex(cx + 1, cy + 1, cz + 1);
@@ -394,6 +398,7 @@ public class SFCReRenderer {
 		return builder.end();
 	}
 	
+	//Push the config to Mixin.
 	public int getFogDistance() {
 		if (config.enableFog) {
 			return config.fogDistance;
@@ -404,5 +409,5 @@ public class SFCReRenderer {
 	public boolean getModEnabled() {
 		return config.enableMod;
 	}
-
+	
 }

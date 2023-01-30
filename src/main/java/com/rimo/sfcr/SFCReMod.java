@@ -23,7 +23,7 @@ public class SFCReMod implements ClientModInitializer {
 		// Proceed with mild caution.
 
 		AutoConfig.register(SFCReConfig.class, GsonConfigSerializer::new);
-		RENDERER = new SFCReRenderer();
+		RENDERER = new SFCReRenderer();	//Needs after config register to prevent valid.
 		
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> RENDERER.init());
 		ClientTickEvents.START_CLIENT_TICK.register((client) -> RENDERER.tick());

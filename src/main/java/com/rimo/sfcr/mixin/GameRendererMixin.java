@@ -13,6 +13,6 @@ public abstract class GameRendererMixin {
 	//Prevent cloud be culled
 	@Inject(method = "method_32796", at = @At("RETURN"), cancellable = true)
 	private void extend_distance(CallbackInfoReturnable<Float> cir) {
-		cir.setReturnValue(cir.getReturnValue() * SFCReMod.RENDERER.getFogDistance());
+		cir.setReturnValue(cir.getReturnValue() * (SFCReMod.RENDERER.getFogDistance() + 1));
 	}
 }

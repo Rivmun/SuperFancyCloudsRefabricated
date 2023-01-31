@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "sfcr",
-  "version": "1.2.0",
+  "version": "1.2.0-1.19.3",
 
   "name": "SuperFancyClouds: Refabricated",
   "description": "An unofficial fabric port of SuperFancyClouds that makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
@@ -31,9 +31,9 @@
   ],
 
   "depends": {
-    "fabricloader": ">=0.14.11",
+    "fabricloader": ">=0.14.12",
     "fabric-api": "*",
-    "minecraft": "~1.19.2",
+    "minecraft": "~1.19.3",
     "java": ">=17",
     "cloth-config2":"*"
   },

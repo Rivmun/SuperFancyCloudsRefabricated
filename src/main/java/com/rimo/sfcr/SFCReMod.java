@@ -1,6 +1,7 @@
 package com.rimo.sfcr;
 
 import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -14,16 +15,15 @@ public class SFCReMod implements ClientModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger("sfcr");
 	
-	public static SFCReRenderer RENDERER;
+	public static final ConfigHolder<SFCReConfig> CONFIG = AutoConfig.register(SFCReConfig.class, GsonConfigSerializer::new);
+	
+	public static SFCReRenderer RENDERER = new SFCReRenderer();
 
 	@Override
 	public void onInitializeClient() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
-
-		AutoConfig.register(SFCReConfig.class, GsonConfigSerializer::new);
-		RENDERER = new SFCReRenderer();	//Needs after config register to prevent valid.
 		
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> RENDERER.init());
 		ClientTickEvents.START_CLIENT_TICK.register((client) -> RENDERER.tick());

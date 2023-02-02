@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import me.shedaniel.autoconfig.AutoConfig;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
@@ -17,23 +16,29 @@ import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.random.Random;
+import net.minecraft.util.math.Vec3d;
 
 public class SFCReRenderer {
+	
+	private SFCReConfig config = SFCReMod.CONFIG.getConfig();
+	private static final boolean hasCloudsHeightModifier = FabricLoader.getInstance().isModLoaded("sodiumextra")||FabricLoader.getInstance().isModLoaded("raisedclouds");
+	
+	private int cloudRenderDistance = config.getCloudRenderDistance();
+	private int cloudLayerThickness = config.getCloudLayerThickness();
+	
+	private static final float RAINGATE = 0.35f;
+	private static final float THUNDERGATE = 0.5f;
+	private float cloudDensityByWeather = 0f;
+	private boolean isWeatherChange = false;
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
-	
-	private final SFCReConfig config = AutoConfig.getConfigHolder(SFCReConfig.class).getConfig();
-	private int cloudRenderDistance = config.cloudRenderDistance;
-	private int cloudLayerThickness = config.cloudLayerThickness;
-	
-	private static final boolean hasCloudsHeightModifier = FabricLoader.getInstance().isModLoaded("sodiumextra")||FabricLoader.getInstance().isModLoaded("raisedclouds");
 
-	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(net.minecraft.util.math.random.Random.create());
+	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(Random.create());
 
 	public VertexBuffer cloudBuffer;
 
@@ -57,7 +62,7 @@ public class SFCReRenderer {
 	public BufferBuilder.BuiltBuffer cb;
 
 	public void init() {
-		cloudNoise = new SimplexNoiseSampler(net.minecraft.util.math.random.Random.create());
+		cloudNoise = new SimplexNoiseSampler(Random.create());
 		isProcessingData = false;
 	}
 
@@ -67,7 +72,7 @@ public class SFCReRenderer {
 		if (MinecraftClient.getInstance().player == null)
 			return;
 		
-		if (!config.enableMod)
+		if (!config.isEnableMod())
 			return;
 
 		//If already processing, don't start up again.
@@ -75,7 +80,8 @@ public class SFCReRenderer {
 			return;
 
 		var player = MinecraftClient.getInstance().player;
-
+		var weather = MinecraftClient.getInstance().world.getLevelProperties();
+		
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
 		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
 
@@ -88,13 +94,44 @@ public class SFCReRenderer {
 			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
 			dataProcessThread.start();
 		}
+
+		if (config.isEnableWeatherDensity()) {
+			if (weather.isRaining()) {
+				if (cloudDensityByWeather > RAINGATE - 0.01f && cloudDensityByWeather < RAINGATE + 0.01f) {
+					isWeatherChange = false;
+				} else {
+					if (cloudDensityByWeather < RAINGATE - 0.01f) {
+						cloudDensityByWeather += 0.003f;
+					} else if (cloudDensityByWeather > RAINGATE + 0.01f) {
+						cloudDensityByWeather -= 0.003f;		//Thunder to Rain
+					}
+					isWeatherChange = true;
+				}
+			} else if (weather.isThundering()) {
+				if (cloudDensityByWeather > THUNDERGATE) {
+					isWeatherChange = false;
+				} else {
+					cloudDensityByWeather += 0.006f;
+					isWeatherChange = true;
+				}
+			} else if (cloudDensityByWeather > 0f){
+				cloudDensityByWeather -= 0.005f;		//Weather to Clear
+				isWeatherChange = true;
+			} else {
+				//cloudDensityByWeather = 0f;
+				isWeatherChange = false;
+			}
+		} else if (cloudDensityByWeather != 0f) {
+			cloudDensityByWeather = 0f;
+			isWeatherChange = false;
+		}
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 		
 		float f = world.getDimensionEffects().getCloudsHeight();
 		if (!hasCloudsHeightModifier)
-			f = config.cloudHeight;
+			f = config.getCloudHeight();
 		
 		if (!Float.isNaN(f)) {
 			//Setup render system
@@ -116,8 +153,12 @@ public class SFCReRenderer {
 				partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 				partialOffsetSecondary += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 
-				time += MinecraftClient.getInstance().getLastFrameDuration() / 20.0f;
-
+				if (!isWeatherChange) {
+					time += MinecraftClient.getInstance().getLastFrameDuration() / 30.0f;		//20.0f for origin
+				} else {
+					time += MinecraftClient.getInstance().getLastFrameDuration() / 5.0f;
+				}
+				
 				var cb = cloudBuffer;
 
 				if (cb == null && this.cb != null && !isProcessingData) {
@@ -132,10 +173,15 @@ public class SFCReRenderer {
 					//Setup shader
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 					RenderSystem.setShaderTexture(0, whiteTexture);
-					if (config.enableFog) {
+					if (config.isEnableFog()) {
 						BackgroundRenderer.setFogBlack();
-						RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.fogDistance);
-						RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * 2 * config.fogDistance);
+						if (!config.isFogAutoDistance()) {
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getFogMinDistance());
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getFogMaxDistance());
+						} else {
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * cloudRenderDistance / 24 + 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (cloudRenderDistance / 24 + 4));
+						}
 					} else {
 						BackgroundRenderer.clearFog();
 					}
@@ -207,14 +253,6 @@ public class SFCReRenderer {
 	}
 
 	private void collectCloudData(double scrollX, double scrollZ) {
-		//Updating RenderDistance and Thickness if they changed.
-		if (cloudRenderDistance != config.cloudRenderDistance || cloudLayerThickness != config.cloudLayerThickness) {
-			cloudRenderDistance = config.cloudRenderDistance;
-			cloudLayerThickness = config.cloudLayerThickness;
-			_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
-			//Fix offset causing by cloudRenderDistance changed.
-			cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
-		}
 
 		try {
 			double startX = scrollX / 16;
@@ -265,7 +303,7 @@ public class SFCReRenderer {
 
 						cloudVal = cloudVal * remappedValue(1 - ((double) (cy + 1) / 32));
 
-						_cloudData[cx][cy][cz] = cloudVal > (0.5f);
+						_cloudData[cx][cy][cz] = cloudVal > (0.5f - cloudDensityByWeather);
 					}
 				}
 			}
@@ -398,16 +436,28 @@ public class SFCReRenderer {
 		return builder.end();
 	}
 	
-	//Push the config to Mixin.
-	public int getFogDistance() {
-		if (config.enableFog) {
-			return config.fogDistance;
-		}
-		return config.getMaxFogDistance();
+	//Updating RenderDistance and Thickness if they changed.
+	public void UpdateRenderData(SFCReConfig newConfig) {
+		config = newConfig;
+		cloudRenderDistance = config.getCloudRenderDistance();
+		cloudLayerThickness = config.getCloudLayerThickness();
+		
+		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
+		
+		//Fix offset causing by cloudRenderDistance changed.
+		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
 	}
 	
+	//Push  to Mixin.
+	public int getFogDistance() {
+		if (config.isEnableFog()) {
+			return config.getFogMaxDistance();
+		}
+		return config.getMaxFogDistanceWhenNoFog();
+	}
+	//Push to Mixin.
 	public boolean getModEnabled() {
-		return config.enableMod;
+		return config.isEnableMod();
 	}
 	
 }

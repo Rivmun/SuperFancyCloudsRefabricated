@@ -26,7 +26,9 @@ import net.minecraft.util.math.Vec3d;
 public class SFCReRenderer {
 	
 	private SFCReConfig config = SFCReMod.CONFIG.getConfig();
-	private static final boolean hasCloudsHeightModifier = FabricLoader.getInstance().isModLoaded("sodiumextra")||FabricLoader.getInstance().isModLoaded("raisedclouds");
+	private static final boolean hasCloudsHeightModifier 
+			= FabricLoader.getInstance().isModLoaded("sodiumextra")
+			||FabricLoader.getInstance().isModLoaded("raisedclouds");
 	
 	private int cloudRenderDistance = config.getCloudRenderDistance();
 	private int cloudLayerThickness = config.getCloudLayerThickness();
@@ -179,7 +181,7 @@ public class SFCReRenderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getFogMinDistance());
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getFogMaxDistance());
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * cloudRenderDistance / 24 + 2);
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (cloudRenderDistance / 24 + 2));
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (cloudRenderDistance / 24 + 4));
 						}
 					} else {
@@ -448,7 +450,7 @@ public class SFCReRenderer {
 		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
 	}
 	
-	//Push  to Mixin.
+	//Push to Mixin.
 	public int getFogDistance() {
 		if (config.isEnableFog()) {
 			return config.getFogMaxDistance();

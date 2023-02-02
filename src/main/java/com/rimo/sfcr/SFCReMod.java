@@ -17,7 +17,7 @@ public class SFCReMod implements ClientModInitializer {
 	
 	public static final ConfigHolder<SFCReConfig> CONFIG = AutoConfig.register(SFCReConfig.class, GsonConfigSerializer::new);
 	
-	public static SFCReRenderer RENDERER = new SFCReRenderer();;
+	public static final SFCReRenderer RENDERER = new SFCReRenderer();;
 
 	@Override
 	public void onInitializeClient() {

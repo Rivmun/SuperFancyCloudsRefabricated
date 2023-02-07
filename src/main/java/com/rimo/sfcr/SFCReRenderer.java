@@ -87,8 +87,9 @@ public class SFCReRenderer {
 			return;
 
 		var player = MinecraftClient.getInstance().player;
-		//var world = MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
-		var world = MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
+		var world = MinecraftClient.getInstance().isIntegratedServerRunning() ? 
+				MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey()) : 
+				MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
 		var worldProperties = ((ServerWorldAccessor)world).getWorldProperties();
 		
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;

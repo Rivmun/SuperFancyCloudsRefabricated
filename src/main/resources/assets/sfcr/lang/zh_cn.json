@@ -22,7 +22,9 @@
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "云层刷新速度",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.@Tooltip": "控制云层的常规刷新速度。",
 	"text.autoconfig.sfcr.option.sampleSteps": "云层采样步骤数",
-	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能。",
+	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。",
+	"text.autoconfig.sfcr.option.debug": "输出调试信息",
+	"text.autoconfig.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
 	
 	"text.autoconfig.sfcr.category.fog": "云层迷雾设置",
 	"text.autoconfig.sfcr.option.enableFog": "启用迷雾",
@@ -48,5 +50,5 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "云层密度变化速度",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "较高的速度会使密度改变得不连贯。",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "群系因数作用百分比",
-	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。"
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n基于“常规密度”设置。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。"
 }

@@ -28,6 +28,7 @@ public class SFCReConfig implements ConfigData {
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
 	private int biomeDensityMultipler = 50;
+	private boolean enableDebug = false;
 	
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
@@ -56,6 +57,7 @@ public class SFCReConfig implements ConfigData {
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
+	public boolean isEnableDebug() {return enableDebug;}
 	
 	//input func.
 	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
@@ -85,6 +87,7 @@ public class SFCReConfig implements ConfigData {
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
+	public void setEnalbeDebug(boolean isEnable) {enableDebug = isEnable;}
 	
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {

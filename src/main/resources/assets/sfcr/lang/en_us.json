@@ -22,7 +22,9 @@
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "Cloud Refresh Rate",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.@Tooltip": "Control speed of cloud normal refresh speed.",
 	"text.autoconfig.sfcr.option.sampleSteps": "Cloud Sample Steps",
-	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "Control how many steps that Cloud-Sampler will use.\nHigh value make clouds more realistic,\nbut will reduce performance.",
+	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "Control how many steps that Cloud-Sampler will use.\nHigh value make clouds more realistic,\nbut will reduce performance (and amount).",
+	"text.autoconfig.sfcr.option.debug": "DEBUG",
+	"text.autoconfig.sfcr.option.debug.@Tooltip": "Do §4NOT§r enable it unless you're tester.",
 	
 	"text.autoconfig.sfcr.category.fog": "Cloud Fog Settings",
 	"text.autoconfig.sfcr.option.enableFog": "Enable Fog",
@@ -39,7 +41,7 @@
 	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather.",
 	"text.autoconfig.sfcr.option.weatherPreDetectTime": "Weather Pre-Detect Time",
 	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "When the weather is about to change,\nhow many seconds in advance to change the cloud.",
-	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "Cloud Density Settings: ",
+	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "Cloud Density Settings: Set cloud density in different scenes",
 	"text.autoconfig.sfcr.option.cloudDensity": "- Common Density Percentage",
 	"text.autoconfig.sfcr.option.rainDensity": "- Rainy Density Percentage",
 	"text.autoconfig.sfcr.option.thunderDensity": "- Thundering Density Percentage",
@@ -48,5 +50,5 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "Density Change Rate",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
-	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. When set to 100, clouds will\nnot appear in some biome like desert."
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert."
 }

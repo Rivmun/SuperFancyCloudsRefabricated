@@ -31,7 +31,7 @@ public class SFCReConfigScreen {
     	builder.setSavingRunnable(() -> {
     		SFCReMod.CONFIG.setConfig(config);
     		SFCReMod.CONFIG.save();
-    		SFCReMod.RENDERER.UpdateRenderData(config);
+    		SFCReMod.RENDERER.updateRenderData(config);
     	});
     	
     	return builder.build();
@@ -61,7 +61,7 @@ public class SFCReConfigScreen {
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness")
     					,config.getCloudLayerThickness()
     					,8
-    					,80)
+    					,64)
                 .setDefaultValue(32)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip"))
                 .setSaveConsumer(config::setCloudLayerThickness)
@@ -104,6 +104,14 @@ public class SFCReConfigScreen {
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.sampleSteps.@Tooltip"))
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
+    	//DEBUG
+    	clouds.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.debug")
+    					,config.isEnableDebug())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.debug.@Tooltip"))
+    			.setSaveConsumer(config::setEnalbeDebug)
+    			.build());
     }
     
     private void buildFogCategory() {
@@ -128,7 +136,7 @@ public class SFCReConfigScreen {
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.fogMinDistance")
     					,config.getFogMinDistance()
     					,1
-    					,16)
+    					,32)
                 .setDefaultValue(2)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.fogMinDistance.@Tooltip"))
                 .setSaveConsumer(newValue -> config.setFogDisance(newValue, config.getFogMaxDistance()))
@@ -137,8 +145,8 @@ public class SFCReConfigScreen {
     	fog.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.fogMaxDistance")
     					,config.getFogMaxDistance()
-    					,2
-    					,18)
+    					,1
+    					,32)
                 .setDefaultValue(4)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip"))
                 .setSaveConsumer(newValue -> config.setFogDisance(config.getFogMinDistance(), newValue))
@@ -242,7 +250,7 @@ public class SFCReConfigScreen {
 		} else if (value.equals(CloudRefreshSpeed.VERY_SLOW)) {
 			return Text.translatable("text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW");
 		} else {
-			return Text.of("ERROR");
+			return Text.of("");
 		}
     }
 }

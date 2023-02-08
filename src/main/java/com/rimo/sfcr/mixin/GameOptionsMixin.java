@@ -14,7 +14,7 @@ public abstract class GameOptionsMixin {
 	//Update cloudRenderDistance when view distance is changed.
 	@Inject(method = "Lnet/minecraft/client/option/GameOptions;setServerViewDistance(I)V", at = @At("RETURN"), cancellable = true)
 	private void updateCloudRenderDistance(CallbackInfo ci) {
-		SFCReMod.RENDERER.UpdateRenderData(SFCReMod.CONFIG.getConfig());
+		SFCReMod.RENDERER.updateRenderData(SFCReMod.CONFIG.getConfig());
 		ci.cancel();
 	}
 }

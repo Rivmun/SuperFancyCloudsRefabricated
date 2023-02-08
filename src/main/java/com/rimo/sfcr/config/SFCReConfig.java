@@ -21,7 +21,7 @@ public class SFCReConfig implements ConfigData {
 	private int fogMaxDistance = 4;
 	//----DENSITY CHANGE----
 	private boolean enableWeatherDensity = true;
-	private int weatherPreDetectTime = 5;
+	private int weatherPreDetectTime = 10;
 	private int cloudDensityPercent = 25;
 	private int rainDensityPercent = 60;
 	private int thunderDensityPercent = 90;

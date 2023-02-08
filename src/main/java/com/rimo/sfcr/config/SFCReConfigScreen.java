@@ -167,8 +167,8 @@ public class SFCReConfigScreen {
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime")
     					,config.getWeatherPreDetectTime()
     					,3
-    					,12)
-    			.setDefaultValue(5)
+    					,30)
+    			.setDefaultValue(10)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip"))
     			.setSaveConsumer(config::setWeatherPreDetectTime)
     			.build());

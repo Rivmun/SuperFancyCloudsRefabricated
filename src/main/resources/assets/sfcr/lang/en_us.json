@@ -36,7 +36,7 @@
 	"text.autoconfig.sfcr.option.fogMaxDistance": "Fog End Distance",
 	"text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if smaller than START.",
 	
-	"text.autoconfig.sfcr.category": "Weather/Biome Settings",
+	"text.autoconfig.sfcr.category.density": "Dynamic Cloud Density",
 	"text.autoconfig.sfcr.option.enableWeatherDensity": "Weather Detect",
 	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather.",
 	"text.autoconfig.sfcr.option.weatherPreDetectTime": "Weather Pre-Detect Time",

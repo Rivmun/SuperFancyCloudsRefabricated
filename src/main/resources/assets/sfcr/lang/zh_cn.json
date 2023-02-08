@@ -50,5 +50,7 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "云层密度变化速度",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "较高的速度会使密度改变得不连贯。",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "群系因数作用百分比",
-	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n基于“常规密度”设置。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。"
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n基于“常规密度”设置。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。",
+	
+	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。"
 }

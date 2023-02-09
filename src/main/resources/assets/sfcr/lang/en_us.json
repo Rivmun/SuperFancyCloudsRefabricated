@@ -50,5 +50,5 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "Density Change Rate",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
-	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert."
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function."
 }

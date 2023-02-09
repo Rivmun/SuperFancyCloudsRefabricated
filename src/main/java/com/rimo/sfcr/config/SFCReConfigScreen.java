@@ -105,13 +105,13 @@ public class SFCReConfigScreen {
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
     	//DEBUG
-    	clouds.addEntry(entryBuilder
+    	/* clouds.addEntry(entryBuilder
     			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.debug")
     					,config.isEnableDebug())
     			.setDefaultValue(false)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.debug.@Tooltip"))
     			.setSaveConsumer(config::setEnalbeDebug)
-    			.build());
+    			.build()); */
     }
     
     private void buildFogCategory() {

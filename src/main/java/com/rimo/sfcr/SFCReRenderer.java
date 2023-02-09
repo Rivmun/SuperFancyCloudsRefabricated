@@ -1,5 +1,7 @@
 package com.rimo.sfcr;
 
+import java.util.Random;
+
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.rimo.sfcr.config.SFCReConfig;
@@ -23,7 +25,7 @@ import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.gen.random.SimpleRandom;
 import net.minecraft.util.math.Vec3d;
 
 public class SFCReRenderer {
@@ -47,7 +49,7 @@ public class SFCReRenderer {
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
-	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(Random.create());
+	public SimplexNoiseSampler cloudNoise = new SimplexNoiseSampler(new SimpleRandom(new Random().nextLong()).derive());
 
 	public VertexBuffer cloudBuffer;
 
@@ -68,10 +70,10 @@ public class SFCReRenderer {
 	public double xScroll;
 	public double zScroll;
 
-	public BufferBuilder.BuiltBuffer cb;
+	public BufferBuilder cb;
 
 	public void init() {
-		cloudNoise = new SimplexNoiseSampler(Random.create());
+		cloudNoise = new SimplexNoiseSampler(new SimpleRandom(new Random().nextLong()).derive());
 		isProcessingData = false;
 	}
 
@@ -174,8 +176,8 @@ public class SFCReRenderer {
 			cloudDensityByBiome = isBiomeChange ? cloudDensityByBiome + (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed : currentBiomeDownFall;
 				
 			if (config.isEnableDebug()) {
-				player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()));
-				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
+				player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()), false);
+				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange), false);
 			}
 		}
 	}
@@ -252,7 +254,7 @@ public class SFCReRenderer {
 						}
 
 						Shader shaderProgram = RenderSystem.getShader();
-						cb.draw(matrices.peek().getPositionMatrix(), projectionMatrix, shaderProgram);
+						cb.setShader(matrices.peek().getPositionMatrix(), projectionMatrix, shaderProgram);
 					}
 
 					VertexBuffer.unbind();
@@ -330,7 +332,7 @@ public class SFCReRenderer {
 			
 			var f = 1.5 - cloudDensityByWeather * (1 - (1 - cloudDensityByBiome) * config.getBiomeDensityMultipler() / 100);
 			if (config.isEnableDebug())
-				MinecraftClient.getInstance().player.sendMessage(Text.of("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f));
+				MinecraftClient.getInstance().player.sendMessage(Text.of("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f), false);
 
 			for (int cx = 0; cx < cloudRenderDistance; cx++) {
 				for (int cy = 0; cy < cloudLayerThickness; cy++) {
@@ -395,7 +397,7 @@ public class SFCReRenderer {
 		vertexList.add(z - 48);
 	}
 
-	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
+	private BufferBuilder rebuildCloudMesh() {
 
 		vertexList.clear();
 		normalList.clear();
@@ -494,7 +496,8 @@ public class SFCReRenderer {
 			SFCReMod.LOGGER.error(e.toString());
 		}
 
-		return builder.end();
+		builder.end();
+		return builder;
 	}
 	
 	//Update Setting.

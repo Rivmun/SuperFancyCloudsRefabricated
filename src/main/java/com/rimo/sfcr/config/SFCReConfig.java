@@ -37,7 +37,7 @@ public class SFCReConfig implements ConfigData {
 	@SuppressWarnings("resource")
 	public int getCloudRenderDistance() {
 		if (cloudRenderDistanceFitToView && MinecraftClient.getInstance().player != null) {
-			return MinecraftClient.getInstance().options.getClampedViewDistance() * 12;
+			return MinecraftClient.getInstance().options.getViewDistance() * 12;
 		} else {
 			return cloudRenderDistance;
 		}

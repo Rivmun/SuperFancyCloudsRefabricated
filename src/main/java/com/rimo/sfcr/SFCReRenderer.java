@@ -83,6 +83,9 @@ public class SFCReRenderer {
 		
 		if (!config.isEnableMod())
 			return;
+		
+		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
+			return;
 
 		//If already processing, don't start up again.
 		if (isProcessingData)
@@ -201,7 +204,7 @@ public class SFCReRenderer {
 				partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 				partialOffsetSecondary += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 
-				if (!isWeatherChange && !isBiomeChange || cloudDensityByBiome == 0 || config.getBiomeDensityMultipler() == 0) {
+				if ((!isWeatherChange || cloudDensityByBiome == 0) && (!isBiomeChange || config.getBiomeDensityMultipler() == 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				} else {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;

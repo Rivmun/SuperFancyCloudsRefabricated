@@ -20,7 +20,7 @@ public abstract class WorldRendererMixin {
 
 	@Inject(method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/math/Matrix4f;FDDD)V", at = @At("HEAD"), cancellable = true)
 	public void renderSFC(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-		if (SFCReMod.RENDERER.getModEnabled()) {
+		if (SFCReMod.RENDERER.getModEnabled() && world.getDimension().hasSkyLight()) {
 			SFCReMod.RENDERER.render(world, matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ);
 			ci.cancel();
 			return;

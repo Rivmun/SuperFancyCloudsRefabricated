@@ -2,6 +2,8 @@ package com.rimo.sfcr;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.rimo.sfcr.config.SFCReConfig;
+import com.rimo.sfcr.mixin.ServerWorldAccessor;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.fabricmc.loader.api.FabricLoader;
@@ -15,6 +17,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
@@ -30,13 +33,17 @@ public class SFCReRenderer {
 			= FabricLoader.getInstance().isModLoaded("sodiumextra")
 			||FabricLoader.getInstance().isModLoaded("raisedclouds");
 	
+	private static final float DENSITY_GATE_RANGE = 0.0500000f;
+	private float cloudDensityByWeather = 0f;
+	private float cloudDensityByBiome = 0f;
+	private boolean isWeatherChange = false;
+	private boolean isBiomeChange = false;
+	
 	private int cloudRenderDistance = config.getCloudRenderDistance();
 	private int cloudLayerThickness = config.getCloudLayerThickness();
-	
-	private static final float RAINGATE = 0.35f;
-	private static final float THUNDERGATE = 0.5f;
-	private float cloudDensityByWeather = 0f;
-	private boolean isWeatherChange = false;
+	private int normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
+	private int weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
+	private int densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed()); 
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -52,7 +59,7 @@ public class SFCReRenderer {
 	public int moveTimer = 40;
 	public double partialOffset = 0;
 	public double partialOffsetSecondary = 0;
-	public int cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;	//Idk why "*16" but it work fine.
+	public int cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;		//Idk why "*16" but it work fine.
 
 	public double time;
 
@@ -76,64 +83,106 @@ public class SFCReRenderer {
 		
 		if (!config.isEnableMod())
 			return;
+		
+		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
+			return;
 
 		//If already processing, don't start up again.
 		if (isProcessingData)
 			return;
 
 		var player = MinecraftClient.getInstance().player;
-		var weather = MinecraftClient.getInstance().world.getLevelProperties();
-		
+		var world = MinecraftClient.getInstance().isIntegratedServerRunning() ? 
+				MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey()) : 
+				MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
+		var worldProperties = ((ServerWorldAccessor)world).getWorldProperties();
+		var currentBiomeDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
 		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
+		
+		//Detect Weather Change
+		if (config.isEnableWeatherDensity()) {
+			if (world.isThundering()) {
+				isWeatherChange = worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime() 
+						|| cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE;
+			} else if (world.isRaining()) {
+				isWeatherChange = worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime() 
+						|| cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
+						|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE;
+			} else {		//Clear...
+				if (worldProperties.getClearWeatherTime() != 0) {
+					isWeatherChange = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime();
+				} else {
+					isWeatherChange = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime() 
+							|| cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
+				}
+			}
+		} else {
+			isWeatherChange = false;
+		}
+		//Detect Biome Change
+		isBiomeChange = cloudDensityByBiome > currentBiomeDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < currentBiomeDownFall - DENSITY_GATE_RANGE; 
 
+		//Refresh Processing...
 		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
 			moveTimer = timeOffset;
 			isProcessingData = true;
 
 			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
 			dataProcessThread.start();
-		}
-
-		if (config.isEnableWeatherDensity()) {
-			if (weather.isRaining()) {
-				if (cloudDensityByWeather > RAINGATE - 0.01f && cloudDensityByWeather < RAINGATE + 0.01f) {
-					isWeatherChange = false;
-				} else {
-					if (cloudDensityByWeather < RAINGATE - 0.01f) {
-						cloudDensityByWeather += 0.003f;
-					} else if (cloudDensityByWeather > RAINGATE + 0.01f) {
-						cloudDensityByWeather -= 0.003f;		//Thunder to Rain
+			
+			//Density Change by Weather
+			if (config.isEnableWeatherDensity()) {
+				if (world.isThundering()) {
+					if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather rain or clear?
+						cloudDensityByWeather += (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored clearing...
+					} else if (cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE) {
+						cloudDensityByWeather += (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+					} else {
+						cloudDensityByWeather = config.getThunderDensityPercent() / 50f;
 					}
-					isWeatherChange = true;
+				} else if (world.isRaining()) {
+					if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thunder or clear?
+						cloudDensityByWeather += (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering...
+					} else {
+						cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
+								|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getRainDensityPercent() / 50f;
+					}
+				} else {		//Clear...
+					if (worldProperties.getClearWeatherTime() != 0) {		//It's complex because if use /weather clear, time of thunder & rain always return 1; time of clear in neutral clear always return 0.
+						cloudDensityByWeather = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime() 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getCloudDensityPercent() / 50f;
+					} else if (Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime()) {
+						cloudDensityByWeather = worldProperties.getRainTime() < worldProperties.getThunderTime() 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+					} else {
+						cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE 
+								? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getCloudDensityPercent() / 50f;
+					}
 				}
-			} else if (weather.isThundering()) {
-				if (cloudDensityByWeather > THUNDERGATE) {
-					isWeatherChange = false;
-				} else {
-					cloudDensityByWeather += 0.006f;
-					isWeatherChange = true;
-				}
-			} else if (cloudDensityByWeather > 0f){
-				cloudDensityByWeather -= 0.005f;		//Weather to Clear
-				isWeatherChange = true;
-			} else {
-				//cloudDensityByWeather = 0f;
-				isWeatherChange = false;
+			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50) {		//Initialize if disabled detect in rain/thunder.
+				cloudDensityByWeather = config.getCloudDensityPercent() / 50;
 			}
-		} else if (cloudDensityByWeather != 0f) {
-			cloudDensityByWeather = 0f;
-			isWeatherChange = false;
+			//Density Change by Biome
+			cloudDensityByBiome = isBiomeChange ? cloudDensityByBiome + (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed : currentBiomeDownFall;
+				
+			if (config.isEnableDebug()) {
+				player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()));
+				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
+			}
 		}
 	}
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 		
-		float f = world.getDimensionEffects().getCloudsHeight();
-		if (!hasCloudsHeightModifier)
-			f = config.getCloudHeight();
+		float f = hasCloudsHeightModifier ? world.getDimensionEffects().getCloudsHeight() : config.getCloudHeight();
 		
 		if (!Float.isNaN(f)) {
 			//Setup render system
@@ -155,10 +204,10 @@ public class SFCReRenderer {
 				partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 				partialOffsetSecondary += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 
-				if (!isWeatherChange) {
-					time += MinecraftClient.getInstance().getLastFrameDuration() / 30.0f;		//20.0f for origin
+				if ((!isWeatherChange || cloudDensityByBiome == 0) && (!isBiomeChange || config.getBiomeDensityMultipler() == 0)) {
+					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				} else {
-					time += MinecraftClient.getInstance().getLastFrameDuration() / 5.0f;
+					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
 				}
 				
 				var cb = cloudBuffer;
@@ -181,8 +230,8 @@ public class SFCReRenderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getFogMinDistance());
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getFogMaxDistance());
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (cloudRenderDistance / 24 + 2));
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (cloudRenderDistance / 24 + 4));
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float)Math.pow(cloudRenderDistance / 48, 2) / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float)Math.pow(cloudRenderDistance / 48, 2));
 						}
 					} else {
 						BackgroundRenderer.clearFog();
@@ -254,6 +303,7 @@ public class SFCReRenderer {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;
 	}
 
+	@SuppressWarnings("resource")
 	private void collectCloudData(double scrollX, double scrollZ) {
 
 		try {
@@ -277,6 +327,10 @@ public class SFCReRenderer {
 
 			float l2Freq = 0.001f;
 			float l2TimeFactor = 0.1f;
+			
+			var f = 1.5 - cloudDensityByWeather * (1 - (1 - cloudDensityByBiome) * config.getBiomeDensityMultipler() / 100);
+			if (config.isEnableDebug())
+				MinecraftClient.getInstance().player.sendMessage(Text.of("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f));
 
 			for (int cx = 0; cx < cloudRenderDistance; cx++) {
 				for (int cy = 0; cy < cloudLayerThickness; cy++) {
@@ -286,26 +340,31 @@ public class SFCReRenderer {
 								(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 								(startZ + cz - fullOffset) * baseFreq
 						);
-						double cloudVal1 = cloudNoise.sample(
-								(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-								(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-								(startZ + cz - fullOffset) * l1Freq
-						);
-						double cloudVal2 = cloudNoise.sample(
-								(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-								0,
-								(startZ + cz - fullOffset) * l2Freq
-						);
+						if (config.getSampleSteps() > 1) {
+							double cloudVal1 = cloudNoise.sample(
+									(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
+									(cy - (timeOffset * l1TimeFactor)) * l1Freq,
+									(startZ + cz - fullOffset) * l1Freq
+							);
+							double cloudVal2 = 1;
+							if (config.getSampleSteps() > 2) {
+								cloudVal2 = cloudNoise.sample(
+										(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
+										0,
+										(startZ + cz - fullOffset) * l2Freq
+								);
+								
+								//Smooth floor function...
+								cloudVal2 *= 3;
+								cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;
+							}
+	
+							cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
+						}
 
-						//Smooth floor function...
-						cloudVal2 *= 3;
-						cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;
+						cloudVal = cloudVal * remappedValue(1 - ((double) (cy + 1) / 32));		//cloudVal ~ [-1, 2]
 
-						cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
-
-						cloudVal = cloudVal * remappedValue(1 - ((double) (cy + 1) / 32));
-
-						_cloudData[cx][cy][cz] = cloudVal > (0.5f - cloudDensityByWeather);
+						_cloudData[cx][cy][cz] = cloudVal > f;		//Original is 0.5f.
 					}
 				}
 			}
@@ -438,15 +497,17 @@ public class SFCReRenderer {
 		return builder.end();
 	}
 	
-	//Updating RenderDistance and Thickness if they changed.
-	public void UpdateRenderData(SFCReConfig newConfig) {
+	//Update Setting.
+	public void updateRenderData(SFCReConfig newConfig) {
 		config = newConfig;
 		cloudRenderDistance = config.getCloudRenderDistance();
 		cloudLayerThickness = config.getCloudLayerThickness();
+		normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
+		weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
+		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed()); 
 		
 		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
 		
-		//Fix offset causing by cloudRenderDistance changed.
 		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
 	}
 	

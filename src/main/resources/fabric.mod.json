@@ -1,15 +1,18 @@
 {
   "schemaVersion": 1,
   "id": "sfcr",
-  "version": "1.3.0b",
+  "version": "1.4.0",
 
   "name": "SuperFancyClouds: Refabricated",
   "description": "An unofficial fabric port of SuperFancyClouds that makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
   "authors": [
     "Rimo"
   ],
+  "contributors": [
+	"ami-wishes"
+  ],
   "contact": {
-    "homepage": "https://modrinth.com/mod/superfancyclouds-refabricated",
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/superfancyclouds-refabricated",
     "sources": "https://github.com/Rivmun/SuperFancyCloudsRefabricated",
     "issues": "https://github.com.Rivemun/SuperFancyCloudsRefabricated/issues"
   },
@@ -23,7 +26,7 @@
       "com.rimo.sfcr.SFCReMod"
     ],
     "modmenu": [ 
-      "com.rimo.sfcr.SFCReModMenuIntegration"
+      "com.rimo.sfcr.config.SFCReModMenuIntegration"
     ]
   },
   "mixins": [
@@ -39,5 +42,12 @@
   },
   "suggests": {
     "modmenu": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.modrinth": "https://modrinth.com/mod/superfancyclouds-refabricated"
+      }
+    }
   }
 }

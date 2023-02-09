@@ -89,11 +89,40 @@ public class SFCReRenderer {
 			return;
 
 		var player = MinecraftClient.getInstance().player;
+		var world = MinecraftClient.getInstance().isIntegratedServerRunning() ? 
+				MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey()) : 
+				MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
+		var worldProperties = ((ServerWorldAccessor)world).getWorldProperties();
+		var currentBiomeDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
 		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
+		
+		//Detect Weather Change
+		if (config.isEnableWeatherDensity()) {
+			if (world.isThundering()) {
+				isWeatherChange = worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime() 
+						|| cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE;
+			} else if (world.isRaining()) {
+				isWeatherChange = worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime() 
+						|| cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
+						|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE;
+			} else {		//Clear...
+				if (worldProperties.getClearWeatherTime() != 0) {
+					isWeatherChange = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime();
+				} else {
+					isWeatherChange = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime() 
+							|| cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
+				}
+			}
+		} else {
+			isWeatherChange = false;
+		}
+		//Detect Biome Change
+		isBiomeChange = cloudDensityByBiome > currentBiomeDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < currentBiomeDownFall - DENSITY_GATE_RANGE; 
 
+		//Refresh Processing...
 		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
 			moveTimer = timeOffset;
 			isProcessingData = true;
@@ -101,82 +130,49 @@ public class SFCReRenderer {
 			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
 			dataProcessThread.start();
 			
-			var world = MinecraftClient.getInstance().isIntegratedServerRunning() ? 
-					MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey()) : 
-					MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
-			
-			//Weather Detect and Forecast...
+			//Density Change by Weather
 			if (config.isEnableWeatherDensity()) {
-				
-				var worldProperties = ((ServerWorldAccessor)world).getWorldProperties();
-				
 				if (world.isThundering()) {
-					if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {
-						isWeatherChange = true;
-						cloudDensityByWeather -= Math.abs(config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+					if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather rain or clear?
+						cloudDensityByWeather += (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored clearing...
 					} else if (cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE) {
-						isWeatherChange = true;
-						cloudDensityByWeather += Math.abs(config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+						cloudDensityByWeather += (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
 					} else {
-						isWeatherChange = false;
 						cloudDensityByWeather = config.getThunderDensityPercent() / 50f;
 					}
 				} else if (world.isRaining()) {
-					if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thundering or clear?
-						isWeatherChange = true;
-						cloudDensityByWeather -= Math.abs(config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering here, for now.
-					} else if (cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE) {
-						isWeatherChange = true;
-						cloudDensityByWeather -= Math.abs(config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-					} else if (cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE) {
-						isWeatherChange = true;
-						cloudDensityByWeather += Math.abs(config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+					if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thunder or clear?
+						cloudDensityByWeather += (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering...
 					} else {
-						isWeatherChange = false;
-						cloudDensityByWeather = config.getRainDensityPercent() / 50f;
+						cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
+								|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getRainDensityPercent() / 50f;
 					}
 				} else {		//Clear...
 					if (worldProperties.getClearWeatherTime() != 0) {		//It's complex because if use /weather clear, time of thunder & rain always return 1; time of clear in neutral clear always return 0.
-						if (worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime()) {
-							isWeatherChange = true;
-							cloudDensityByWeather += Math.abs(config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-						} else {
-							isWeatherChange = false;
-							cloudDensityByWeather = config.getCloudDensityPercent() / 50f;
-						}
+						cloudDensityByWeather = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime() 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getCloudDensityPercent() / 50f;
 					} else if (Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime()) {
-						isWeatherChange = true;
-						if (worldProperties.getRainTime() > worldProperties.getThunderTime()) {
-							cloudDensityByWeather += Math.abs(config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-						} else {
-							cloudDensityByWeather += Math.abs(config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-						}
-					} else if (cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE) {
-						isWeatherChange = true;
-						cloudDensityByWeather -= Math.abs(config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+						cloudDensityByWeather = worldProperties.getRainTime() < worldProperties.getThunderTime() 
+								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
 					} else {
-						cloudDensityByWeather = config.getCloudDensityPercent() / 50f;
-						isWeatherChange = false;
+						cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE 
+								? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+								: config.getCloudDensityPercent() / 50f;
 					}
 				}
-				
-				if (config.isEnableDebug()) {
-					player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()));
-					player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
-				}
-				
 			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50) {		//Initialize if disabled detect in rain/thunder.
 				cloudDensityByWeather = config.getCloudDensityPercent() / 50;
-				isWeatherChange = false;
 			}
-			
-			//Biome Downfall Detect...
-			var currentBiomeDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-			isBiomeChange = cloudDensityByBiome > currentBiomeDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < currentBiomeDownFall - DENSITY_GATE_RANGE; 
-			if (isBiomeChange) {
-				cloudDensityByBiome += (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed;
-			} else {
-				cloudDensityByBiome = currentBiomeDownFall;
+			//Density Change by Biome
+			cloudDensityByBiome = isBiomeChange ? cloudDensityByBiome + (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed : currentBiomeDownFall;
+				
+			if (config.isEnableDebug()) {
+				player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()));
+				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
 			}
 		}
 	}
@@ -205,7 +201,7 @@ public class SFCReRenderer {
 				partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 				partialOffsetSecondary += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 
-				if (!isWeatherChange && !isBiomeChange || cloudDensityByBiome == 0) {
+				if (!isWeatherChange && !isBiomeChange || cloudDensityByBiome == 0 || config.getBiomeDensityMultipler() == 0) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				} else {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;

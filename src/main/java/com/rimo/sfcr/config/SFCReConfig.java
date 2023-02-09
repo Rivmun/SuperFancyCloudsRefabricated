@@ -91,7 +91,7 @@ public class SFCReConfig implements ConfigData {
 	
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {
-		return cloudRenderDistance / 24;
+		return (int)Math.pow(cloudRenderDistance / 48, 2);
 	}
 	
 	//exchanged speed enum.

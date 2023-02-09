@@ -1,10 +1,16 @@
 { 
+	"text.option.cloudrendermode.superfancy": "超级华丽",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "非常快",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "较快",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "正常",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "较慢",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "非常慢",
+	
 	"text.autoconfig.sfcr.title": "超级华丽云：重织版",
+	
+	"text.autoconfig.sfcr.category.clouds": "云层设置",
 	"text.autoconfig.sfcr.option.enableMod": "启用模组",
 	"text.autoconfig.sfcr.option.enableMod.@Tooltip": "启用以代替原版云。",
-	"text.autoconfig.sfcr.option.enableWeatherDensity": "天气检测",
-	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "使云的密度随天气变化。",
-	"text.autoconfig.sfcr.option.cloudHeight.@PrefixText": "云层设置",
 	"text.autoconfig.sfcr.option.cloudHeight": "云高度",
 	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n安装了其他修改云高度的模组时\n（例如钠·拓展），该选项无效。",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "云层厚度",
@@ -13,7 +19,14 @@
 	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "当“匹配视野”启用时，该选项被忽略。\n§4取值过高可能引起奇怪的问题§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView": "云层显示距离匹配视野",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "云层显示距离将根据游戏视距自动调整，\n“云层显示距离”选项将被忽略。",
-	"text.autoconfig.sfcr.option.enableFog.@PrefixText": "云层迷雾设置",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "云层刷新速度",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.@Tooltip": "控制云层的常规刷新速度。",
+	"text.autoconfig.sfcr.option.sampleSteps": "云层采样步骤数",
+	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。",
+	"text.autoconfig.sfcr.option.debug": "输出调试信息",
+	"text.autoconfig.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
+	
+	"text.autoconfig.sfcr.category.fog": "云层迷雾设置",
 	"text.autoconfig.sfcr.option.enableFog": "启用迷雾",
 	"text.autoconfig.sfcr.option.enableFog.@Tooltip": "用迷雾使云向视野边缘过渡。",
 	"text.autoconfig.sfcr.option.fogAutoDistance": "自动调整迷雾距离",
@@ -21,5 +34,23 @@
 	"text.autoconfig.sfcr.option.fogMinDistance": "迷雾起始距离",
 	"text.autoconfig.sfcr.option.fogMinDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若大于结束距离，则会自动进行交换。",
 	"text.autoconfig.sfcr.option.fogMaxDistance": "迷雾结束距离",
-	"text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若小于起始距离，则会自动进行交换。"
+	"text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若小于起始距离，则会自动进行交换。",
+	
+	"text.autoconfig.sfcr.category.density": "动态云层密度",
+	"text.autoconfig.sfcr.option.enableWeatherDensity": "天气检测",
+	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "使云的密度随当前天气变化。",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime": "天气预检测时间",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "天气即将改变时，\n提前多少秒进行云层变化。",
+	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "云层密度设置：决定不同天气情况下的云层密度。",
+	"text.autoconfig.sfcr.option.cloudDensity": "- 常规密度百分比",
+	"text.autoconfig.sfcr.option.rainDensity": "- 降雨时密度百分比",
+	"text.autoconfig.sfcr.option.thunderDensity": "- 雷暴时密度百分比",
+	"text.autoconfig.sfcr.option.weatherRefreshSpeed": "天气变化时云层刷新速度",
+	"text.autoconfig.sfcr.option.weatherRefreshSpeed.@Tooltip": "控制云层在天气改变时的刷新速度。\n刷新速度越快，密度改变越平滑。",
+	"text.autoconfig.sfcr.option.densityChangingSpeed": "云层密度变化速度",
+	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "较高的速度会使密度改变得不连贯。",
+	"text.autoconfig.sfcr.option.biomeDensityMultipler": "群系因数作用百分比",
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n基于“常规密度”设置。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。\n设置为 0 可禁用群系检测。",
+	
+	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。"
 }

@@ -8,7 +8,8 @@
   "client": [
     "WorldRendererMixin",
     "GameRendererMixin",
-    "GameOptionsMixin"
+    "GameOptionsMixin",
+	"ServerWorldAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

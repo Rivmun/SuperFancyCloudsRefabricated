@@ -1,10 +1,16 @@
 { 
+	"text.option.cloudrendermode.superfancy": "Super Fancy",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "Very Fast",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "Fast",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "Normal",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "Slow",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "Very Slow",
+	
 	"text.autoconfig.sfcr.title": "SuperFancyClouds: Refabricated",
+	
+	"text.autoconfig.sfcr.category.clouds": "Cloud Layer Settings",
 	"text.autoconfig.sfcr.option.enableMod": "Enable Mod",
 	"text.autoconfig.sfcr.option.enableMod.@Tooltip": "Enable to overwrite vanilla cloud.",
-	"text.autoconfig.sfcr.option.enableWeatherDensity": "Weather Detect",
-	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with weather.",
-	"text.autoconfig.sfcr.option.cloudHeight.@PrefixText": "Cloud Layer Settings",
 	"text.autoconfig.sfcr.option.cloudHeight": "Cloud Height",
 	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nIt will invalid when other mod which \nmodify cloud height are installed (such as Sodium-Extra).",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "Cloud Thickness",
@@ -13,7 +19,14 @@
 	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "Ignored when \"Fit to View\" is enabled.\n§4May cause weird issue if set too high§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView": "Cloud Render Distance Fit to View",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "\"Cloud Render Distance\" will be ignore when enable it.",
-	"text.autoconfig.sfcr.option.enableFog.@PrefixText": "Cloud Fog Settings",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "Cloud Refresh Rate",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.@Tooltip": "Control speed of cloud normal refresh speed.",
+	"text.autoconfig.sfcr.option.sampleSteps": "Cloud Sample Steps",
+	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "Control how many steps that Cloud-Sampler will use.\nHigh value make clouds more realistic,\nbut will reduce performance (and amount).",
+	"text.autoconfig.sfcr.option.debug": "DEBUG",
+	"text.autoconfig.sfcr.option.debug.@Tooltip": "Do §4NOT§r enable it unless you're tester.",
+	
+	"text.autoconfig.sfcr.category.fog": "Cloud Fog Settings",
 	"text.autoconfig.sfcr.option.enableFog": "Enable Fog",
 	"text.autoconfig.sfcr.option.enableFog.@Tooltip": "Use fog to transition cloud to view boundary.",
 	"text.autoconfig.sfcr.option.fogAutoDistance": "Auto Adjust Fog Distance",
@@ -21,5 +34,21 @@
 	"text.autoconfig.sfcr.option.fogMinDistance": "Fog Start Distance",
 	"text.autoconfig.sfcr.option.fogMinDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if bigger than END.",
 	"text.autoconfig.sfcr.option.fogMaxDistance": "Fog End Distance",
-	"text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if smaller than START."
+	"text.autoconfig.sfcr.option.fogMaxDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if smaller than START.",
+	
+	"text.autoconfig.sfcr.category.density": "Dynamic Cloud Density",
+	"text.autoconfig.sfcr.option.enableWeatherDensity": "Weather Detect",
+	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather.",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime": "Weather Pre-Detect Time",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "When the weather is about to change,\nhow many seconds in advance to change the cloud.",
+	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "Cloud Density Settings: Set cloud density in different scenes",
+	"text.autoconfig.sfcr.option.cloudDensity": "- Common Density Percentage",
+	"text.autoconfig.sfcr.option.rainDensity": "- Rainy Density Percentage",
+	"text.autoconfig.sfcr.option.thunderDensity": "- Thundering Density Percentage",
+	"text.autoconfig.sfcr.option.weatherRefreshSpeed": "Refresh Rate when weather changes",
+	"text.autoconfig.sfcr.option.weatherRefreshSpeed.@Tooltip": "Control the refresh rate of clouds when\nweather changes. The faster refresh rate,\nthe smoother density change.",
+	"text.autoconfig.sfcr.option.densityChangingSpeed": "Density Change Rate",
+	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
+	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function."
 }

@@ -40,7 +40,7 @@
 	"text.autoconfig.sfcr.option.enableWeatherDensity": "Weather Detect",
 	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather.",
 	"text.autoconfig.sfcr.option.weatherPreDetectTime": "Weather Pre-Detect Time",
-	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "When the weather is about to change,\nhow many seconds in advance to change the cloud.",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "When the weather is about to change,\nhow many seconds in advance to change the cloud.\nSet 0 to disable.\nWill automatic disable if you aren't host in multiplayer.",
 	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "Cloud Density Settings: Set cloud density in different scenes",
 	"text.autoconfig.sfcr.option.cloudDensity": "- Common Density Percentage",
 	"text.autoconfig.sfcr.option.rainDensity": "- Rainy Density Percentage",

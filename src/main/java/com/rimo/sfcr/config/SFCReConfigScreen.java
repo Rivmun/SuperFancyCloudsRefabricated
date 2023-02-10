@@ -166,7 +166,7 @@ public class SFCReConfigScreen {
     	density.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime")
     					,config.getWeatherPreDetectTime()
-    					,3
+    					,0
     					,30)
     			.setDefaultValue(10)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip"))

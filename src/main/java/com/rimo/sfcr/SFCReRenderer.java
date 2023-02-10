@@ -92,10 +92,14 @@ public class SFCReRenderer {
 			return;
 
 		var player = MinecraftClient.getInstance().player;
-		var world = MinecraftClient.getInstance().isIntegratedServerRunning() ? 
-				MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey()) : 
-				MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());
-		var worldProperties = ((ServerWorldAccessor)world).getWorldProperties();
+		var world = MinecraftClient.getInstance().world.isClient()
+				? MinecraftClient.getInstance().world
+				: MinecraftClient.getInstance().isIntegratedServerRunning()
+						? MinecraftClient.getInstance().getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey())
+						: MinecraftClient.getInstance().world.getServer().getWorld(MinecraftClient.getInstance().world.getRegistryKey());		//This line is useless, right?
+		var worldProperties = MinecraftClient.getInstance().world.isClient()
+				? null
+				: ((ServerWorldAccessor)world).getWorldProperties();
 		var currentBiomeDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
 		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
@@ -105,18 +109,24 @@ public class SFCReRenderer {
 		//Detect Weather Change
 		if (config.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
-				isWeatherChange = worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime() 
-						|| cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE;
+				isWeatherChange = worldProperties == null || config.getWeatherPreDetectTime() == 0
+						? cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE
+						: cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE || worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime();
 			} else if (world.isRaining()) {
-				isWeatherChange = worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime() 
-						|| cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
-						|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE;
+				isWeatherChange = worldProperties == null || config.getWeatherPreDetectTime() == 0
+						? cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE || cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE
+						: cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE || cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE 
+								|| worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime();
 			} else {		//Clear...
-				if (worldProperties.getClearWeatherTime() != 0) {
-					isWeatherChange = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime();
+				if (worldProperties == null || config.getWeatherPreDetectTime() == 0) {
+					isWeatherChange = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
 				} else {
-					isWeatherChange = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime() 
-							|| cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
+					if (worldProperties.getClearWeatherTime() != 0) {
+						isWeatherChange = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime();
+					} else {
+						isWeatherChange = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime() 
+								|| cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
+					}
 				}
 			}
 		} else {
@@ -135,36 +145,53 @@ public class SFCReRenderer {
 			
 			//Density Change by Weather
 			if (config.isEnableWeatherDensity()) {
-				if (world.isThundering()) {
-					if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather rain or clear?
-						cloudDensityByWeather += (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored clearing...
-					} else if (cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE) {
-						cloudDensityByWeather += (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-					} else {
-						cloudDensityByWeather = config.getThunderDensityPercent() / 50f;
-					}
-				} else if (world.isRaining()) {
-					if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thunder or clear?
-						cloudDensityByWeather += (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering...
-					} else {
+				if (worldProperties == null || config.getWeatherPreDetectTime() == 0) {		//If not a host, automatic disable pre-detect.
+					if (world.isThundering()) {
+						cloudDensityByWeather = cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE
+								? cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+								: config.getThunderDensityPercent() / 50f;
+					} else if (world.isRaining()) {
 						cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
 								|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE 
 								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
 								: config.getRainDensityPercent() / 50f;
-					}
-				} else {		//Clear...
-					if (worldProperties.getClearWeatherTime() != 0) {		//It's complex because if use /weather clear, time of thunder & rain always return 1; time of clear in neutral clear always return 0.
-						cloudDensityByWeather = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime() 
-								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
-								: config.getCloudDensityPercent() / 50f;
-					} else if (Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime()) {
-						cloudDensityByWeather = worldProperties.getRainTime() < worldProperties.getThunderTime() 
-								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
-								: cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
-					} else {
+					} else {		//Clear...
 						cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE 
 								? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
 								: config.getCloudDensityPercent() / 50f;
+					}
+				} else {		//Only host can access the ServerWorld (and Properties).
+					if (world.isThundering()) {
+						if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather rain or clear?
+							cloudDensityByWeather += (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored clearing...
+						} else {
+							cloudDensityByWeather = cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE
+									? cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+									: config.getThunderDensityPercent() / 50f;
+						}
+					} else if (world.isRaining()) {
+						if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thunder or clear?
+							cloudDensityByWeather += (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering...
+						} else {
+							cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE 
+									|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE 
+									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+									: config.getRainDensityPercent() / 50f;
+						}
+					} else {		//Clear...
+						if (worldProperties.getClearWeatherTime() != 0) {		//It's complex because if use /weather clear, time of thunder & rain always return 1; time of clear in neutral clear always return 0.
+							cloudDensityByWeather = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime() 
+									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+									: config.getCloudDensityPercent() / 50f;
+						} else if (Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime()) {
+							cloudDensityByWeather = worldProperties.getRainTime() < worldProperties.getThunderTime() 
+									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+									: cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+						} else {
+							cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE 
+									? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed 
+									: config.getCloudDensityPercent() / 50f;
+						}
 					}
 				}
 			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50) {		//Initialize if disabled detect in rain/thunder.

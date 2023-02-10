@@ -40,7 +40,7 @@
 	"text.autoconfig.sfcr.option.enableWeatherDensity": "天气检测",
 	"text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip": "使云的密度随当前天气变化。",
 	"text.autoconfig.sfcr.option.weatherPreDetectTime": "天气预检测时间",
-	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "天气即将改变时，\n提前多少秒进行云层变化。",
+	"text.autoconfig.sfcr.option.weatherPreDetectTime.@Tooltip": "天气即将改变时，提前多少秒进行云层变化。\n设为 0 可禁用该功能。\n多人游戏时若你并非主机，此选项将自动禁用。",
 	"text.autoconfig.sfcr.option.cloudDensity.@PrefixText": "云层密度设置：决定不同天气情况下的云层密度。",
 	"text.autoconfig.sfcr.option.cloudDensity": "- 常规密度百分比",
 	"text.autoconfig.sfcr.option.rainDensity": "- 降雨时密度百分比",

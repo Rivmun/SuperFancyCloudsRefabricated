@@ -59,7 +59,7 @@ public class SFCReRenderer {
 	public int moveTimer = 40;
 	public double partialOffset = 0;
 	public double partialOffsetSecondary = 0;
-	public int cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;		//Idk why "*16" but it work fine.
+	public double cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;		//Idk why "*16" but it work fine.
 
 	public double time;
 
@@ -334,8 +334,8 @@ public class SFCReRenderer {
 	private void collectCloudData(double scrollX, double scrollZ) {
 
 		try {
-			double startX = scrollX / 16;
-			double startZ = scrollZ / 16;
+			double startX = scrollX / 16 - (cloudRenderDistance - 96) / 2f;
+			double startZ = scrollZ / 16 - (cloudRenderDistance - 96) / 2f;
 
 			double timeOffset = Math.floor(time / 6) * 6;
 
@@ -408,6 +408,7 @@ public class SFCReRenderer {
 				while (partialOffset >= 16) {
 					partialOffset -= 16;
 				}
+				cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 			}
 		} catch (Exception e) {
 			// -- Ignore...
@@ -534,8 +535,6 @@ public class SFCReRenderer {
 		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
 		
 		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
-		
-		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
 	}
 	
 	//Push to Mixin.

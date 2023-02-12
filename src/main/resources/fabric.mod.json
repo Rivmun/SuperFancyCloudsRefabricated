@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "sfcr",
-  "version": "1.4.1",
+  "version": "${version}",
 
   "name": "SuperFancyClouds: Refabricated",
   "description": "An unofficial fabric port of SuperFancyClouds that makes your Minecraft sky full of more stereoscopic and dynamic clouds.",

@@ -410,6 +410,7 @@ public class SFCReRenderer {
 				while (partialOffset >= 16) {
 					partialOffset -= 16;
 				}
+				cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 			}
 		} catch (Exception e) {
 			// -- Ignore...
@@ -537,8 +538,6 @@ public class SFCReRenderer {
 		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed()); 
 		
 		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
-		
-		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 	}
 	
 	//Push to Mixin.

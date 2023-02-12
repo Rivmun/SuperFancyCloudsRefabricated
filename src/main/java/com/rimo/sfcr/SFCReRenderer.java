@@ -60,7 +60,7 @@ public class SFCReRenderer {
 	public int moveTimer = 40;
 	public double partialOffset = 0;
 	public double partialOffsetSecondary = 0;
-	public int cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;		//Idk why "*16" but it work fine.
+	public double cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;		//Idk why "*16" but it work fine.
 
 	public double time;
 
@@ -195,8 +195,8 @@ public class SFCReRenderer {
 						}
 					}
 				}
-			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50) {		//Initialize if disabled detect in rain/thunder.
-				cloudDensityByWeather = config.getCloudDensityPercent() / 50;
+			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50f) {		//Initialize if disabled detect in rain/thunder.
+				cloudDensityByWeather = config.getCloudDensityPercent() / 50f;
 			}
 			//Density Change by Biome
 			cloudDensityByBiome = isBiomeChange ? cloudDensityByBiome + (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed : currentBiomeDownFall;
@@ -258,8 +258,8 @@ public class SFCReRenderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getFogMinDistance());
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getFogMaxDistance());
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float)Math.pow(cloudRenderDistance / 48, 2) / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float)Math.pow(cloudRenderDistance / 48, 2));
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float)Math.pow(cloudRenderDistance / 48f, 2) / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float)Math.pow(cloudRenderDistance / 48f, 2));
 						}
 					} else {
 						BackgroundRenderer.clearFog();
@@ -335,8 +335,8 @@ public class SFCReRenderer {
 	private void collectCloudData(double scrollX, double scrollZ) {
 
 		try {
-			double startX = scrollX / 16;
-			double startZ = scrollZ / 16;
+			double startX = scrollX / 16 - (cloudRenderDistance - 96) / 2f;
+			double startZ = scrollZ / 16 - (cloudRenderDistance - 96) / 2f;
 
 			double timeOffset = Math.floor(time / 6) * 6;
 
@@ -356,7 +356,7 @@ public class SFCReRenderer {
 			float l2Freq = 0.001f;
 			float l2TimeFactor = 0.1f;
 			
-			var f = 1.5 - cloudDensityByWeather * (1 - (1 - cloudDensityByBiome) * config.getBiomeDensityMultipler() / 100);
+			var f = 1.3 - cloudDensityByWeather * (1 - (1 - cloudDensityByBiome) * config.getBiomeDensityMultipler() / 100f * 1.5);
 			if (config.isEnableDebug())
 				MinecraftClient.getInstance().player.sendMessage(Text.of("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f));
 
@@ -409,6 +409,7 @@ public class SFCReRenderer {
 				while (partialOffset >= 16) {
 					partialOffset -= 16;
 				}
+				cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 			}
 		} catch (Exception e) {
 			// -- Ignore...
@@ -535,8 +536,6 @@ public class SFCReRenderer {
 		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed()); 
 		
 		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
-		
-		cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2 * 16;
 	}
 	
 	//Push to Mixin.

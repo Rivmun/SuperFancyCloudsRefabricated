@@ -1,10 +1,10 @@
 { 
 	"text.option.cloudrendermode.superfancy": "Super Fancy",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "Very Fast",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "Fast",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "Normal",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "Slow",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "Very Slow",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "Slow",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "Normal",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "Fast",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "Very Fast",
 	
 	"text.autoconfig.sfcr.title": "SuperFancyClouds: Refabricated",
 	
@@ -14,9 +14,9 @@
 	"text.autoconfig.sfcr.option.cloudHeight": "Cloud Height",
 	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nIt will invalid when other mod which \nmodify cloud height are installed (such as Sodium-Extra).",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "Cloud Thickness",
-	"text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip": "§4May cause weird issue if set too high§r",
+	"text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip": "§4May impact performance if set too high§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistance": "Cloud Render Distance",
-	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "Ignored when \"Fit to View\" is enabled.\n§4May cause weird issue if set too high§r",
+	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "Ignored when \"Fit to View\" is enabled.\n§4May impact performance if set too high§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView": "Cloud Render Distance Fit to View",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "\"Cloud Render Distance\" will be ignore when enable it.",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "Cloud Refresh Rate",
@@ -50,5 +50,7 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "Density Change Rate",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
-	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function."
+	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function.",
+	"text.autoconfig.sfcr.option.biomeFilter": "Biome Affect Filter",
+	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormatting §omodid:biomeid§r"
 }

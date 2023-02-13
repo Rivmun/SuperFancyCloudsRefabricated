@@ -17,7 +17,6 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
@@ -36,6 +35,8 @@ public class SFCReRenderer {
 	private static final float DENSITY_GATE_RANGE = 0.0500000f;
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
+	private float targetDownFall = 1f;
+	private int cloudColorModifier = -1;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
 	
@@ -59,7 +60,7 @@ public class SFCReRenderer {
 	public int moveTimer = 40;
 	public double partialOffset = 0;
 	public double partialOffsetSecondary = 0;
-	public double cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;		//Idk why "*16" but it work fine.
+	public double cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 
 	public double time;
 
@@ -100,7 +101,6 @@ public class SFCReRenderer {
 		var worldProperties = MinecraftClient.getInstance().world.isClient()
 				? null
 				: ((ServerWorldAccessor)world).getWorldProperties();
-		var currentBiomeDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
 		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
 		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
 
@@ -132,8 +132,11 @@ public class SFCReRenderer {
 		} else {
 			isWeatherChange = false;
 		}
-		//Detect Biome Change
-		isBiomeChange = cloudDensityByBiome > currentBiomeDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < currentBiomeDownFall - DENSITY_GATE_RANGE; 
+		
+		//Detect Biome Change (why biome registry name so difficult to access...
+		if (!config.getBiomeFilterList().contains(world.getBiome(player.getBlockPos()).getKey().get().getValue().toString()))
+			targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+		isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
 
 		//Refresh Processing...
 		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
@@ -148,48 +151,48 @@ public class SFCReRenderer {
 				if (worldProperties == null || config.getWeatherPreDetectTime() == 0) {		//If not a host, automatic disable pre-detect.
 					if (world.isThundering()) {
 						cloudDensityByWeather = cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE
-								? cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+								? stepAppr(config.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 								: config.getThunderDensityPercent() / 50f;
 					} else if (world.isRaining()) {
 						cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE
 								|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE
-								? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+								? stepAppr(config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 								: config.getRainDensityPercent() / 50f;
 					} else {		//Clear...
 						cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE
-								? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+								? stepAppr(config.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 								: config.getCloudDensityPercent() / 50f;
 					}
 				} else {		//Only host can access the ServerWorld (and Properties).
 					if (world.isThundering()) {
 						if (worldProperties.getThunderTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather rain or clear?
-							cloudDensityByWeather += (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored clearing...
+							cloudDensityByWeather = stepAppr(config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);		//Ignored clearing...
 						} else {
 							cloudDensityByWeather = cloudDensityByWeather < config.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE
-									? cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+									? stepAppr(config.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 									: config.getThunderDensityPercent() / 50f;
 						}
 					} else if (world.isRaining()) {
 						if (worldProperties.getRainTime() / 20 < config.getWeatherPreDetectTime()) {		//How to figure next weather thunder or clear?
-							cloudDensityByWeather += (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;		//Ignored thundering...
+							cloudDensityByWeather = stepAppr(config.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);		//Ignored thundering...
 						} else {
 							cloudDensityByWeather = cloudDensityByWeather > config.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE
 									|| cloudDensityByWeather < config.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE
-									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+									? stepAppr(config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 									: config.getRainDensityPercent() / 50f;
 						}
 					} else {		//Clear...
 						if (worldProperties.getClearWeatherTime() != 0) {		//It's complex because if use /weather clear, time of thunder & rain always return 1; time of clear in neutral clear always return 0.
 							cloudDensityByWeather = worldProperties.getClearWeatherTime() / 20 < config.getWeatherPreDetectTime()
-									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+									? stepAppr(config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 									: config.getCloudDensityPercent() / 50f;
 						} else if (Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < config.getWeatherPreDetectTime()) {
 							cloudDensityByWeather = worldProperties.getRainTime() < worldProperties.getThunderTime() 
-									? cloudDensityByWeather + (config.getRainDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
-									: cloudDensityByWeather + (config.getThunderDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed;
+									? stepAppr(config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
+									: stepAppr(config.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
 						} else {
 							cloudDensityByWeather = cloudDensityByWeather > config.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE
-									? cloudDensityByWeather + (config.getCloudDensityPercent() / 50f - cloudDensityByWeather) / (float)densityChangingSpeed
+									? stepAppr(config.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed)
 									: config.getCloudDensityPercent() / 50f;
 						}
 					}
@@ -197,12 +200,36 @@ public class SFCReRenderer {
 			} else if (cloudDensityByWeather != config.getCloudDensityPercent() / 50f) {		//Initialize if disabled detect in rain/thunder.
 				cloudDensityByWeather = config.getCloudDensityPercent() / 50f;
 			}
+			
 			//Density Change by Biome
-			cloudDensityByBiome = isBiomeChange ? cloudDensityByBiome + (currentBiomeDownFall - cloudDensityByBiome) / (float)densityChangingSpeed : currentBiomeDownFall;
-				
+			cloudDensityByBiome = isBiomeChange ? stepAppr(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
+			
+			//Color Change by Time
+			var t = (int)(world.getTimeOfDay() % 24000);
+			if (t > 22000) {		//Dawn, scale param in [0, 2000]
+				t -= 22000;
+				cloudColorModifier = ColorHelper.Argb.getArgb(
+						(int)(255 * 1f), 
+						(int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8)), 
+						(int)(255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1)), 
+						(int)(255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6))
+					);
+			} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
+				t -= 11500;
+				cloudColorModifier = ColorHelper.Argb.getArgb(
+						(int)(255 * 1f), 
+						(int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8)), 
+						(int)(255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1)), 
+						(int)(255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6))
+					);
+			} else {
+				cloudColorModifier = ColorHelper.Argb.getArgb(255, 255, 255, 255);
+			}
+			
 			if (config.isEnableDebug()) {
-				player.sendMessage(Text.of("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime()));
-				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
+				//SFCReMod.LOGGER.info("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime());
+				//SFCReMod.LOGGER.info("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange);
+				//SFCReMod.LOGGER.info("[SFCRe] color: " + world.getTimeOfDay() + ", " + t + ", " + ColorHelper.Argb.getRed(cloudColorModifier) + ", " + ColorHelper.Argb.getGreen(cloudColorModifier) + ", " + ColorHelper.Argb.getBlue(cloudColorModifier));
 			}
 		}
 	}
@@ -318,19 +345,18 @@ public class SFCReRenderer {
 	};
 
 	private final int[] colors = {
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.95f), (int) (255 * 0.9f), (int) (255 * 0.9f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.75f), (int) (255 * 0.75f), (int) (255 * 0.75f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 255, 255, 255),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.6f), (int) (255 * 0.6f), (int) (255 * 0.6f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.92f), (int) (255 * 0.85f), (int) (255 * 0.85f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f)),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	(int) (255 * 0.95f), 	(int) (255 * 0.9f), 	(int) (255 * 0.9f)),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	(int) (255 * 0.75f), 	(int) (255 * 0.75f), 	(int) (255 * 0.75f)),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	255, 					255, 					255),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	(int) (255 * 0.6f), 	(int) (255 * 0.6f), 	(int) (255 * 0.6f)),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	(int) (255 * 0.92f), 	(int) (255 * 0.85f), 	(int) (255 * 0.85f)),
+			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 	(int) (255 * 0.8f), 	(int) (255 * 0.8f), 	(int) (255 * 0.8f)),
 	};
 
 	double remappedValue(double noise) {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;
 	}
 
-	@SuppressWarnings("resource")
 	private void collectCloudData(double scrollX, double scrollZ) {
 
 		try {
@@ -357,7 +383,7 @@ public class SFCReRenderer {
 			
 			var f = 1.3 - cloudDensityByWeather * (1 - (1 - cloudDensityByBiome) * config.getBiomeDensityMultipler() / 100f * 1.5);
 			if (config.isEnableDebug())
-				MinecraftClient.getInstance().player.sendMessage(Text.of("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f));
+				SFCReMod.LOGGER.info("[SFCRe] density W: " + cloudDensityByWeather + ", B: " + cloudDensityByBiome + ", f: " + f);
 
 			for (int cx = 0; cx < cloudRenderDistance; cx++) {
 				for (int cy = 0; cy < cloudLayerThickness; cy++) {
@@ -515,7 +541,7 @@ public class SFCReRenderer {
 				var ny = norm[1];
 				var nz = norm[2];
 
-				builder.vertex(x, y, z).texture(0.5f, 0.5f).color(colors[normIndex]).normal(nx, ny, nz).next();
+				builder.vertex(x, y, z).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], cloudColorModifier)).normal(nx, ny, nz).next();
 			}
 		} catch (Exception e) {
 			// -- Ignore...
@@ -523,6 +549,17 @@ public class SFCReRenderer {
 		}
 
 		return builder.end();
+	}
+	
+	/*
+	 * @param tg - target to approach
+	 * @param cr - current value
+	 * @param spd - value of change speed
+	 * 
+	 * @comment needs to be improve.
+	 */
+	private static float stepAppr(float tg, float cr, float spd) {
+		return cr + (tg - cr) / spd;
 	}
 	
 	//Update Setting.

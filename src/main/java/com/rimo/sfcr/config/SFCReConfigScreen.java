@@ -1,5 +1,8 @@
 package com.rimo.sfcr.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.rimo.sfcr.SFCReMod;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -105,13 +108,13 @@ public class SFCReConfigScreen {
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
     	//DEBUG
-    	/* clouds.addEntry(entryBuilder
+    	clouds.addEntry(entryBuilder
     			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.debug")
     					,config.isEnableDebug())
     			.setDefaultValue(false)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.debug.@Tooltip"))
     			.setSaveConsumer(config::setEnalbeDebug)
-    			.build()); */
+    			.build());
     }
     
     private void buildFogCategory() {
@@ -235,6 +238,19 @@ public class SFCReConfigScreen {
     			.setDefaultValue(50)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
     			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.build());
+    	//biome filter
+    	density.addEntry(entryBuilder
+    			.startStrList(Text.translatable("text.autoconfig.sfcr.option.biomeFilter")
+    					,config.getBiomeFilterList())
+    			.setDefaultValue(() -> {
+    				List<String> list = new ArrayList<>();
+    				list.add("minecraft:river");
+    				list.add("minecraft:frozen_river");
+    				return list;
+    			})
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeFilter.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeFilterList)
     			.build());
     }
     

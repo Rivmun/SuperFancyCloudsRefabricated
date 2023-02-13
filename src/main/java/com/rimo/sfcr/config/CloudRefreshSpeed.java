@@ -1,9 +1,9 @@
 package com.rimo.sfcr.config;
 
 public enum CloudRefreshSpeed {
-	VERY_FAST,
-	FAST,
-	NORMAL,
+	VERY_SLOW,
 	SLOW,
-	VERY_SLOW
+	NORMAL,
+	FAST,
+	VERY_FAST
 }

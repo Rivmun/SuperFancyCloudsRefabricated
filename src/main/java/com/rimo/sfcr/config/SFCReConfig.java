@@ -11,6 +11,7 @@ import net.minecraft.client.MinecraftClient;
 public class SFCReConfig implements ConfigData {
 	//----CLOUDS, GENERAL----
 	private boolean enableMod = true;
+	private boolean enableServerConfig = false;
 	private int cloudHeight = 192;
 	private int cloudLayerThickness = 32;
 	private int cloudRenderDistance = 96;
@@ -36,6 +37,7 @@ public class SFCReConfig implements ConfigData {
 	
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
+	public boolean isEnableServerConfig() {return enableServerConfig;}
 	public int getCloudHeight() {return cloudHeight;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	@SuppressWarnings("resource")
@@ -66,6 +68,7 @@ public class SFCReConfig implements ConfigData {
 	
 	//input func.
 	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
+	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
 	public void setCloudHeight(int height) {cloudHeight = height;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}

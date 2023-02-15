@@ -3,7 +3,9 @@ package com.rimo.sfcr.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.SFCReClient;
+import com.rimo.sfcr.SFCReMain;
+
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -22,7 +24,7 @@ public class SFCReConfigScreen {
     ConfigCategory fog = builder.getOrCreateCategory(Text.translatable("text.autoconfig.sfcr.category.fog"));
     ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.autoconfig.sfcr.category.density"));
     
-    SFCReConfig config = SFCReMod.CONFIG.getConfig();
+    SFCReConfig config = SFCReMain.CONFIGHOLDER.getConfig();
     
     public Screen buildScreen() {
     	buildCloudsCategory();
@@ -32,9 +34,10 @@ public class SFCReConfigScreen {
     	
 		//Update when saving
     	builder.setSavingRunnable(() -> {
-    		SFCReMod.CONFIG.setConfig(config);
-    		SFCReMod.CONFIG.save();
-    		SFCReMod.RENDERER.updateRenderData(config);
+    		SFCReMain.CONFIGHOLDER.save();
+    		SFCReClient.RENDERER.updateRenderData(config);
+    		if (config.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
+    			SFCReClient.sendSyncRequest(true);
     	});
     	
     	return builder.build();
@@ -49,6 +52,14 @@ public class SFCReConfigScreen {
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableMod.@Tooltip"))
                 .setSaveConsumer(config::setEnableMod)
                 .build());
+    	//server control
+    	clouds.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableServer")
+    					,config.isEnableServerConfig())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableServer.@Tooltip"))
+    			.setSaveConsumer(config::setEnableServerConfig)
+    			.build());
     	//cloud height
     	clouds.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudHeight")

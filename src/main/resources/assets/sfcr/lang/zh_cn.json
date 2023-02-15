@@ -1,4 +1,5 @@
 { 
+	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。",
 	"text.option.cloudrendermode.superfancy": "超级华丽",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "非常慢",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "较慢",
@@ -11,6 +12,8 @@
 	"text.autoconfig.sfcr.category.clouds": "云层设置",
 	"text.autoconfig.sfcr.option.enableMod": "启用模组",
 	"text.autoconfig.sfcr.option.enableMod.@Tooltip": "启用以代替原版云。",
+	"text.autoconfig.sfcr.option.enableServer": "服务器同步",
+	"text.autoconfig.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。",
 	"text.autoconfig.sfcr.option.cloudHeight": "云高度",
 	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n安装了其他修改云高度的模组时\n（例如钠·拓展），该选项无效。",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "云层厚度",
@@ -54,5 +57,5 @@
 	"text.autoconfig.sfcr.option.biomeFilter": "群系影响过滤",
 	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r",
 	
-	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。"
+	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中..."
 }

@@ -20,11 +20,17 @@
   "license": "MIT",
   "icon": "assets/sfcr/icon.png",
 
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
+	"main": [
+	  "com.rimo.sfcr.SFCReMain"
+	],
     "client": [
-      "com.rimo.sfcr.SFCReMod"
+      "com.rimo.sfcr.SFCReClient"
     ],
+    "server": [
+	  "com.rimo.sfcr.SFCReServer"
+	],
     "modmenu": [ 
       "com.rimo.sfcr.config.SFCReModMenuIntegration"
     ]
@@ -36,7 +42,7 @@
   "depends": {
     "fabricloader": ">=0.14.11",
     "fabric-api": "*",
-    "minecraft": "~1.19.2",
+    "minecraft": "~1.19.3",
     "java": ">=17",
     "cloth-config2":"*"
   },

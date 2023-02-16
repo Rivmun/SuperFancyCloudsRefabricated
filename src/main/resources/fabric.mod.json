@@ -20,11 +20,17 @@
   "license": "MIT",
   "icon": "assets/sfcr/icon.png",
 
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
+	"main": [
+	  "com.rimo.sfcr.SFCReMain"
+	],
     "client": [
-      "com.rimo.sfcr.SFCReMod"
+      "com.rimo.sfcr.SFCReClient"
     ],
+    "server": [
+	  "com.rimo.sfcr.SFCReServer"
+	],
     "modmenu": [ 
       "com.rimo.sfcr.config.SFCReModMenuIntegration"
     ]

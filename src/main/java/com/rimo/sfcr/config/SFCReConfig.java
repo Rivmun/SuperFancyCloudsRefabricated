@@ -1,5 +1,8 @@
 package com.rimo.sfcr.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import net.minecraft.client.MinecraftClient;
@@ -8,12 +11,15 @@ import net.minecraft.client.MinecraftClient;
 public class SFCReConfig implements ConfigData {
 	//----CLOUDS, GENERAL----
 	private boolean enableMod = true;
+	private boolean enableServerConfig = false;
+	private int secPerSync = 30;		// Banned in config screen on client.
 	private int cloudHeight = 192;
 	private int cloudLayerThickness = 32;
 	private int cloudRenderDistance = 96;
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private int sampleSteps = 3;
+	private boolean enableDebug = false;
 	//----FOG----
 	private boolean enableFog = true;
 	private boolean fogAutoDistance = true;
@@ -28,10 +34,12 @@ public class SFCReConfig implements ConfigData {
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
 	private int biomeDensityMultipler = 50;
-	private boolean enableDebug = false;
+	private List<String> biomeFilterList = new ArrayList<>();
 	
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
+	public boolean isEnableServerConfig() {return enableServerConfig;}
+	public int getSecPerSync() {return secPerSync;}
 	public int getCloudHeight() {return cloudHeight;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	@SuppressWarnings("resource")
@@ -45,6 +53,7 @@ public class SFCReConfig implements ConfigData {
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
+	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableFog() {return enableFog;}
 	public boolean isFogAutoDistance() {return fogAutoDistance;}
 	public int getFogMinDistance() {return fogMinDistance;}
@@ -57,17 +66,19 @@ public class SFCReConfig implements ConfigData {
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
-	public boolean isEnableDebug() {return enableDebug;}
+	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	
 	//input func.
 	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
+	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
+	public void setSecPerSync(int value) {secPerSync = value; }
 	public void setCloudHeight(int height) {cloudHeight = height;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
-	
+	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
 	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
 	public void setFogDisance(int min, int max) {
@@ -87,7 +98,13 @@ public class SFCReConfig implements ConfigData {
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
-	public void setEnalbeDebug(boolean isEnable) {enableDebug = isEnable;}
+	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
+	
+	
+	SFCReConfig(){
+		biomeFilterList.add("minecraft:river");
+		biomeFilterList.add("minecraft:frozen_river");
+	}
 	
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {

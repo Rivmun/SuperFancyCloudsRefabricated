@@ -1,10 +1,16 @@
 package com.rimo.sfcr.config;
 
-import com.rimo.sfcr.SFCReMod;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.rimo.sfcr.SFCReClient;
+import com.rimo.sfcr.SFCReMain;
+
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.client.MinecraftClient;
 
@@ -19,7 +25,7 @@ public class SFCReConfigScreen {
     ConfigCategory fog = builder.getOrCreateCategory(new TranslatableText("text.autoconfig.sfcr.category.fog"));
     ConfigCategory density = builder.getOrCreateCategory(new TranslatableText("text.autoconfig.sfcr.category.density"));
     
-    SFCReConfig config = SFCReMod.CONFIG.getConfig();
+    SFCReConfig config = SFCReMain.CONFIGHOLDER.getConfig();
     
     public Screen buildScreen() {
     	buildCloudsCategory();
@@ -29,9 +35,10 @@ public class SFCReConfigScreen {
     	
 		//Update when saving
     	builder.setSavingRunnable(() -> {
-    		SFCReMod.CONFIG.setConfig(config);
-    		SFCReMod.CONFIG.save();
-    		SFCReMod.RENDERER.updateRenderData(config);
+    		SFCReMain.CONFIGHOLDER.save();
+    		SFCReClient.RENDERER.updateRenderData(config);
+    		if (config.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
+    			SFCReClient.sendSyncRequest(true);
     	});
     	
     	return builder.build();
@@ -46,6 +53,14 @@ public class SFCReConfigScreen {
                 .setTooltip(new TranslatableText("text.autoconfig.sfcr.option.enableMod.@Tooltip"))
                 .setSaveConsumer(config::setEnableMod)
                 .build());
+    	//server control
+    	clouds.addEntry(entryBuilder
+    			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.enableServer")
+    					,config.isEnableServerConfig())
+    			.setDefaultValue(false)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.enableServer.@Tooltip"))
+    			.setSaveConsumer(config::setEnableServerConfig)
+    			.build());
     	//cloud height
     	clouds.addEntry(entryBuilder
     			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.cloudHeight")
@@ -105,13 +120,15 @@ public class SFCReConfigScreen {
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
     	//DEBUG
-    	/* clouds.addEntry(entryBuilder
+    	/*
+    	clouds.addEntry(entryBuilder
     			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.debug")
     					,config.isEnableDebug())
     			.setDefaultValue(false)
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.debug.@Tooltip"))
-    			.setSaveConsumer(config::setEnalbeDebug)
-    			.build()); */
+    			.setSaveConsumer(config::setEnableDebug)
+    			.build());
+    	 */
     }
     
     private void buildFogCategory() {
@@ -236,9 +253,22 @@ public class SFCReConfigScreen {
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
     			.setSaveConsumer(config::setBiomeDensityMultipler)
     			.build());
+    	//biome filter
+    	density.addEntry(entryBuilder
+    			.startStrList(new TranslatableText("text.autoconfig.sfcr.option.biomeFilter")
+    					,config.getBiomeFilterList())
+    			.setDefaultValue(() -> {
+    				List<String> list = new ArrayList<>();
+    				list.add("minecraft:river");
+    				list.add("minecraft:frozen_river");
+    				return list;
+    			})
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeFilter.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeFilterList)
+    			.build());
     }
     
-    private TranslatableText getNameFromSpeedEnum(CloudRefreshSpeed value) {
+    private Text getNameFromSpeedEnum(CloudRefreshSpeed value) {
 		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
 			return new TranslatableText("text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST");
 		} else if (value.equals(CloudRefreshSpeed.FAST)){
@@ -250,7 +280,7 @@ public class SFCReConfigScreen {
 		} else if (value.equals(CloudRefreshSpeed.VERY_SLOW)) {
 			return new TranslatableText("text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW");
 		} else {
-			return new TranslatableText("");
+			return Text.of("");
 		}
     }
 }

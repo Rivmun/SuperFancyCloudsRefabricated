@@ -17,6 +17,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
@@ -43,7 +44,7 @@ public class SFCReRenderer {
 	private int cloudLayerThickness = SFCReMain.config.getCloudLayerThickness();
 	private int normalRefreshSpeed = SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getNormalRefreshSpeed());
 	private int weatheringRefreshSpeed = SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getDensityChangingSpeed());
+	private int densityChangingSpeed = SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getDensityChangingSpeed()) / 2;
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -96,7 +97,7 @@ public class SFCReRenderer {
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 		
 		//Detect Weather Change
-		if (world.isClient)
+		if (!MinecraftClient.getInstance().isIntegratedServerRunning())
 			SFCReMain.RUNTIME.clientTick(world);
 		if (SFCReMain.config.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
@@ -131,13 +132,13 @@ public class SFCReRenderer {
 				if (isWeatherChange) {
 					switch (SFCReMain.RUNTIME.nextWeather) {
 					case THUNDER:
-						stepAppr(SFCReMain.config.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
+						cloudDensityByWeather = nextDensityStep(SFCReMain.config.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
 						break;
 					case RAIN:
-						stepAppr(SFCReMain.config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
+						cloudDensityByWeather = nextDensityStep(SFCReMain.config.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
 						break;
 					case CLEAR:
-						stepAppr(SFCReMain.config.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
+						cloudDensityByWeather = nextDensityStep(SFCReMain.config.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed);
 						break;
 					}
 				}
@@ -146,7 +147,7 @@ public class SFCReRenderer {
 			}
 			
 			//Density Change by Biome
-			cloudDensityByBiome = isBiomeChange ? stepAppr(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
+			cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
 			
 			//Color Change by Time
 			var t = (int)(world.getTimeOfDay() % 24000);
@@ -172,7 +173,7 @@ public class SFCReRenderer {
 			
 			if (SFCReMain.config.isEnableDebug()) {
 				//SFCReMain.LOGGER.info("[SFCRe] pre-time nT: " + worldProperties.getThunderTime() + ", nR: " + worldProperties.getRainTime() + ", nC: " + worldProperties.getClearWeatherTime());
-				//SFCReMain.LOGGER.info("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange);
+				player.sendMessage(Text.of("[SFCRe] changing W: " + isWeatherChange + ", B: " + isBiomeChange));
 				//SFCReMain.LOGGER.info("[SFCRe] color: " + world.getTimeOfDay() + ", " + t + ", " + ColorHelper.Argb.getRed(cloudColorModifier) + ", " + ColorHelper.Argb.getGreen(cloudColorModifier) + ", " + ColorHelper.Argb.getBlue(cloudColorModifier));
 			}
 		}
@@ -198,10 +199,10 @@ public class SFCReRenderer {
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
 			synchronized (this) {
-				if ((!isWeatherChange || cloudDensityByBiome == 0) && (!isBiomeChange || SFCReMain.config.getBiomeDensityMultipler() == 0)) {
-					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
-				} else {
+				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && SFCReMain.config.getBiomeDensityMultipler() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
+				} else {
+					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				}
 				
 				var cb = cloudBuffer;
@@ -491,7 +492,7 @@ public class SFCReRenderer {
 	 * 
 	 * @comment needs to be improve.
 	 */
-	private static float stepAppr(float tg, float cr, float spd) {
+	private static float nextDensityStep(float tg, float cr, float spd) {
 		return cr + (tg - cr) / spd;
 	}
 	
@@ -504,8 +505,5 @@ public class SFCReRenderer {
 		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
 		
 		_cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
-	}
-	public void updateConfigFromServer(SFCReConfig config) {
-		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
 	}	
 }

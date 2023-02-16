@@ -13,18 +13,20 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+//import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+//import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 public class SFCReMain implements ModInitializer {
@@ -39,15 +41,19 @@ public class SFCReMain implements ModInitializer {
 	
 	@Override
 	public void onInitialize() {
+		ServerPlayNetworking.registerGlobalReceiver(PACKET_SYNC_REQUEST, SFCReMain::receiveSyncRequest);
+		
 		ServerWorldEvents.LOAD.register((server, world) -> RUNTIME.init(server, world));		
 		ServerTickEvents.START_SERVER_TICK.register(server -> RUNTIME.tick(server));
+		/* 
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			SFCReMain.sendConfig(handler.getPlayer(), server);
-			SFCReRuntimeData.sendInitialData(handler.getPlayer(), server);
+			SFCReRuntimeData.sendRuntimeData(handler.getPlayer(), server);
 		});
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> RUNTIME.end());
+		 */
 	}
-	
+
 	//Push to Mixin.
 	public static int getFogDistance() {
 		if (config.isEnableFog()) {
@@ -64,7 +70,10 @@ public class SFCReMain implements ModInitializer {
 		if (!config.isEnableMod())
 			return;
 		PacketByteBuf packet = PacketByteBufs.create();
+		packet.writeLong(SFCReMain.RUNTIME.seed);
+		packet.writeInt(config.getSecPerSync());
 		packet.writeInt(config.getCloudHeight());
+		packet.writeInt(config.getCloudLayerThickness());
 		packet.writeInt(config.getSampleSteps());
 		packet.writeEnumConstant(config.getDensityChangingSpeed());
 		packet.writeInt(config.getCloudDensityPercent());
@@ -81,7 +90,10 @@ public class SFCReMain implements ModInitializer {
 	public static void receiveConfig(MinecraftClient client, ClientPlayNetworkHandler handler, PacketByteBuf packet, PacketSender sender) {
 		if (!config.isEnableServerConfig())
 			return;
+		SFCReMain.RUNTIME.seed = packet.readLong();
+		config.setSecPerSync(packet.readInt());
 		config.setCloudHeight(packet.readInt());
+		config.setCloudLayerThickness(packet.readInt());
 		config.setSampleSteps(packet.readInt());
 		config.setDensityChangingSpeed(packet.readEnumConstant(CloudRefreshSpeed.class));
 		config.setCloudDensityPercent(packet.readInt());
@@ -95,6 +107,19 @@ public class SFCReMain implements ModInitializer {
 			size--;
 		}
 		config.setBiomeFilterList(list);
-		SFCReClient.RENDERER.updateConfigFromServer(config);
+		SFCReClient.RENDERER.updateRenderData(config);
+		SFCReClient.RENDERER.init();		// Reset renderer.
+		
+		if (SFCReMain.config.isEnableDebug())
+			client.getMessageHandler().onGameMessage(Text.translatable("text.sfcr.command.sync_full_succ"), false);
+	}
+	
+	public static void receiveSyncRequest(MinecraftServer server, ServerPlayerEntity player, ServerPlayNetworkHandler handler, PacketByteBuf packet, PacketSender sender) {
+		var isFull = packet.readBoolean();
+		if (isFull)
+			SFCReMain.sendConfig(player, server);
+		SFCReRuntimeData.sendRuntimeData(player, server);
+		if (config.isEnableDebug())
+			SFCReMain.LOGGER.info("[SFCRe] Auto send " + (isFull ? "full" : "") + "sync data to " + player.getDisplayName().getString());
 	}
 }

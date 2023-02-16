@@ -56,5 +56,7 @@
 	"text.autoconfig.sfcr.option.biomeFilter": "Biome Affect Filter",
 	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormatting §omodid:biomeid§r",
 	
-	"text.sfcr.command.sync_request": "[SFCRe] Requesting sync to server..."
+	"text.sfcr.command.sync_request": "[SFCRe] Requesting sync to server...",
+	"text.sfcr.command.sync_succ": "[SFCRe] Sync successfully!",
+	"text.sfcr.command.sync_full_succ": "[SFCRe] Config sync complete!"
 }

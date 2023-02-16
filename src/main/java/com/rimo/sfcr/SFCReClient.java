@@ -1,7 +1,5 @@
 package com.rimo.sfcr;
 
-import com.rimo.sfcr.register.Command;
-
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -18,19 +16,27 @@ public class SFCReClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		Command.registerClient();
 
 		ClientPlayNetworking.registerGlobalReceiver(SFCReMain.PACKET_CONFIG, SFCReMain::receiveConfig);
-		ClientPlayNetworking.registerGlobalReceiver(SFCReRuntimeData.PACKET_RUNTIME, SFCReRuntimeData::receiveInitialData);
+		ClientPlayNetworking.registerGlobalReceiver(SFCReRuntimeData.PACKET_RUNTIME, SFCReRuntimeData::receiveRuntimeData);
 		ClientPlayNetworking.registerGlobalReceiver(SFCReRuntimeData.PACKET_WEATHER, SFCReRuntimeData::receiveWeather);
 		
-		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> RENDERER.init());
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			RENDERER.init();
+			sendSyncRequest(true);
+		});
 		ClientTickEvents.START_CLIENT_TICK.register((client) -> RENDERER.tick());
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> RENDERER.clean());
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			RENDERER.clean();
+			SFCReMain.CONFIGHOLDER.load();
+			SFCReMain.config = SFCReMain.CONFIGHOLDER.getConfig();
+		});
 	}
 	
 	@Environment(EnvType.CLIENT)
 	public static void sendSyncRequest(boolean isFull) {
+		if (!SFCReMain.config.isEnableServerConfig())
+			return;
 		PacketByteBuf packet = PacketByteBufs.create();
 		packet.writeBoolean(isFull);
 		ClientPlayNetworking.send(SFCReMain.PACKET_SYNC_REQUEST, packet);

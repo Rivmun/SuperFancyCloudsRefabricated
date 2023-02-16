@@ -124,7 +124,7 @@ public class SFCReConfigScreen {
     					,config.isEnableDebug())
     			.setDefaultValue(false)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.debug.@Tooltip"))
-    			.setSaveConsumer(config::setEnalbeDebug)
+    			.setSaveConsumer(config::setEnableDebug)
     			.build());
     }
     

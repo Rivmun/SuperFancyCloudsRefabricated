@@ -57,5 +57,7 @@
 	"text.autoconfig.sfcr.option.biomeFilter": "群系影响过滤",
 	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r",
 	
-	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中..."
+	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中...",
+	"text.sfcr.command.sync_succ": "[SFCRe] 同步成功！",
+	"text.sfcr.command.sync_full_succ": "[SFCRe] 设置已同步！"
 }

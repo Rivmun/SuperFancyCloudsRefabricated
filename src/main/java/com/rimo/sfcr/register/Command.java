@@ -2,14 +2,12 @@ package com.rimo.sfcr.register;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.rimo.sfcr.SFCReClient;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.SFCReRuntimeData;
 import com.rimo.sfcr.config.CloudRefreshSpeed;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -17,33 +15,16 @@ import net.minecraft.text.Text;
 import static net.minecraft.server.command.CommandManager.*;
 
 public class Command {
-	@Environment(EnvType.CLIENT)
-	public static void registerClient() {
-		ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) -> {
-			dispatcher.register(ClientCommandManager.literal("sfcr")
-					.then(ClientCommandManager.literal("sync")
-							.then(ClientCommandManager.literal("full")).executes(content -> {
-								content.getSource().sendFeedback(Text.translatable("text.sfcr.command.sync_request"));
-								SFCReClient.sendSyncRequest(true);
-								return 1;
-							})
-							.executes(content -> {
-								content.getSource().sendFeedback(Text.translatable("text.sfcr.command.sync_request"));
-								SFCReClient.sendSyncRequest(false);
-								return 1;
-							})
-					)
-			);
-		});
-	}
-	
 	@Environment(EnvType.SERVER)
 	public static void register() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> {
-			dispatcher.register(literal("sfcr").requires(source -> source.hasPermissionLevel(2))
+			dispatcher.register(literal("sfcr")
 					.executes(content -> {
 						content.getSource().sendMessage(Text.of("- - - - - SFCR Help Page - - - - -"));
 						content.getSource().sendMessage(Text.of("/sfcr - Show this page"));
+						content.getSource().sendMessage(Text.of("/sfcr sync - Sync with server instantly"));
+						if (!content.getSource().hasPermissionLevel(2))
+							return 1;
 						content.getSource().sendMessage(Text.of("/sfcr statu - Show runtime config"));
 						content.getSource().sendMessage(Text.of("/sfcr [enable|disable] - Toggle SFCR server activity"));
 						content.getSource().sendMessage(Text.of("/sfcr [cloud|density] - Edit config"));
@@ -52,7 +33,43 @@ public class Command {
 						content.getSource().sendMessage(Text.of("/sfcr save - Save runtime config to file"));
 						return 1;
 					})
-					.then(literal("statu").executes(content -> {
+					.then(literal("sync")
+							.executes(content -> {
+								SFCReRuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								SFCReMain.LOGGER.info("[SFCRe] cb: Send sync data to " + content.getSource().getDisplayName().getString());
+								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								return 1;
+							})
+							.then(literal("full").executes(content -> {
+								SFCReMain.sendConfig(content.getSource().getPlayer(), content.getSource().getServer());
+								SFCReRuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								SFCReMain.LOGGER.info("[SFCRe] cb: Send full sync data to " + content.getSource().getDisplayName().getString());
+								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								return 1;
+							}))
+							.then(literal("second").requires(source -> source.hasPermissionLevel(2))
+									.then(argument("sec", IntegerArgumentType.integer()).executes(content -> {
+										SFCReMain.config.setSecPerSync(content.getArgument("sec", Integer.class));
+										content.getSource().sendMessage(Text.of("Sync time changed!"));
+										return 1;
+									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Sync per second is " + SFCReMain.config.getSecPerSync()));
+										return 1;
+									})
+							)
+							.then(literal("allPlayer").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
+								for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
+									SFCReMain.sendConfig(player, content.getSource().getServer());
+									SFCReRuntimeData.sendRuntimeData(player, content.getSource().getServer());
+									player.sendMessage(Text.of("[SFCRe] Force sync request came from server..."));
+								}
+								content.getSource().sendMessage(Text.of("Force sync complete!"));
+								SFCReMain.LOGGER.info("[SFCRe] cb: Force sync running by " + content.getSource().getDisplayName().getString());
+								return 1;
+							}))
+					)
+					.then(literal("statu").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 						content.getSource().sendMessage(Text.of("- - - - - SFCR Mod Statu - - - - -"));
                         content.getSource().sendMessage(Text.of("§eStatu:           §r" + SFCReMain.config.isEnableMod()));
                         content.getSource().sendMessage(Text.of("§eCloud height:    §r" + SFCReMain.config.getCloudHeight()));
@@ -66,23 +83,31 @@ public class Command {
                         content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
 						return 1;
 					}))
-					.then(literal("enable").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
-						SFCReMain.config.setEnableMod(true);
-						content.getSource().sendMessage(Text.of("SFCR enabled!"));
-						return 1;
-					}))
-					.then(literal("disable").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
-						SFCReMain.config.setEnableMod(false);
-						content.getSource().sendMessage(Text.of("SFCR disabled!"));
-						return 1;
-					}))
-					.then(literal("cloud")
+					.then(literal("enable").requires(source -> source.hasPermissionLevel(2))
+							.then(argument("e", BoolArgumentType.bool()).executes(content -> {
+								SFCReMain.config.setEnableMod(content.getArgument("e", Boolean.class));
+								content.getSource().sendMessage(Text.of("SFCR statu changed!"));
+								return 1;
+							}))
+					)
+					.then(literal("debug").requires(source -> source.hasPermissionLevel(2))
+							.then(argument("e", BoolArgumentType.bool()).executes(content -> {
+								SFCReMain.config.setEnableDebug(content.getArgument("e", Boolean.class));
+								content.getSource().sendMessage(Text.of("Debug statu changed!"));
+								return 1;
+							}))
+					)
+					.then(literal("cloud").requires(source -> source.hasPermissionLevel(2))
 							.then(literal("height")
 									.then(argument("height", IntegerArgumentType.integer(96, 384)).executes(content -> {
 										SFCReMain.config.setCloudHeight(content.getArgument("height", Integer.class));
 										content.getSource().sendMessage(Text.of("Cloud height changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud height is " + SFCReMain.config.getCloudHeight()));
+										return 1;
+									})
 							)
 							.then(literal("sample")
 									.then(argument("sample", IntegerArgumentType.integer(1, 3)).executes(content -> {
@@ -90,15 +115,23 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Sample step changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Sample steps is " + SFCReMain.config.getSampleSteps()));
+										return 1;
+									})
 							)
 					)
-					.then(literal("density")
+					.then(literal("density").requires(source -> source.hasPermissionLevel(2))
 							.then(literal("predetect")
 									.then(argument("predetect", IntegerArgumentType.integer(0, 30)).executes(content -> {
 										SFCReMain.config.setWeatherPreDetectTime(content.getArgument("predetect", Integer.class));
 										content.getSource().sendMessage(Text.of("Pre-detect time changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Pre-detect time is " + SFCReMain.config.getWeatherPreDetectTime()));
+										return 1;
+									})
 							)
 							.then(literal("changingspeed")
 									.then(argument("changingspeed", IntegerArgumentType.integer(1, 5)).executes(content -> {
@@ -112,6 +145,10 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Changing speed changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Density changing speed is " + SFCReMain.config.getDensityChangingSpeed().toString()));
+										return 1;
+									})
 							)
 							.then(literal("common")
 									.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
@@ -119,6 +156,10 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Common density changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Common density is " + SFCReMain.config.getCloudDensityPercent()));
+										return 1;
+									})
 							)
 							.then(literal("rain")
 									.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
@@ -126,6 +167,10 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Rain density changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Rain density is " + SFCReMain.config.getRainDensityPercent()));
+										return 1;
+									})
 							)
 							.then(literal("thunder")
 									.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
@@ -133,18 +178,26 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Thunder density changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Thunder density is " + SFCReMain.config.getThunderDensityPercent()));
+										return 1;
+									})
 							)
 					)
-					.then(literal("biome")
+					.then(literal("biome").requires(source -> source.hasPermissionLevel(2))
 							.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
 								SFCReMain.config.setBiomeDensityMultipler(content.getArgument("percent", Integer.class));
 								content.getSource().sendMessage(Text.of("Biome affect changed!"));
 								return 1;
 							}))
+							.executes(content -> {
+								content.getSource().sendMessage(Text.of("Biome affect percent is " + SFCReMain.config.getBiomeDensityMultipler()));
+								return 1;
+							})
 							.then(literal("list").executes(content -> {
 								content.getSource().sendMessage(Text.of("Server Biome Filter List: "));
 								for (String biome : SFCReMain.config.getBiomeFilterList()) {
-									content.getSource().sendMessage(Text.of(biome));
+									content.getSource().sendMessage(Text.of("- " + biome));
 								}
 								return 1;
 							}))
@@ -167,19 +220,16 @@ public class Command {
 									}))
 							)
 					)
-					.then(literal("reload").executes(content -> {
+					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMain.CONFIGHOLDER.load();
 						SFCReMain.config = SFCReMain.CONFIGHOLDER.getConfig();
-						for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
-							SFCReMain.sendConfig(player, content.getSource().getServer());
-							SFCReRuntimeData.sendInitialData(player, content.getSource().getServer());
-							player.sendMessage(Text.of("[SFCRe] Force sync request came from server..."));
-						}
-						content.getSource().sendMessage(Text.of("Reloading & force sync complete!"));
+						SFCReMain.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
+						content.getSource().sendMessage(Text.of("Reloading complete!"));
 						return 1;
 					}))
-					.then(literal("save").executes(content -> {
+					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMain.CONFIGHOLDER.save();
+						SFCReMain.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendMessage(Text.of("Config saving complete!"));
 						return 1;
 					}))

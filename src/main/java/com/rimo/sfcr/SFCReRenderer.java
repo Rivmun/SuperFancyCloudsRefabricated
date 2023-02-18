@@ -29,8 +29,7 @@ import net.minecraft.util.math.Vec3d;
 public class SFCReRenderer {
 	
 	private static final boolean hasCloudsHeightModifier
-			= FabricLoader.getInstance().isModLoaded("sodiumextra")
-			||FabricLoader.getInstance().isModLoaded("raisedclouds");
+			= FabricLoader.getInstance().isModLoaded("sodiumextra");
 	
 	private static final float DENSITY_GATE_RANGE = 0.0500000f;
 	private float cloudDensityByWeather = 0f;
@@ -181,7 +180,14 @@ public class SFCReRenderer {
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 		
-		float f = hasCloudsHeightModifier && !SFCReMain.config.isEnableServerConfig() ? world.getDimensionEffects().getCloudsHeight() : SFCReMain.config.getCloudHeight();
+		float f;
+		if ((world.getServer().isRemote() && SFCReMain.config.isEnableServerConfig())
+				|| (world.getServer().isRemote() && !SFCReMain.config.isEnableServerConfig() && !hasCloudsHeightModifier)
+				|| (!world.getServer().isRemote() && !hasCloudsHeightModifier)) {
+			f = SFCReMain.config.getCloudHeight();
+		} else {
+			f = world.getDimensionEffects().getCloudsHeight();
+		}
 		
 		if (!Float.isNaN(f)) {
 			//Setup render system

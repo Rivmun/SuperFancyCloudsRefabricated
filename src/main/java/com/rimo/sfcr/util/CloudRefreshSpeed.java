@@ -1,4 +1,4 @@
-package com.rimo.sfcr.config;
+package com.rimo.sfcr.util;
 
 public enum CloudRefreshSpeed {
 	VERY_SLOW,

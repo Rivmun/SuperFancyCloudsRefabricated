@@ -1,0 +1,226 @@
+package com.rimo.sfcr.core;
+
+import com.rimo.sfcr.util.CloudDataType;
+
+public class CloudFadeData extends CloudData {
+
+	// Reverse input to get between fade-in and fade-out data
+	public CloudFadeData(CloudData prevData, CloudData nextData, CloudDataType type) {
+		super(prevData, nextData, type);
+		
+		width = nextData.width;
+		height = nextData.height;
+		_cloudData = nextData._cloudData;
+		
+		collectCloudData(nextData, prevData);
+	}
+	
+	@Override
+	public void collectCloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
+		// Leave empty to prevent wrong invoke.
+	}
+
+	@Override
+	public void collectCloudData(CloudData prevData, CloudData nextData) {
+
+		var startWidth = (prevData.width - nextData.width) / 2;
+		var minWidth = Math.min(prevData.width, nextData.width);
+		var minHeight = Math.min(prevData.height, nextData.height);
+
+		// Remove same block
+		if (prevData.width > nextData.width) {
+			for (int cx = startWidth; cx < minWidth; cx++) {
+				for (int cy = 0; cy < minHeight; cy++) {
+					for (int cz = startWidth; cz < minWidth; cz++) {
+						_cloudData[cx][cy][cz] = prevData._cloudData[cx][cy][cz] != nextData._cloudData[cx - minWidth][cy][cz - minWidth];
+					}
+				}
+			}
+			
+			for (int cx = 0; cx < width; cx++) {
+				for (int cy = 0; cy < height; cy++) {
+					for (int cz = 0; cz < width; cz++) {
+						if (!_cloudData[cx][cy][cz])
+							continue;
+
+						//Right
+						if (cx == width - 1 || !_cloudData[cx + 1][cy][cz]) {
+							if (cx >= startWidth && cx < startWidth + minWidth && cy <= minHeight)		// Remove contiguous mesh
+								if (nextData._cloudData[cx + 1 - startWidth][cy][cz - startWidth])
+									continue;
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx + 1, cy + 1, cz);
+
+							normalList.add((byte) 0);
+						}
+
+						//Left....
+						if (cx == 0 || !_cloudData[cx - 1][cy][cz]) {
+							if (cx > startWidth && cx <= startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx - 1 - startWidth][cy][cz - startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx, cy, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz);
+
+							normalList.add((byte) 1);
+						}
+
+						//Up....
+						if (cy == height - 1 || !_cloudData[cx][cy + 1][cz]) {
+							if (cx >= startWidth && cx <= startWidth + minWidth && cy < minHeight)
+								if (nextData._cloudData[cx - startWidth][cy + 1][cz - startWidth])
+									continue;
+							addVertex(cx, cy + 1, cz);
+							addVertex(cx + 1, cy + 1, cz);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+
+							normalList.add((byte) 2);
+						}
+
+						//Down
+						if (cy == 0 || !_cloudData[cx][cy - 1][cz]) {
+							if (cx >= startWidth && cx <= startWidth + minWidth && cy > 0)
+								if (nextData._cloudData[cx - startWidth][cy - 1][cz - startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx, cy, cz + 1);
+
+							normalList.add((byte) 3);
+						}
+
+
+						//Forward....
+						if (cz == width - 1 || !_cloudData[cx][cy][cz + 1]) {
+							if (cz >= startWidth && cz < startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx - startWidth][cy][cz + 1 - startWidth])
+									continue;
+							addVertex(cx, cy, cz + 1);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+
+							normalList.add((byte) 4);
+						}
+
+						//Backward
+						if (cz == 0 || !_cloudData[cx][cy][cz - 1]) {
+							if (cz > startWidth && cz <= startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx - startWidth][cy][cz - 1 - startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy + 1, cz);
+							addVertex(cx, cy + 1, cz);
+
+							normalList.add((byte) 5);
+						}
+					}
+				}
+			}
+			
+		} else {
+			for (int cx = startWidth; cx < minWidth; cx++) {
+				for (int cy = 0; cy < minHeight; cy++) {
+					for (int cz = startWidth; cz < minWidth; cz++) {
+						_cloudData[cx - minWidth][cy][cz - minWidth] = prevData._cloudData[cx - minWidth][cy][cz - minWidth] != nextData._cloudData[cx][cy][cz];
+					}
+				}
+			}
+
+			for (int cx = 0; cx < width; cx++) {
+				for (int cy = 0; cy < height; cy++) {
+					for (int cz = 0; cz < width; cz++) {
+						if (!_cloudData[cx][cy][cz])
+							continue;
+
+						//Right
+						if (cx == width - 1 || !_cloudData[cx + 1][cy][cz]) {
+							if (cx >= startWidth && cx < startWidth + minWidth && cy <= minHeight)		// Remove contiguous mesh
+								if (nextData._cloudData[cx + 1 + startWidth][cy][cz + startWidth])
+									continue;
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx + 1, cy + 1, cz);
+
+							normalList.add((byte) 0);
+						}
+
+						//Left....
+						if (cx == 0 || !_cloudData[cx - 1][cy][cz]) {
+							if (cx > startWidth && cx <= startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx - 1 + startWidth][cy][cz + startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx, cy, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz);
+
+							normalList.add((byte) 1);
+						}
+
+						//Up....
+						if (cy == height - 1 || !_cloudData[cx][cy + 1][cz]) {
+							if (cx >= startWidth && cx <= startWidth + minWidth && cy < minHeight)
+								if (nextData._cloudData[cx + startWidth][cy + 1][cz + startWidth])
+									continue;
+							addVertex(cx, cy + 1, cz);
+							addVertex(cx + 1, cy + 1, cz);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+
+							normalList.add((byte) 2);
+						}
+
+						//Down
+						if (cy == 0 || !_cloudData[cx][cy - 1][cz]) {
+							if (cx >= startWidth && cx <= startWidth + minWidth && cy > 0)
+								if (nextData._cloudData[cx + startWidth][cy - 1][cz + startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx, cy, cz + 1);
+
+							normalList.add((byte) 3);
+						}
+
+
+						//Forward....
+						if (cz == width - 1 || !_cloudData[cx][cy][cz + 1]) {
+							if (cz >= startWidth && cz < startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx + startWidth][cy][cz + 1 + startWidth])
+									continue;
+							addVertex(cx, cy, cz + 1);
+							addVertex(cx + 1, cy, cz + 1);
+							addVertex(cx + 1, cy + 1, cz + 1);
+							addVertex(cx, cy + 1, cz + 1);
+
+							normalList.add((byte) 4);
+						}
+
+						//Backward
+						if (cz == 0 || !_cloudData[cx][cy][cz - 1]) {
+							if (cz > startWidth && cz <= startWidth + minWidth && cy <= minHeight)
+								if (nextData._cloudData[cx + startWidth][cy][cz - 1 + startWidth])
+									continue;
+							addVertex(cx, cy, cz);
+							addVertex(cx + 1, cy, cz);
+							addVertex(cx + 1, cy + 1, cz);
+							addVertex(cx, cy + 1, cz);
+
+							normalList.add((byte) 5);
+						}
+					}
+				}
+			}
+		}
+	}
+}

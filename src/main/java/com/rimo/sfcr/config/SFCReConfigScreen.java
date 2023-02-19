@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
 import com.rimo.sfcr.SFCReMain;
+import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -119,6 +120,7 @@ public class SFCReConfigScreen {
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
     	//DEBUG
+		/*
     	clouds.addEntry(entryBuilder
     			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.debug")
     					,config.isEnableDebug())
@@ -126,6 +128,7 @@ public class SFCReConfigScreen {
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.debug.@Tooltip"))
     			.setSaveConsumer(config::setEnableDebug)
     			.build());
+		 */
     }
     
     private void buildFogCategory() {

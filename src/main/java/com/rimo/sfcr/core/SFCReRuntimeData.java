@@ -1,7 +1,10 @@
-package com.rimo.sfcr;
+package com.rimo.sfcr.core;
 
+import com.rimo.sfcr.SFCReClient;
+import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import com.rimo.sfcr.config.WeatherType;
+import com.rimo.sfcr.util.WeatherType;
+
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -87,6 +90,10 @@ public class SFCReRuntimeData {
 	
 	public void checkPartialOffset() {
 		partialOffset = partialOffset % 16d;
+	}
+	
+	public SFCReRuntimeData getInstance() {
+		return this;
 	}
 	
 	public static void sendRuntimeData(ServerPlayerEntity player, MinecraftServer server) {

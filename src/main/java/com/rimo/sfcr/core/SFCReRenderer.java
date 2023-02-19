@@ -1,11 +1,14 @@
-package com.rimo.sfcr;
+package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.config.SFCReConfig;
-import com.rimo.sfcr.config.WeatherType;
+import com.rimo.sfcr.util.WeatherType;
+
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
@@ -51,6 +54,7 @@ public class SFCReRenderer {
 
 	public VertexBuffer cloudBuffer;
 
+	public ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<CloudData>();
 	public boolean[][][] _cloudData = new boolean[cloudRenderDistance][cloudLayerThickness][cloudRenderDistance];
 
 	public Thread dataProcessThread;
@@ -58,7 +62,6 @@ public class SFCReRenderer {
 
 	public int moveTimer = 40;
 	public double partialOffsetSecondary = 0;
-	public double cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 
 	public double time;
 
@@ -242,7 +245,7 @@ public class SFCReRenderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll - cloudRenderDistanceOffset, f - 15, zScroll + SFCReMain.RUNTIME.partialOffset - cloudRenderDistanceOffset);
+					matrices.translate(xScroll, f - 15, zScroll + SFCReMain.RUNTIME.partialOffset);
 					cb.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -374,7 +377,6 @@ public class SFCReRenderer {
 				this.zScroll = scrollZ;
 
 				SFCReMain.RUNTIME.checkPartialOffset();
-				cloudRenderDistanceOffset = (cloudRenderDistance - 96) / 2f * 16;
 			}
 		} catch (Exception e) {
 			// -- Ignore...
@@ -384,9 +386,9 @@ public class SFCReRenderer {
 	}
 
 	public void addVertex(float x, float y, float z) {
-		vertexList.add(x - 48);
+		vertexList.add(x - SFCReMain.config.getCloudRenderDistance() / 2);
 		vertexList.add(y);
-		vertexList.add(z - 48);
+		vertexList.add(z - SFCReMain.config.getCloudRenderDistance() / 2);
 	}
 
 	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {

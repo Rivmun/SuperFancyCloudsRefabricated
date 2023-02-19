@@ -5,7 +5,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.SFCReRuntimeData;
-import com.rimo.sfcr.config.CloudRefreshSpeed;
+import com.rimo.sfcr.util.CloudRefreshSpeed;
+
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -106,6 +107,17 @@ public class Command {
 									}))
 									.executes(content -> {
 										content.getSource().sendMessage(Text.of("Cloud height is " + SFCReMain.config.getCloudHeight()));
+										return 1;
+									})
+							)
+							.then(literal("thickness")
+									.then(argument("thickness", IntegerArgumentType.integer(8, 64)).executes(content -> {
+										SFCReMain.config.setCloudLayerThickness(content.getArgument("thickness", Integer.class));
+										content.getSource().sendMessage(Text.of("Cloud thickness changed!"));
+										return 1;
+									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud thickness is " + SFCReMain.config.getCloudLayerThickness()));
 										return 1;
 									})
 							)

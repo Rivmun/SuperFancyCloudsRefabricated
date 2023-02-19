@@ -3,6 +3,8 @@ package com.rimo.sfcr.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rimo.sfcr.util.CloudRefreshSpeed;
+
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import net.minecraft.client.MinecraftClient;

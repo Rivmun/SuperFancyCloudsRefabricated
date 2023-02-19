@@ -4,7 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.SFCReMain;
-import com.rimo.sfcr.SFCReRuntimeData;
+import com.rimo.sfcr.core.SFCReRuntimeData;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import net.fabricmc.api.EnvType;

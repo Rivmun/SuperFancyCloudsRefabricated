@@ -1,5 +1,8 @@
 package com.rimo.sfcr;
 
+import com.rimo.sfcr.core.SFCReRenderer;
+import com.rimo.sfcr.core.SFCReRuntimeData;
+
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

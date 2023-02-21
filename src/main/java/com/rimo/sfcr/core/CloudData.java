@@ -68,14 +68,10 @@ public class CloudData implements CloudDataImplement {
 		return lifeTime;
 	}
 	
+	/* - - - - - Sampler Core - - - - - */
+	
 	protected double remappedValue(double noise) {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;
-	}
-
-	protected void addVertex(float x, float y, float z) {
-		vertexList.add(x - width / 2);
-		vertexList.add(y);
-		vertexList.add(z - width / 2);
 	}
 	
 	@Override
@@ -97,7 +93,8 @@ public class CloudData implements CloudDataImplement {
 			float l2Freq = 0.001f;
 			float l2TimeFactor = 0.1f;
 			
-			var f = 1.3 - densityByWeather * (1 - (1 - densityByBiome) * config.getBiomeDensityMultipler() / 100f * 1.5);
+			// Density threshold control
+			var f = 1.3 - densityByWeather * (1 - (1 - densityByBiome) * config.getBiomeDensityMultipler() / 100f * 2);
 			if (config.isEnableDebug())
 				SFCReMain.LOGGER.info("[SFCRe] density W: " + densityByWeather + ", B: " + densityByBiome + ", f: " + f);
 
@@ -147,6 +144,14 @@ public class CloudData implements CloudDataImplement {
 	@Override
 	public void collectCloudData(CloudData prevData, CloudData nextData) {
 		// Leave empty here for child.
+	}
+
+	/* - - - - - Mesh Computing - - - - - */
+	
+	protected void addVertex(float x, float y, float z) {
+		vertexList.add(x - width / 2);
+		vertexList.add(y);
+		vertexList.add(z - width / 2);
 	}
 	
 	protected void computingCloudMesh() {

@@ -9,6 +9,7 @@ public class CloudMidData extends CloudData {
 
 		width = Math.max(prevData.width, nextData.width);
 		height = Math.min(prevData.height, nextData.height);
+		_cloudData = new boolean[width][height][width];
 		
 		collectCloudData(prevData, nextData);
 	}
@@ -30,7 +31,7 @@ public class CloudMidData extends CloudData {
 			for (int cx = startWidth; cx < minWidth; cx++) {
 				for (int cy = 0; cy < minHeight; cy++) {
 					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx][cy][cz] = prevData._cloudData[cx][cy][cz] == nextData._cloudData[cx - minWidth][cy][cz - minWidth];
+						_cloudData[cx][cy][cz] = prevData._cloudData[cx][cy][cz] && prevData._cloudData[cx][cy][cz] == nextData._cloudData[cx - startWidth][cy][cz - startWidth];
 					}
 				}
 			}
@@ -38,7 +39,7 @@ public class CloudMidData extends CloudData {
 			for (int cx = startWidth; cx < minWidth; cx++) {
 				for (int cy = 0; cy < minHeight; cy++) {
 					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx - minWidth][cy][cz - minWidth] = prevData._cloudData[cx - minWidth][cy][cz - minWidth] == nextData._cloudData[cx][cy][cz];
+						_cloudData[cx - startWidth][cy][cz - startWidth] = prevData._cloudData[cx - startWidth][cy][cz - startWidth] == nextData._cloudData[cx][cy][cz] && nextData._cloudData[cx][cy][cz];
 					}
 				}
 			}

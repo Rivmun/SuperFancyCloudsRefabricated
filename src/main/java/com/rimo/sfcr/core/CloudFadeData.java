@@ -10,7 +10,7 @@ public class CloudFadeData extends CloudData {
 		
 		width = nextData.width;
 		height = nextData.height;
-		_cloudData = nextData._cloudData;
+		_cloudData = new boolean[nextData.width][nextData.height][nextData.width];
 		
 		collectCloudData(prevData, nextData);
 	}
@@ -23,7 +23,7 @@ public class CloudFadeData extends CloudData {
 	@Override
 	public void collectCloudData(CloudData prevData, CloudData nextData) {
 
-		var startWidth = (prevData.width - nextData.width) / 2;
+		var startWidth = Math.abs(prevData.width - nextData.width) / 2;
 		var minWidth = Math.min(prevData.width, nextData.width);
 		var minHeight = Math.min(prevData.height, nextData.height);
 
@@ -32,11 +32,11 @@ public class CloudFadeData extends CloudData {
 			for (int cx = startWidth; cx < minWidth; cx++) {
 				for (int cy = 0; cy < minHeight; cy++) {
 					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx - startWidth][cy][cz - startWidth] = prevData._cloudData[cx][cy][cz] != nextData._cloudData[cx - startWidth][cy][cz - startWidth];
+						_cloudData[cx - startWidth][cy][cz - startWidth] = !prevData._cloudData[cx][cy][cz] && nextData._cloudData[cx - startWidth][cy][cz - startWidth];
 					}
 				}
 			}
-			
+
 			for (int cx = 0; cx < width; cx++) {
 				for (int cy = 0; cy < height; cy++) {
 					for (int cz = 0; cz < width; cz++) {
@@ -130,12 +130,12 @@ public class CloudFadeData extends CloudData {
 					}
 				}
 			}
-			
+
 		} else {
 			for (int cx = startWidth; cx < minWidth; cx++) {
 				for (int cy = 0; cy < minHeight; cy++) {
 					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx][cy][cz] = prevData._cloudData[cx - startWidth][cy][cz - startWidth] != nextData._cloudData[cx][cy][cz];
+						_cloudData[cx][cy][cz] = !prevData._cloudData[cx - startWidth][cy][cz - startWidth] && nextData._cloudData[cx][cy][cz];
 					}
 				}
 			}

@@ -248,7 +248,7 @@ public class SFCReRenderer {
 		}
 	}
 
-	public BufferBuilder builder = new BufferBuilder(2097152);
+	private BufferBuilder builder = new BufferBuilder(2097152);
 
 	private final float[][] normals = {
 			{1, 0, 0},
@@ -271,6 +271,7 @@ public class SFCReRenderer {
 	@SuppressWarnings("resource")
 	public BufferBuilder.BuiltBuffer rebuildCloudMesh() {
 		// Building mesh
+		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
 		for (CloudData data : cloudDataGroup) {
 
@@ -324,6 +325,38 @@ public class SFCReRenderer {
 			return null;
 		}
 	}
+	
+	private int getCloudColor(long worldTime, CloudData data) {
+		int a = 255, r = 255, g = 255, b = 255;
+		int t = (int) (worldTime % 24000);
+		
+		// Alpha changed by cloud type and lifetime
+		switch (data.getDataType()) {
+		case NORMAL, TRANS_MID_BODY:
+			break;
+		case TRANS_IN:
+			a = (int) (255 - 255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f);
+			break;
+		case TRANS_OUT:
+			a = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f);
+			break;
+		}
+		
+		// Color changed by time...
+		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
+			t = t > 22500 ? t - 22000 : t + 1500; 
+			r = (int) (255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
+			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
+			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
+			t -= 11500;
+			r = (int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
+			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
+			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+		}
+		
+		return ColorHelper.Argb.getArgb(a, r, g, b);
+	}
 
 	private void collectCloudData(double scrollX, double scrollZ) {
 		try {
@@ -357,39 +390,6 @@ public class SFCReRenderer {
 		}
 		
 		isProcessingData = false;
-	}
-	
-	private int getCloudColor(long worldTime, CloudData data) {
-		int a = 255, r = 255, g = 255, b = 255;
-		int t = (int) (worldTime % 24000);
-		
-		// Alpha changed by cloud type and lifetime
-		switch (data.getDataType()) {
-		case NORMAL:
-		case TRANS_MID_BODY:
-			break;
-		case TRANS_IN:
-			a = (int) (255 - 255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f);
-			break;
-		case TRANS_OUT:
-			a = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f);
-			break;
-		}
-		
-		// Color changed by time...
-		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
-			t = t > 22500 ? t - 22000 : t + 1500; 
-			r = (int) (255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
-		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
-			t -= 11500;
-			r = (int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
-		}
-		
-		return ColorHelper.Argb.getArgb(a, r, g, b);
 	}
 	
 	/* Density Step Approaching 

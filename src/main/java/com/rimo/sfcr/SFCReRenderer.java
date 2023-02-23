@@ -84,10 +84,10 @@ public class SFCReRenderer {
 		if (!CONFIG.isEnableMod())
 			return;
 
-		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
+		if (MinecraftClient.getInstance().isIntegratedServerRunning() && MinecraftClient.getInstance().isPaused())
 			return;
 
-		if (MinecraftClient.getInstance().isIntegratedServerRunning() && MinecraftClient.getInstance().isPaused())
+		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
 			return;
 
 		//If already processing, don't start up again.

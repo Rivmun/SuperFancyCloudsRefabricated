@@ -241,7 +241,7 @@ public class SFCReRenderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll - cloudRenderDistanceOffset, f - 15 - CONFIG.getCloudHeight() / 2, zScroll + RUNTIME.partialOffset - cloudRenderDistanceOffset);
+					matrices.translate(xScroll - cloudRenderDistanceOffset, f - 15 - CONFIG.getCloudLayerThickness() / 2, zScroll + RUNTIME.partialOffset - cloudRenderDistanceOffset);
 					cb.bind();
 
 					for (int s = 0; s < 2; ++s) {

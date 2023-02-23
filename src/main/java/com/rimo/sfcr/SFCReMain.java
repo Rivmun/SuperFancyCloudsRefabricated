@@ -45,7 +45,7 @@ public class SFCReMain implements ModInitializer {
 		
 		ServerWorldEvents.LOAD.register((server, world) -> RUNTIME.init(server, world));		
 		ServerTickEvents.START_SERVER_TICK.register(server -> RUNTIME.tick(server));
-		/* 
+		/* - - - Listen the request from client instead...
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			SFCReMain.sendConfig(handler.getPlayer(), server);
 			SFCReRuntimeData.sendRuntimeData(handler.getPlayer(), server);

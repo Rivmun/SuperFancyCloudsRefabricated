@@ -45,8 +45,8 @@ public class CloudFadeData extends CloudData {
 
 						//Right
 						if (cx == width - 1 || !_cloudData[cx + 1][cy][cz]) {
-							if (cx >= startWidth && cx < startWidth + minWidth - 1 && cy <= minHeight) {		// Remove contiguous mesh
-								if (prevData._cloudData[cx + 1 - startWidth][cy][cz - startWidth])
+							if (cy < minHeight) {
+								if (prevData._cloudData[cx + 1 + startWidth][cy][cz + startWidth])		// Remove contiguous mesh
 									continue;
 							}
 							addVertex(cx + 1, cy, cz);
@@ -59,8 +59,8 @@ public class CloudFadeData extends CloudData {
 
 						//Left....
 						if (cx == 0 || !_cloudData[cx - 1][cy][cz]) {
-							if (cx > startWidth && cx <= startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx - 1 - startWidth][cy][cz - startWidth])
+							if (cy < minHeight) {
+								if (prevData._cloudData[cx - 1 + startWidth][cy][cz + startWidth])
 									continue;
 							}
 							addVertex(cx, cy, cz);
@@ -73,8 +73,8 @@ public class CloudFadeData extends CloudData {
 
 						//Up....
 						if (cy == height - 1 || !_cloudData[cx][cy + 1][cz]) {
-							if (cx >= startWidth && cx <= startWidth + minWidth && cy < minHeight) {
-								if (prevData._cloudData[cx - startWidth][cy + 1][cz - startWidth])
+							if (cy < minHeight - 1) {
+								if (prevData._cloudData[cx + startWidth][cy + 1][cz + startWidth])
 									continue;
 							}
 							addVertex(cx, cy + 1, cz);
@@ -87,8 +87,8 @@ public class CloudFadeData extends CloudData {
 
 						//Down
 						if (cy == 0 || !_cloudData[cx][cy - 1][cz]) {
-							if (cx >= startWidth && cx <= startWidth + minWidth && cy > 0) {
-								if (prevData._cloudData[cx - startWidth][cy - 1][cz - startWidth])
+							if (cy < minHeight) {
+								if (prevData._cloudData[cx + startWidth][cy - 1][cz + startWidth])
 									continue;
 							}
 							addVertex(cx, cy, cz);
@@ -102,8 +102,8 @@ public class CloudFadeData extends CloudData {
 
 						//Forward....
 						if (cz == width - 1 || !_cloudData[cx][cy][cz + 1]) {
-							if (cz >= startWidth && cz < startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx - startWidth][cy][cz + 1 - startWidth])
+							if (cy < minHeight) {
+								if (prevData._cloudData[cx + startWidth][cy][cz + 1 + startWidth])
 									continue;
 							}
 							addVertex(cx, cy, cz + 1);
@@ -116,8 +116,8 @@ public class CloudFadeData extends CloudData {
 
 						//Backward
 						if (cz == 0 || !_cloudData[cx][cy][cz - 1]) {
-							if (cz > startWidth && cz <= startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx - startWidth][cy][cz - 1 - startWidth])
+							if (cy < minHeight) {
+								if (prevData._cloudData[cx + startWidth][cy][cz - 1 + startWidth])
 									continue;
 							}
 							addVertex(cx, cy, cz);
@@ -140,17 +140,22 @@ public class CloudFadeData extends CloudData {
 				}
 			}
 
-			for (int cx = 0; cx < width; cx++) {
+			for (int cx = startWidth; cx < width; cx++) {
 				for (int cy = 0; cy < height; cy++) {
-					for (int cz = 0; cz < width; cz++) {
+					for (int cz = startWidth; cz < width; cz++) {
 						if (!_cloudData[cx][cy][cz])
 							continue;
 
 						//Right
 						if (cx == width - 1 || !_cloudData[cx + 1][cy][cz]) {
-							if (cx > startWidth && cx < startWidth + minWidth - 1 && cy <= minHeight) {		// Remove contiguous mesh
-								if (prevData._cloudData[cx + 1 + startWidth][cy][cz + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cx - startWidth == prevData.width - 1) {
+									if (prevData._cloudData[cx][cy][cz - startWidth])
+										continue;
+								} else {
+									if (prevData._cloudData[cx + 1 - startWidth][cy][cz - startWidth])		// Remove contiguous mesh
+										continue;
+								}
 							}
 							addVertex(cx + 1, cy, cz);
 							addVertex(cx + 1, cy, cz + 1);
@@ -162,9 +167,14 @@ public class CloudFadeData extends CloudData {
 
 						//Left....
 						if (cx == 0 || !_cloudData[cx - 1][cy][cz]) {
-							if (cx > startWidth && cx <= startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx - 1 + startWidth][cy][cz + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cx - startWidth == 0) {
+									if (prevData._cloudData[0][cy][cz - startWidth])
+										continue;
+								} else {
+									if (prevData._cloudData[cx - 1 - startWidth][cy][cz - startWidth])
+										continue;
+								}
 							}
 							addVertex(cx, cy, cz);
 							addVertex(cx, cy, cz + 1);
@@ -176,9 +186,14 @@ public class CloudFadeData extends CloudData {
 
 						//Up....
 						if (cy == height - 1 || !_cloudData[cx][cy + 1][cz]) {
-							if (cx >= startWidth && cx <= startWidth + minWidth && cy < minHeight - 1) {
-								if (prevData._cloudData[cx + startWidth][cy + 1][cz + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cy == prevData.height - 1) {
+									if (prevData._cloudData[cx - startWidth][cy][cz - startWidth])
+										continue;
+								} else {
+									if (prevData._cloudData[cx - startWidth][cy + 1][cz - startWidth])
+										continue;
+								}
 							}
 							addVertex(cx, cy + 1, cz);
 							addVertex(cx + 1, cy + 1, cz);
@@ -190,9 +205,14 @@ public class CloudFadeData extends CloudData {
 
 						//Down
 						if (cy == 0 || !_cloudData[cx][cy - 1][cz]) {
-							if (cx >= startWidth && cx <= startWidth + minWidth && cy > 1) {
-								if (prevData._cloudData[cx + startWidth][cy - 1][cz + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cy == 0) {
+									if (prevData._cloudData[cx - startWidth][0][cz - startWidth])
+										continue;
+								} else {
+									if (prevData._cloudData[cx - startWidth][cy - 1][cz - startWidth])
+										continue;
+								}
 							}
 							addVertex(cx, cy, cz);
 							addVertex(cx + 1, cy, cz);
@@ -205,9 +225,14 @@ public class CloudFadeData extends CloudData {
 
 						//Forward....
 						if (cz == width - 1 || !_cloudData[cx][cy][cz + 1]) {
-							if (cz >= startWidth && cz < startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx + startWidth][cy][cz + 1 + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cz == prevData.width - 1) {
+									if (prevData._cloudData[cx - startWidth][cy][cz])
+										continue;
+								} else {
+									if (prevData._cloudData[cx - startWidth][cy][cz + 1 - startWidth])
+										continue;
+								}
 							}
 							addVertex(cx, cy, cz + 1);
 							addVertex(cx + 1, cy, cz + 1);
@@ -219,9 +244,14 @@ public class CloudFadeData extends CloudData {
 
 						//Backward
 						if (cz == 0 || !_cloudData[cx][cy][cz - 1]) {
-							if (cz > startWidth && cz <= startWidth + minWidth - 1 && cy <= minHeight) {
-								if (prevData._cloudData[cx + startWidth][cy][cz - 1 + startWidth])
-									continue;
+							if (cy < minHeight) {
+								if (cz == 0) {
+									if (prevData._cloudData[cx - startWidth][cy][0])
+										continue;
+								} else {
+									if (prevData._cloudData[cx - startWidth][cy][cz - 1 - startWidth])
+										continue;
+								}
 							}
 							addVertex(cx, cy, cz);
 							addVertex(cx + 1, cy, cz);

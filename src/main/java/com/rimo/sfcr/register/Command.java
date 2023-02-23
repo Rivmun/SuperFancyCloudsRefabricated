@@ -47,7 +47,7 @@ public class Command {
 								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
 								return 1;
 							}))
-							.then(literal("second").requires(source -> source.hasPermissionLevel(2))
+							.then(literal("time").requires(source -> source.hasPermissionLevel(2))
 									.then(argument("sec", IntegerArgumentType.integer()).executes(content -> {
 										SFCReMain.config.setSecPerSync(content.getArgument("sec", Integer.class));
 										content.getSource().sendMessage(Text.of("Sync time changed!"));
@@ -58,7 +58,7 @@ public class Command {
 										return 1;
 									})
 							)
-							.then(literal("allPlayer").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
+							.then(literal("toAllPlayers").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 								for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
 									SFCReMain.sendConfig(player, content.getSource().getServer());
 									SFCReRuntimeData.sendRuntimeData(player, content.getSource().getServer());
@@ -106,6 +106,17 @@ public class Command {
 									}))
 									.executes(content -> {
 										content.getSource().sendMessage(Text.of("Cloud height is " + SFCReMain.config.getCloudHeight()));
+										return 1;
+									})
+							)
+							.then(literal("thickness")
+									.then(argument("thickness", IntegerArgumentType.integer(8, 64)).executes(content -> {
+										SFCReMain.config.setCloudLayerThickness(content.getArgument("thickness", Integer.class));
+										content.getSource().sendMessage(Text.of("Cloud thickness changed!"));
+										return 1;
+									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud thickness is " + SFCReMain.config.getCloudLayerThickness()));
 										return 1;
 									})
 							)
@@ -185,11 +196,13 @@ public class Command {
 							)
 					)
 					.then(literal("biome").requires(source -> source.hasPermissionLevel(2))
-							.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
-								SFCReMain.config.setBiomeDensityMultipler(content.getArgument("percent", Integer.class));
-								content.getSource().sendMessage(Text.of("Biome affect changed!"));
-								return 1;
-							}))
+							.then(literal("multipler")
+									.then(argument("percent", IntegerArgumentType.integer(0,100)).executes(content -> {
+										SFCReMain.config.setBiomeDensityMultipler(content.getArgument("percent", Integer.class));
+										content.getSource().sendMessage(Text.of("Biome affect changed!"));
+										return 1;
+									}))
+							)
 							.executes(content -> {
 								content.getSource().sendMessage(Text.of("Biome affect percent is " + SFCReMain.config.getBiomeDensityMultipler()));
 								return 1;

@@ -7,14 +7,14 @@ public class CloudFadeData extends CloudData {
 	// Reverse input to get between fade-in and fade-out data
 	public CloudFadeData(CloudData prevData, CloudData nextData, CloudDataType type) {
 		super(prevData, nextData, type);
-		
+
 		width = nextData.width;
 		height = nextData.height;
 		_cloudData = new boolean[nextData.width][nextData.height][nextData.width];
-		
+
 		collectCloudData(prevData, nextData);
 	}
-	
+
 	@Override
 	public void collectCloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
 		// Leave empty to prevent wrong invoke.

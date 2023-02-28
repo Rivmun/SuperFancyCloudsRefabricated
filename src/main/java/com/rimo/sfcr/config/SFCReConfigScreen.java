@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
 import com.rimo.sfcr.SFCReMain;
+import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -74,7 +75,7 @@ public class SFCReConfigScreen {
     	clouds.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness")
     					,config.getCloudLayerThickness()
-    					,8
+    					,1
     					,64)
                 .setDefaultValue(32)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip"))
@@ -176,6 +177,14 @@ public class SFCReConfigScreen {
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip"))
                 .setSaveConsumer(config::setEnableWeatherDensity)
                 .build());
+    	//smooth change
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange")
+    					,config.isEnableSmoothChange())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip"))
+    			.setSaveConsumer(config::setEnableSmoothChange)
+    			.build());
     	//weather pre-detect time
     	density.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime")
@@ -197,7 +206,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(25)
-    			//.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudDensity.@Tooltip"))
     			.setSaveConsumer(config::setCloudDensityPercent)
     			.build());
     	//rain density
@@ -207,7 +215,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(60)
-    			//.setTooltip(Text.translatable("text.autoconfig.sfcr.optioon.rainDensity.@Tooltip"))
     			.setSaveConsumer(config::setRainDensityPercent)
     			.build());
     	//thunder density
@@ -217,7 +224,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(90)
-    			//.setTooltip(Text.translatable("text.autoconfig.sfcr.option.thunderDensity.@Tooltip"))
     			.setSaveConsumer(config::setThunderDensityPercent)
     			.build());
     	//weather refresh speed 

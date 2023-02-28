@@ -4,8 +4,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.SFCReMain;
-import com.rimo.sfcr.SFCReRuntimeData;
-import com.rimo.sfcr.config.CloudRefreshSpeed;
+import com.rimo.sfcr.core.RuntimeData;
+import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -36,14 +36,14 @@ public class Command {
 					})
 					.then(literal("sync")
 							.executes(content -> {
-								SFCReRuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
 								SFCReMain.LOGGER.info("[SFCRe] cb: Send sync data to " + content.getSource().getDisplayName().getString());
 								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
 								return 1;
 							})
 							.then(literal("full").executes(content -> {
 								SFCReMain.sendConfig(content.getSource().getPlayer(), content.getSource().getServer());
-								SFCReRuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
 								SFCReMain.LOGGER.info("[SFCRe] cb: Send full sync data to " + content.getSource().getDisplayName().getString());
 								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
 								return 1;
@@ -62,7 +62,7 @@ public class Command {
 							.then(literal("toAllPlayers").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 								for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
 									SFCReMain.sendConfig(player, content.getSource().getServer());
-									SFCReRuntimeData.sendRuntimeData(player, content.getSource().getServer());
+									RuntimeData.sendRuntimeData(player, content.getSource().getServer());
 									player.sendMessage(Text.of("[SFCRe] Force sync request came from server..."));
 								}
 								content.getSource().sendMessage(Text.of("Force sync complete!"));

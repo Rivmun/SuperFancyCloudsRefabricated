@@ -29,6 +29,7 @@ public class SFCReConfig implements ConfigData {
 	private int fogMaxDistance = 4;
 	//----DENSITY CHANGE----
 	private boolean enableWeatherDensity = true;
+	private boolean enableSmoothChange = false;
 	private int weatherPreDetectTime = 10;
 	private int cloudDensityPercent = 25;
 	private int rainDensityPercent = 60;
@@ -61,6 +62,7 @@ public class SFCReConfig implements ConfigData {
 	public int getFogMinDistance() {return fogMinDistance;}
 	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
+	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public int getWeatherPreDetectTime() {return weatherPreDetectTime;}
 	public int getCloudDensityPercent() {return cloudDensityPercent;}
 	public int getRainDensityPercent() {return rainDensityPercent;}
@@ -93,6 +95,7 @@ public class SFCReConfig implements ConfigData {
 		}
 	}
 	public void setEnableWeatherDensity(boolean isEnable) {enableWeatherDensity = isEnable;}
+	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setWeatherPreDetectTime(int time) {weatherPreDetectTime = time;}
 	public void setCloudDensityPercent(int density) {cloudDensityPercent = density;}
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}
@@ -110,7 +113,7 @@ public class SFCReConfig implements ConfigData {
 	
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {
-		return (int)Math.pow(cloudRenderDistance / 48f, 2);
+		return (int) Math.pow(cloudRenderDistance / 48f, 2);
 	}
 	
 	//exchanged speed enum.

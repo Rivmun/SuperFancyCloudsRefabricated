@@ -10,7 +10,7 @@ public class CloudMidData extends CloudData {
 		width = Math.max(prevData.width, nextData.width);
 		height = Math.max(prevData.height, nextData.height);
 		_cloudData = new boolean[width][height][width];
-		
+
 		collectCloudData(prevData, nextData);
 	}
 

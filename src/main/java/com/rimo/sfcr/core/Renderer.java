@@ -175,7 +175,7 @@ public class Renderer {
 					GlStateManager.SrcFactor.ONE,
 					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA
 			);
-			RenderSystem.depthMask(true);
+			//RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
@@ -305,7 +305,7 @@ public class Renderer {
 
 			if (data.getDataType().equals(CloudDataType.NORMAL)) {
 				break;
-			} else if (data.getDataType().equals(CloudDataType.TRANS_OUT)) {
+			} else if (data.getDataType().equals(CloudDataType.TRANS_MID_BODY)) {
 				data.tick();
 				if (data.getLifeTime() <= 0) {		// Clear if lifetime reach end
 					while (!cloudDataGroup.get(0).getDataType().equals(CloudDataType.NORMAL)) {
@@ -336,8 +336,8 @@ public class Renderer {
 			tmp = new CloudData(scrollX, scrollZ, cloudDensityByWeather, cloudDensityByBiome);
 			if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
 				fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_IN);
-				midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_MID_BODY);
 				fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudDataType.TRANS_OUT);
+				midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_MID_BODY);
 				SFCReMain.LOGGER.info("Smooth body built.");
 			}
 
@@ -346,14 +346,15 @@ public class Renderer {
 
 				if (midBody != null) {
 					cloudDataGroup.add(fadeIn);
-					cloudDataGroup.add(midBody);
 					cloudDataGroup.add(fadeOut);
+					cloudDataGroup.add(midBody);
 					SFCReMain.LOGGER.info("Smooth body added.");
 				}
 				cloudDataGroup.add(tmp);
 
 				this.xScroll = scrollX;
 				this.zScroll = scrollZ;
+				RUNTIME.checkFullOffset();
 				RUNTIME.checkPartialOffset();
 			}
 		} catch (Exception e) {		// Debug

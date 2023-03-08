@@ -70,8 +70,6 @@ public class CloudData implements CloudDataImplement {
 
 			double timeOffset = Math.floor(RUNTIME.time / 6) * 6;
 
-			RUNTIME.checkFullOffset();
-
 			float baseFreq = 0.05f;
 			float baseTimeFactor = 0.01f;
 

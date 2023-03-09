@@ -18,11 +18,13 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.biome.Biome;
 
 public class Renderer {
 
@@ -111,9 +113,17 @@ public class Renderer {
 			isWeatherChange = false;
 		}
 
-		//Detect Biome Change (why biome registry name so difficult to access...
-		if (!CONFIG.getBiomeFilterList().contains(world.getBiome(player.getBlockPos()).getKey().get().getValue().toString()))
+		//Detect Biome Change
+		if (!CONFIG.getBiomeFilterList().contains(world.getBiome(player.getBlockPos()).getKey().get().getValue().toString())) {
 			targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+		} else {
+			for (TagKey<Biome> tag : world.getBiome(player.getBlockPos()).streamTags().toList()) {
+				if (CONFIG.getBiomeFilterList().contains("#" + tag.id().toString())) {
+					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+					break;
+				}
+			}
+		}
 		isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
 
 		//Refresh Processing...

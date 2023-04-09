@@ -119,6 +119,14 @@ public class SFCReConfigScreen {
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.sampleSteps.@Tooltip"))
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
+    	//terrain dodge
+    	clouds.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableTerrainDodge")
+    					,config.isEnableTerrainDodge())
+    			.setDefaultValue(true)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip"))
+    			.setSaveConsumer(config::setEnableTerrainDodge)
+    			.build());
     	//DEBUG
     	clouds.addEntry(entryBuilder
     			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.debug")
@@ -255,6 +263,14 @@ public class SFCReConfigScreen {
     			.setDefaultValue(50)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
     			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.build());
+    	//biome density affect by chunk
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.isBiomeDensityByChunk")
+    					,config.isBiomeDensityByChunk())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityByChunk)
     			.build());
     	//biome filter
     	density.addEntry(entryBuilder

@@ -48,7 +48,7 @@ public class RuntimeData {
 		time += 1 / 20f;
 
 		// Weather Pre-detect
-		var worldProperties = ((ServerWorldAccessor)server.getWorld(worldKey)).getWorldProperties();
+		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
 		var currentWeather = nextWeather;
 		if (worldProperties.isThundering()) {
 			nextWeather = worldProperties.getThunderTime() / 20 < SFCReMain.CONFIGHOLDER.getConfig().getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.THUNDER;
@@ -85,7 +85,7 @@ public class RuntimeData {
 	}
 
 	public void checkFullOffset() {
-		fullOffset += (int)partialOffset / 16;
+		fullOffset += (int) partialOffset / 16;
 	}
 
 	public void checkPartialOffset() {

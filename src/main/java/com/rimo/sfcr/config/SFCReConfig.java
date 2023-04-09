@@ -21,6 +21,7 @@ public class SFCReConfig implements ConfigData {
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private int sampleSteps = 3;
+	private boolean enableTerrainDodge = true;
 	private boolean enableDebug = false;
 	//----FOG----
 	private boolean enableFog = true;
@@ -37,6 +38,7 @@ public class SFCReConfig implements ConfigData {
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
 	private int biomeDensityMultipler = 50;
+	private boolean isBiomeDensityByChunk = false;
 	private List<String> biomeFilterList = new ArrayList<>();
 	
 	//output func.
@@ -56,6 +58,7 @@ public class SFCReConfig implements ConfigData {
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
+	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableFog() {return enableFog;}
 	public boolean isFogAutoDistance() {return fogAutoDistance;}
@@ -70,6 +73,7 @@ public class SFCReConfig implements ConfigData {
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
+	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	
 	//input func.
@@ -82,6 +86,7 @@ public class SFCReConfig implements ConfigData {
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
+	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
 	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
@@ -103,6 +108,7 @@ public class SFCReConfig implements ConfigData {
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
+	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	
 	

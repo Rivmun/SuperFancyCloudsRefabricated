@@ -40,6 +40,7 @@ public class Renderer {
 	private float targetDownFall = 1f;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
+	public float cloudHeight;
 
 	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
 	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
@@ -133,7 +134,6 @@ public class Renderer {
 
 			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
 			dataProcessThread.start();
-			SFCReMain.LOGGER.info("thread: start.");
 
 			//Density Change by Weather
 			if (CONFIG.isEnableWeatherDensity()) {
@@ -165,16 +165,15 @@ public class Renderer {
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 
-		float f;
 		if ((!MinecraftClient.getInstance().isIntegratedServerRunning() && CONFIG.isEnableServerConfig())
 				|| (!MinecraftClient.getInstance().isIntegratedServerRunning() && !CONFIG.isEnableServerConfig() && !hasCloudsHeightModifier)
 				|| (MinecraftClient.getInstance().isIntegratedServerRunning() && !hasCloudsHeightModifier)) {
-			f = CONFIG.getCloudHeight();
+			cloudHeight = CONFIG.getCloudHeight();
 		} else {
-			f = world.getDimensionEffects().getCloudsHeight();
+			cloudHeight = world.getDimensionEffects().getCloudsHeight();
 		}
 
-		if (!Float.isNaN(f)) {
+		if (!Float.isNaN(cloudHeight)) {
 			//Setup render system
 			RenderSystem.disableCull();
 			RenderSystem.enableBlend();
@@ -185,7 +184,7 @@ public class Renderer {
 					GlStateManager.SrcFactor.ONE,
 					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA
 			);
-			//RenderSystem.depthMask(true);
+			RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
@@ -228,7 +227,7 @@ public class Renderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll, f - 15 - CONFIG.getCloudLayerThickness() / 2, zScroll + SFCReMain.RUNTIME.partialOffset);
+					matrices.translate(xScroll, cloudHeight - 15 - CONFIG.getCloudLayerThickness() / 2, zScroll + SFCReMain.RUNTIME.partialOffset);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -321,7 +320,6 @@ public class Renderer {
 					while (!cloudDataGroup.get(0).getDataType().equals(CloudDataType.NORMAL)) {
 						cloudDataGroup.remove(0);
 					}
-					SFCReMain.LOGGER.info("Smooth body dead and removed.");
 				}
 				break;		// Only render IN, BODY, OUT till its life end and remove.
 			} else {
@@ -343,12 +341,13 @@ public class Renderer {
 		CloudMidData midBody = null;
 
 		try {
+			RUNTIME.checkFullOffset();
+
 			tmp = new CloudData(scrollX, scrollZ, cloudDensityByWeather, cloudDensityByBiome);
 			if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
 				fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_IN);
 				fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudDataType.TRANS_OUT);
 				midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_MID_BODY);
-				SFCReMain.LOGGER.info("Smooth body built.");
 			}
 
 			synchronized (this) {
@@ -358,15 +357,13 @@ public class Renderer {
 					cloudDataGroup.add(fadeIn);
 					cloudDataGroup.add(fadeOut);
 					cloudDataGroup.add(midBody);
-					SFCReMain.LOGGER.info("Smooth body added.");
 				}
 				cloudDataGroup.add(tmp);
 
 				this.xScroll = scrollX;
 				this.zScroll = scrollZ;
-				RUNTIME.checkFullOffset();
-				RUNTIME.checkPartialOffset();
 			}
+			RUNTIME.checkPartialOffset();
 		} catch (Exception e) {		// Debug
 			SFCReMain.LOGGER.error(e.toString());
 			for (StackTraceElement i : e.getStackTrace()) {

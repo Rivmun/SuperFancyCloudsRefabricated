@@ -21,6 +21,7 @@ public class SFCReConfig implements ConfigData {
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private int sampleSteps = 3;
+	private int cloudBlockSize = 16;
 	private boolean enableTerrainDodge = true;
 	private boolean enableDebug = false;
 	//----FOG----
@@ -58,6 +59,7 @@ public class SFCReConfig implements ConfigData {
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
+	public int getCloudBlockSize() {return cloudBlockSize;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableFog() {return enableFog;}
@@ -86,6 +88,7 @@ public class SFCReConfig implements ConfigData {
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
+	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}

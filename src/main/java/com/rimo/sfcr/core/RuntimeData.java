@@ -85,11 +85,11 @@ public class RuntimeData {
 	}
 
 	public void checkFullOffset() {
-		fullOffset += (int) partialOffset / 16;
+		fullOffset += (int) partialOffset / SFCReMain.config.getCloudBlockSize();
 	}
 
 	public void checkPartialOffset() {
-		partialOffset = partialOffset % 16d;
+		partialOffset = partialOffset % SFCReMain.config.getCloudBlockSize();
 	}
 
 	public RuntimeData getInstance() {

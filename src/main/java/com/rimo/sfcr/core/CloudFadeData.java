@@ -37,9 +37,7 @@ public class CloudFadeData extends CloudData {
 			for (int cy = 0; cy < minHeight; cy++) {
 				for (int cz = startLength; cz < minLength; cz++) {
 					if (cz < 0) cz = 0;
-					_cloudData[cx - startWidth][cy][cz - startLength]
-							= !prevData._cloudData[cx][cy][cz]
-							&& nextData._cloudData[cx - startWidth][cy][cz - startLength];
+					_cloudData[cx - startWidth][cy][cz - startLength] = !prevData._cloudData[cx][cy][cz] && nextData._cloudData[cx - startWidth][cy][cz - startLength];
 				}
 			}
 		}

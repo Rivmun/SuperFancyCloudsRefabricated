@@ -10,6 +10,7 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.client.MinecraftClient;
@@ -118,6 +119,16 @@ public class SFCReConfigScreen {
     			.setDefaultValue(3)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.sampleSteps.@Tooltip"))
     			.setSaveConsumer(config::setSampleSteps)
+    			.build());
+    	//cloud block size
+    	clouds.addEntry(entryBuilder
+    			.startDropdownMenu(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize")
+    					,DropdownMenuBuilder.TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return value;}))
+    			.setDefaultValue(16)
+    			.setSuggestionMode(false)
+    			.setSelections(List.of(2, 4, 8, 16))
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
+    			.setSaveConsumer(value -> config.setCloudBlockSize(Integer.parseInt((String) value)))
     			.build());
     	//terrain dodge
     	clouds.addEntry(entryBuilder

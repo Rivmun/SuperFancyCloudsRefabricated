@@ -35,8 +35,8 @@ public class CloudData implements CloudDataImplement {
 		dataType = CloudDataType.NORMAL;
 		width = CONFIG.getCloudRenderDistance();
 		height = CONFIG.getCloudLayerThickness();
-		startX = (int) (scrollX / 16);
-		startZ = (int) (scrollZ / 16) - RUNTIME.fullOffset;
+		startX = (int) (scrollX / CONFIG.getCloudBlockSize());
+		startZ = (int) (scrollZ / CONFIG.getCloudBlockSize()) - RUNTIME.fullOffset;
 		_cloudData = new boolean[width][height][width];
 		
 		collectCloudData(scrollX, scrollZ, densityByWeather, densityByBiome);
@@ -72,8 +72,8 @@ public class CloudData implements CloudDataImplement {
 	@Override
 	public void collectCloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
 		try {
-			double startX = scrollX / 16;
-			double startZ = scrollZ / 16;
+			double startX = scrollX / CONFIG.getCloudBlockSize();
+			double startZ = scrollZ / CONFIG.getCloudBlockSize();
 
 			double timeOffset = Math.floor(RUNTIME.time / 6) * 6;
 
@@ -90,8 +90,8 @@ public class CloudData implements CloudDataImplement {
 				for (int cz = 0; cz < width; cz++) {
 
 					var world = MinecraftClient.getInstance().world;		// Locating biome...
-					var px = (startX - width / 2 + cx) * 16;
-					var pz = (startZ - width / 2 + cz) * 16 + 12;
+					var px = (startX - width / 2 + cx) * CONFIG.getCloudBlockSize();
+					var pz = (startZ - width / 2 + cz) * CONFIG.getCloudBlockSize() + CONFIG.getCloudBlockSize() * 0.75;
 //					while (!world.isChunkLoaded((int) px / 16, (int) pz / 16)) {		// (Trying to) Prevent to access unloaded chunk...
 //						px += Math.sin((Math.PI * (cx - width / 2)) / width) * 16;		// --Seems has no effect
 //						pz += Math.cos((Math.PI * (cz - width / 2)) / width) * 16;
@@ -103,10 +103,12 @@ public class CloudData implements CloudDataImplement {
 							: 1.3 - densityByWeather * (1 - (1 - densityByBiome * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f);
 
 					for (int cy = 0; cy < height; cy++) {
+
 						// Light level use to detect terrain.
-						if (CONFIG.isEnableTerrainDodge() && world.getLightLevel(new BlockPos(px, SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * 8, pz)) != 15) {
+						if (CONFIG.isEnableTerrainDodge() && world.getLightLevel(new BlockPos(px, SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, pz)) != 15) {
 							_cloudData[cx][cy][cz] = false;
 						} else {
+
 							// Sampling...
 							double cloudVal = cloudNoise.sample(
 									(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,

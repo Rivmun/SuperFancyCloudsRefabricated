@@ -21,7 +21,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.biome.Biome;
@@ -91,8 +90,8 @@ public class Renderer {
 
 		var player = MinecraftClient.getInstance().player;
 		var world = MinecraftClient.getInstance().world;
-		var xScroll = MathHelper.floor(player.getX() / 16) * 16;
-		var zScroll = MathHelper.floor(player.getZ() / 16) * 16;
+		var xScroll = (int) (player.getX() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
+		var zScroll = (int) (player.getZ() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
@@ -216,8 +215,8 @@ public class Renderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance());
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance());
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48f, 2) / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48f, 2));
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 3f / CONFIG.getCloudBlockSize(), 2) / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 3f / CONFIG.getCloudBlockSize(), 2));
 						}
 					} else {
 						BackgroundRenderer.clearFog();
@@ -295,9 +294,9 @@ public class Renderer {
 
 				for (int i = 0; i < vertCount; i++) {
 					int origin = i * 3;
-					var x = data.vertexList.getFloat(origin) * 16;
-					var y = data.vertexList.getFloat(origin + 1) * 8;
-					var z = data.vertexList.getFloat(origin + 2) * 16;
+					var x = data.vertexList.getFloat(origin) * CONFIG.getCloudBlockSize();
+					var y = data.vertexList.getFloat(origin + 1) * CONFIG.getCloudBlockSize() / 2;
+					var z = data.vertexList.getFloat(origin + 2) * CONFIG.getCloudBlockSize();
 
 					int normIndex = data.normalList.getByte(i / 4);
 					var norm = normals[normIndex];

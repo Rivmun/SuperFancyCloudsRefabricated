@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
 
@@ -86,16 +87,23 @@ public class CloudData implements CloudDataImplement {
 			float l2Freq = 0.001f;
 			float l2TimeFactor = 0.1f;
 
+			var world = MinecraftClient.getInstance().world;
+
 			for (int cx = 0; cx < width; cx++) {
 				for (int cz = 0; cz < width; cz++) {
 
-					var world = MinecraftClient.getInstance().world;		// transform cloudpos to blockpos
-					var px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();
+					var px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
 					var pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
+					var xl = new Vec2f(cx - width / 2, cz - width / 2).normalize();
 
 					while (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
-						px += Math.sin((Math.PI * (cx + width / 2)) / width) * 16;
-						pz += Math.cos((Math.PI * cz) / width) * 16;
+						px -= xl.x * CONFIG.getCloudBlockSize();
+						pz -= xl.y * CONFIG.getCloudBlockSize();
+//						px += Math.sin((Math.PI * (cx + width / 2)) / width) * CONFIG.getCloudBlockSize();
+//						pz += Math.cos((Math.PI * cz) / width) * CONFIG.getCloudBlockSize();
+						if (cx == 0 && cz == 0) {
+							SFCReMain.LOGGER.info("pos fix to:" + px + ", " + pz);
+						}
 					}
 
 					// Density threshold...

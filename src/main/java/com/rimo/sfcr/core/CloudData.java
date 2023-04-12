@@ -89,18 +89,19 @@ public class CloudData implements CloudDataImplement {
 			for (int cx = 0; cx < width; cx++) {
 				for (int cz = 0; cz < width; cz++) {
 
-					var world = MinecraftClient.getInstance().world;		// Locating biome...
-					var px = (startX - width / 2 + cx) * CONFIG.getCloudBlockSize();
-					var pz = (startZ - width / 2 + cz) * CONFIG.getCloudBlockSize() + CONFIG.getCloudBlockSize() * 0.75;
-//					while (!world.isChunkLoaded((int) px / 16, (int) pz / 16)) {		// (Trying to) Prevent to access unloaded chunk...
-//						px += Math.sin((Math.PI * (cx - width / 2)) / width) * 16;		// --Seems has no effect
-//						pz += Math.cos((Math.PI * (cz - width / 2)) / width) * 16;
-//					}
+					var world = MinecraftClient.getInstance().world;		// transform cloudpos to blockpos
+					var px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();
+					var pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
+
+					while (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
+						px += Math.sin((Math.PI * (cx + width / 2)) / width) * 16;
+						pz += Math.cos((Math.PI * cz) / width) * 16;
+					}
 
 					// Density threshold...
 					var f = CONFIG.isBiomeDensityByChunk()
-							? 1.3 - densityByWeather * (1 - (1 - world.getBiome(new BlockPos(px, 64, pz)).value().getDownfall() * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f)
-							: 1.3 - densityByWeather * (1 - (1 - densityByBiome * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f);
+							? 1.3 - densityByWeather - (1 - (1 - (world.getBiome(new BlockPos(px, 64, pz)).value().getDownfall() - 0.4f) * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f)
+							: 1.3 - densityByWeather - (1 - (1 - (densityByBiome - 0.4f) * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f);
 
 					for (int cy = 0; cy < height; cy++) {
 

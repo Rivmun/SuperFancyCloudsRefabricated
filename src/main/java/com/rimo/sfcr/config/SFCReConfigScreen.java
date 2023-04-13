@@ -72,6 +72,16 @@ public class SFCReConfigScreen {
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudHeight.@Tooltip"))
                 .setSaveConsumer(config::setCloudHeight)
                 .build());
+    	//cloud block size
+    	clouds.addEntry(entryBuilder
+    			.startDropdownMenu(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize")
+    					,DropdownMenuBuilder.TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return value;}))
+    			.setDefaultValue(16)
+    			.setSuggestionMode(false)
+    			.setSelections(List.of(2, 4, 8, 16))
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
+    			.setSaveConsumer(value -> config.setCloudBlockSize(Integer.parseInt((String) value)))
+    			.build());
     	//cloud thickness
     	clouds.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness")
@@ -119,16 +129,6 @@ public class SFCReConfigScreen {
     			.setDefaultValue(3)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.sampleSteps.@Tooltip"))
     			.setSaveConsumer(config::setSampleSteps)
-    			.build());
-    	//cloud block size
-    	clouds.addEntry(entryBuilder
-    			.startDropdownMenu(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize")
-    					,DropdownMenuBuilder.TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return value;}))
-    			.setDefaultValue(16)
-    			.setSuggestionMode(false)
-    			.setSelections(List.of(2, 4, 8, 16))
-    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
-    			.setSaveConsumer(value -> config.setCloudBlockSize(Integer.parseInt((String) value)))
     			.build());
     	//terrain dodge
     	clouds.addEntry(entryBuilder
@@ -282,6 +282,14 @@ public class SFCReConfigScreen {
     			.setDefaultValue(false)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
     			.setSaveConsumer(config::setBiomeDensityByChunk)
+    			.build());
+    	//biome density detect loaded chunk
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk")
+    					,config.isBiomeDensityUseLoadedChunk())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityUseLoadedChunk)
     			.build());
     	//biome filter
     	density.addEntry(entryBuilder

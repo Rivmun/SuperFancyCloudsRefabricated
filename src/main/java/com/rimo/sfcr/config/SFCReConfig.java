@@ -16,12 +16,12 @@ public class SFCReConfig implements ConfigData {
 	private boolean enableServerConfig = false;
 	private int secPerSync = 30;		// Banned in config screen on client.
 	private int cloudHeight = 192;
+	private int cloudBlockSize = 16;
 	private int cloudLayerThickness = 32;
 	private int cloudRenderDistance = 96;
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private int sampleSteps = 3;
-	private int cloudBlockSize = 16;
 	private boolean enableTerrainDodge = true;
 	private boolean enableDebug = false;
 	//----FOG----
@@ -40,6 +40,7 @@ public class SFCReConfig implements ConfigData {
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
 	private int biomeDensityMultipler = 50;
 	private boolean isBiomeDensityByChunk = false;
+	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = new ArrayList<>();
 	
 	//output func.
@@ -47,6 +48,7 @@ public class SFCReConfig implements ConfigData {
 	public boolean isEnableServerConfig() {return enableServerConfig;}
 	public int getSecPerSync() {return secPerSync;}
 	public int getCloudHeight() {return cloudHeight;}
+	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	@SuppressWarnings("resource")
 	public int getCloudRenderDistance() {
@@ -59,7 +61,6 @@ public class SFCReConfig implements ConfigData {
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
-	public int getCloudBlockSize() {return cloudBlockSize;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableFog() {return enableFog;}
@@ -76,6 +77,7 @@ public class SFCReConfig implements ConfigData {
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
+	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	
 	//input func.
@@ -83,12 +85,12 @@ public class SFCReConfig implements ConfigData {
 	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
 	public void setSecPerSync(int value) {secPerSync = value; }
 	public void setCloudHeight(int height) {cloudHeight = height;}
+	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
-	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
@@ -112,6 +114,7 @@ public class SFCReConfig implements ConfigData {
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
+	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	
 	
@@ -122,7 +125,7 @@ public class SFCReConfig implements ConfigData {
 	
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {
-		return (int) Math.pow(cloudRenderDistance / 48f, 2);
+		return (int) Math.pow(cloudRenderDistance / 3f / this.getCloudBlockSize(), 2);
 	}
 	
 	//exchanged speed enum.

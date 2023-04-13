@@ -65,8 +65,49 @@ public class CloudData implements CloudDataImplement {
 
 	/* - - - - - Sampler Core - - - - - */
 
-	protected double remappedValue(double noise) {
-		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;
+	private static final float baseFreq = 0.05f;
+	private static final float baseTimeFactor = 0.01f;
+
+	private static final float l1Freq = 0.09f;
+	private static final float l1TimeFactor = 0.02f;
+
+	private static final float l2Freq = 0.001f;
+	private static final float l2TimeFactor = 0.1f;
+
+	private double remappedValue(double noise) {
+		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
+	}
+
+	private double getCloudSample(double startX, double startZ, double timeOffset, double cx, double cy, double cz) {
+		double cloudVal = cloudNoise.sample(
+				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
+				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
+				(startZ + cz - RUNTIME.fullOffset) * baseFreq
+		);
+		if (CONFIG.getSampleSteps() > 1) {
+			double cloudVal1 = cloudNoise.sample(
+					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
+					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
+					(startZ + cz - RUNTIME.fullOffset) * l1Freq
+			);
+			double cloudVal2 = 1;
+			if (CONFIG.getSampleSteps() > 2) {
+				cloudVal2 = cloudNoise.sample(
+						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
+						0,
+						(startZ + cz - RUNTIME.fullOffset) * l2Freq
+				);
+				//Smooth floor function...
+				cloudVal2 *= 3;
+				cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;		// (3*x-sin(2*3.1415926*3*x/(2*3.1415926)))/2
+			}
+			cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
+		}
+		return cloudVal * remappedValue(1 - ((double) (cy + 1) / 32));		//cloudVal ~ [-1, 2]
+	}
+
+	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
+		return 1.9f - densityByWeather * 2f * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultipler() / 100f);
 	}
 
 	@SuppressWarnings("resource")
@@ -78,77 +119,48 @@ public class CloudData implements CloudDataImplement {
 
 			double timeOffset = Math.floor(RUNTIME.time / 6) * 6;
 
-			float baseFreq = 0.05f;
-			float baseTimeFactor = 0.01f;
-
-			float l1Freq = 0.09f;
-			float l1TimeFactor = 0.02f;
-
-			float l2Freq = 0.001f;
-			float l2TimeFactor = 0.1f;
-
 			var world = MinecraftClient.getInstance().world;
+			var f = 0.5f;		// origin
 
 			for (int cx = 0; cx < width; cx++) {
 				for (int cz = 0; cz < width; cz++) {
 
 					var px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
 					var pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
-					var xl = new Vec2f(cx - width / 2, cz - width / 2).normalize();
 
-					while (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
-						px -= xl.x * CONFIG.getCloudBlockSize();
-						pz -= xl.y * CONFIG.getCloudBlockSize();
-//						px += Math.sin((Math.PI * (cx + width / 2)) / width) * CONFIG.getCloudBlockSize();
-//						pz += Math.cos((Math.PI * cz) / width) * CONFIG.getCloudBlockSize();
-						if (cx == 0 && cz == 0) {
-							SFCReMain.LOGGER.info("pos fix to:" + px + ", " + pz);
+					// calculating density...
+					if (CONFIG.isBiomeDensityByChunk()) {
+						if (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16)) {
+							if (CONFIG.isBiomeDensityUseLoadedChunk()) {
+								var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();
+								var px2 = px;
+								var pz2 = pz;
+								while (!world.getChunkManager().isChunkLoaded((int) px2 / 16, (int) pz2 / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
+									px2 -= vec.x * CONFIG.getCloudBlockSize();
+									pz2 -= vec.y * CONFIG.getCloudBlockSize();
+								}
+								f = getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall());
+							} else {
+								f = getCloudDensityThreshold(densityByWeather, densityByBiome);
+							}
+						} else {
+							f = getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall());
 						}
+					} else {
+						f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 					}
 
-					// Density threshold...
-					var f = CONFIG.isBiomeDensityByChunk()
-							? 1.3 - densityByWeather - (1 - (1 - (world.getBiome(new BlockPos(px, 64, pz)).value().getDownfall() - 0.4f) * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f)
-							: 1.3 - densityByWeather - (1 - (1 - (densityByBiome - 0.4f) * 1.5f) * CONFIG.getBiomeDensityMultipler() / 100f);
-
-					for (int cy = 0; cy < height; cy++) {
-
-						// Light level use to detect terrain.
-						if (CONFIG.isEnableTerrainDodge() && world.getLightLevel(new BlockPos(px, SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, pz)) != 15) {
-							_cloudData[cx][cy][cz] = false;
-						} else {
-
-							// Sampling...
-							double cloudVal = cloudNoise.sample(
-									(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
-									(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
-									(startZ + cz - RUNTIME.fullOffset) * baseFreq
-							);
-							if (CONFIG.getSampleSteps() > 1) {
-								double cloudVal1 = cloudNoise.sample(
-										(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-										(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-										(startZ + cz - RUNTIME.fullOffset) * l1Freq
-								);
-								double cloudVal2 = 1;
-								if (CONFIG.getSampleSteps() > 2) {
-									cloudVal2 = cloudNoise.sample(
-											(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-											0,
-											(startZ + cz - RUNTIME.fullOffset) * l2Freq
-									);
-	
-									//Smooth floor function...
-									cloudVal2 *= 3;
-									cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;		//cv2 = (3*x-sin(2*3.1415926*3*x/(2*3.1415926)))/2
-								}
-	
-								cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
-							}
-	
-							cloudVal = cloudVal * remappedValue(1 - ((double) (cy + 1) / 32));		//cloudVal ~ [-1, 2], rv = ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
-
-							_cloudData[cx][cy][cz] = cloudVal > f;		//Original is 0.5f.
+					// sampling...
+					if (CONFIG.isEnableTerrainDodge()) {
+						for (int cy = 0; cy < height; cy++) {
+							// terrain detect (use light level)
+							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(px, SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, pz)) == 15
+									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f
+									: false;
+						}
+					} else {
+						for (int cy = 0; cy < height; cy++) {
+							_cloudData[cx][cy][cz] = getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f;
 						}
 					}
 				}

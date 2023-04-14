@@ -107,7 +107,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
-		return 1.9f - densityByWeather * 2f * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultipler() / 100f);
+		return 1.9f - densityByWeather * 1.5f * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultipler() / 100f);
 	}
 
 	@SuppressWarnings("resource")
@@ -139,12 +139,16 @@ public class CloudData implements CloudDataImplement {
 									px2 -= vec.x * CONFIG.getCloudBlockSize();
 									pz2 -= vec.y * CONFIG.getCloudBlockSize();
 								}
-								f = getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall());
+								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)))
+										? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall())
+										: getCloudDensityThreshold(densityByWeather, densityByBiome);
 							} else {
 								f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 							}
 						} else {
-							f = getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall());
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px, 80, pz)))
+									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall())
+									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						}
 					} else {
 						f = getCloudDensityThreshold(densityByWeather, densityByBiome);

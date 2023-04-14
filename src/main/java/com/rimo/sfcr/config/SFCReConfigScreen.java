@@ -10,7 +10,7 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
+import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.client.MinecraftClient;
@@ -75,18 +75,18 @@ public class SFCReConfigScreen {
     	//cloud block size
     	clouds.addEntry(entryBuilder
     			.startDropdownMenu(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize")
-    					,DropdownMenuBuilder.TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return value;}))
+    					,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return Integer.parseInt(value);}))
     			.setDefaultValue(16)
     			.setSuggestionMode(false)
     			.setSelections(List.of(2, 4, 8, 16))
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
-    			.setSaveConsumer(value -> config.setCloudBlockSize(Integer.parseInt((String) value)))
+    			.setSaveConsumer(config::setCloudBlockSize)
     			.build());
     	//cloud thickness
     	clouds.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness")
     					,config.getCloudLayerThickness()
-    					,1
+    					,3
     					,64)
                 .setDefaultValue(32)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip"))
@@ -196,14 +196,6 @@ public class SFCReConfigScreen {
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableWeatherDensity.@Tooltip"))
                 .setSaveConsumer(config::setEnableWeatherDensity)
                 .build());
-    	//smooth change
-    	density.addEntry(entryBuilder
-    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange")
-    					,config.isEnableSmoothChange())
-    			.setDefaultValue(false)
-    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip"))
-    			.setSaveConsumer(config::setEnableSmoothChange)
-    			.build());
     	//weather pre-detect time
     	density.addEntry(entryBuilder
     			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.weatherPreDetectTime")
@@ -264,6 +256,14 @@ public class SFCReConfigScreen {
     			.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip"))
     			.setSaveConsumer(config::setDensityChangingSpeed)
+    			.build());
+    	//smooth change
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange")
+    					,config.isEnableSmoothChange())
+    			.setDefaultValue(false)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip"))
+    			.setSaveConsumer(config::setEnableSmoothChange)
     			.build());
     	//biome detect
     	density.addEntry(entryBuilder

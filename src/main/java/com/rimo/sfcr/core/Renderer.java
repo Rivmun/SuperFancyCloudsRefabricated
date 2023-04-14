@@ -18,12 +18,10 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.biome.Biome;
 
 public class Renderer {
 
@@ -109,30 +107,22 @@ public class Renderer {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
 						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
 			}
+
+			//Detect Biome Change
+			if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
+				targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+			isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
+
 		} else {
 			isWeatherChange = false;
+			isBiomeChange = false;
 		}
 
-		//Detect Biome Change
-		if (!CONFIG.getBiomeFilterList().contains(world.getBiome(player.getBlockPos()).getKey().get().getValue().toString())) {
-			targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-		} else {
-			for (TagKey<Biome> tag : world.getBiome(player.getBlockPos()).streamTags().toList()) {
-				if (CONFIG.getBiomeFilterList().contains("#" + tag.id().toString())) {
-					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-					break;
-				}
-			}
-		}
-		isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
 
 		//Refresh Processing...
 		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
 			moveTimer = timeOffset;
 			isProcessingData = true;
-
-			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
-			dataProcessThread.start();
 
 			//Density Change by Weather
 			if (CONFIG.isEnableWeatherDensity()) {
@@ -149,12 +139,16 @@ public class Renderer {
 						case CLEAR: cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 50f; break;
 					}
 				}
-			} else if (cloudDensityByWeather != CONFIG.getCloudDensityPercent() / 50f) {		//Initialize if disabled detect in rain/thunder.
+				//Density Change by Biome
+				cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
+
+			} else {		//Initialize if disabled detect in rain/thunder.
 				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 50f;
+				cloudDensityByBiome = 0f;
 			}
 
-			//Density Change by Biome
-			cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
+			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
+			dataProcessThread.start();
 
 			if (CONFIG.isEnableDebug()) {
 				//

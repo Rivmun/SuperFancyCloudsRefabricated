@@ -8,6 +8,9 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.tag.TagKey;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.world.biome.Biome;
 
 @Config(name = "sfcr")
 public class SFCReConfig implements ConfigData {
@@ -142,6 +145,19 @@ public class SFCReConfig implements ConfigData {
 			return 40;
 		} else {
 			return 20;
+		}
+	}
+	
+	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
+		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {
+			return true;
+		} else {
+			for (TagKey<Biome> tag : biome.streamTags().toList()) {
+				if (this.getBiomeFilterList().contains("#" + tag.id().toString())) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

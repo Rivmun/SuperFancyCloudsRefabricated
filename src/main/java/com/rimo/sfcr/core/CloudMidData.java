@@ -24,23 +24,18 @@ public class CloudMidData extends CloudData {
 
 		// Get same block
 		var startWidth = Math.abs(prevData.width - nextData.width) / 2;
+		var startLength = prevData.startZ - nextData.startZ + Math.abs(prevData.width - nextData.width) / 2;
 		var minWidth = Math.min(prevData.width, nextData.width);
+		var minLength = Math.min(prevData.width, nextData.width) - startLength * 2;
 		var minHeight = Math.min(prevData.height, nextData.height);
 
-		if (prevData.width > nextData.width) {
-			for (int cx = startWidth; cx < minWidth; cx++) {
-				for (int cy = 0; cy < minHeight; cy++) {
-					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx][cy][cz] = prevData._cloudData[cx][cy][cz] && nextData._cloudData[cx - startWidth][cy][cz - startWidth];
-					}
-				}
-			}
-		} else {
-			for (int cx = startWidth; cx < minWidth; cx++) {
-				for (int cy = 0; cy < minHeight; cy++) {
-					for (int cz = startWidth; cz < minWidth; cz++) {
-						_cloudData[cx - startWidth][cy][cz - startWidth] = prevData._cloudData[cx - startWidth][cy][cz - startWidth]  && nextData._cloudData[cx][cy][cz];
-					}
+		for (int cx = startWidth; cx < minWidth; cx++) {
+			for (int cy = 0; cy < minHeight; cy++) {
+				for (int cz = startLength; cz < minLength; cz++) {
+					if (cz < 0) cz = 0;
+					_cloudData[cx][cy][cz] = 
+							prevData._cloudData[cx][cy][cz] && 
+							nextData._cloudData[cx - startWidth][cy][cz - startLength];
 				}
 			}
 		}

@@ -93,9 +93,10 @@ public class Renderer {
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
-		//Detect Weather Change
 		if (!MinecraftClient.getInstance().isIntegratedServerRunning())
 			RUNTIME.clientTick(world);
+
+		//Detect Weather Change
 		if (CONFIG.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
@@ -109,10 +110,11 @@ public class Renderer {
 			}
 
 			//Detect Biome Change
-			if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-				targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-			isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
-
+			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
+				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
+					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+				isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
+			}
 		} else {
 			isWeatherChange = false;
 			isBiomeChange = false;
@@ -140,8 +142,11 @@ public class Renderer {
 					}
 				}
 				//Density Change by Biome
-				cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
-
+				if (!CONFIG.isBiomeDensityByChunk()) {
+					cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
+				} else {
+					cloudDensityByBiome = 0.5f;		//Output common value if use chunk.
+				}
 			} else {		//Initialize if disabled detect in rain/thunder.
 				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 50f;
 				cloudDensityByBiome = 0f;
@@ -301,8 +306,7 @@ public class Renderer {
 					builder.vertex(x, y, z).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
 				}
 			} catch (Exception e) {
-				// -- Ignore...
-				SFCReMain.LOGGER.error(e.toString());
+				SFCReMain.exceptionCatcher(e);
 			}
 
 			if (data.getDataType().equals(CloudDataType.NORMAL)) {
@@ -358,10 +362,7 @@ public class Renderer {
 			}
 			RUNTIME.checkPartialOffset();
 		} catch (Exception e) {		// Debug
-			SFCReMain.LOGGER.error(e.toString());
-			for (StackTraceElement i : e.getStackTrace()) {
-				SFCReMain.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
-			}
+			SFCReMain.exceptionCatcher(e);
 		}
 
 		isProcessingData = false;

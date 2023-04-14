@@ -157,8 +157,12 @@ public class CloudData implements CloudDataImplement {
 					// sampling...
 					if (CONFIG.isEnableTerrainDodge()) {
 						for (int cy = 0; cy < height; cy++) {
-							// terrain detect (use light level)
-							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(px, SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, pz)) == 15
+							// terrain dodge (detect light level)
+							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
+											px, 
+											SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, 
+											pz + CONFIG.getCloudBlockSize() / 2		// cloud is moving...fix Z pos
+									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f
 									: false;
 						}
@@ -170,7 +174,7 @@ public class CloudData implements CloudDataImplement {
 				}
 			}
 		} catch (Exception e) {
-			SFCReMain.LOGGER.info(e.toString());
+			SFCReMain.exceptionCatcher(e);
 		}
 
 		computingCloudMesh();

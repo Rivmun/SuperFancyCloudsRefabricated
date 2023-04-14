@@ -22,7 +22,7 @@
 	"text.autoconfig.sfcr.option.sampleSteps": "云层采样步骤数",
 	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。",
 	"text.autoconfig.sfcr.option.enableTerrainDodge": "地形回避",
-	"text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip": "启用后，云块将不会出现在较高的山体和建筑物内部。\n降低云块大小可提升检测精度。",
+	"text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip": "启用后，云块将不会出现在较高的山体和建筑物内部。\n降低云块大小并提升常规刷新速度可提升检测精度。",
 	"text.autoconfig.sfcr.option.debug": "输出调试信息",
 	"text.autoconfig.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
 	

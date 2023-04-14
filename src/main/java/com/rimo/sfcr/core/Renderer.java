@@ -151,7 +151,7 @@ public class Renderer {
 			dataProcessThread.start();
 
 			if (CONFIG.isEnableDebug()) {
-				//
+				SFCReMain.LOGGER.info("wc: " + isWeatherChange + ", bc: " + isBiomeChange + ", wd: " + cloudDensityByWeather + ", bd: " + cloudDensityByBiome);
 			}
 		}
 	}

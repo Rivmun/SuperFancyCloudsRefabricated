@@ -149,15 +149,17 @@ public class SFCReConfig implements ConfigData {
 	}
 	
 	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
+		var isHas = false;
 		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {
-			return true;
+			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.streamTags().toList()) {
 				if (this.getBiomeFilterList().contains("#" + tag.id().toString())) {
-					return true;
+					isHas = true;
+					break;
 				}
 			}
-			return false;
 		}
+		return isHas;
 	}
 }

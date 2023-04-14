@@ -75,12 +75,12 @@ public class SFCReConfigScreen {
     	//cloud block size
     	clouds.addEntry(entryBuilder
     			.startDropdownMenu(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize")
-    					,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return value;}))
-    			.setDefaultValue("16")
+    					,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return Integer.parseInt(value);}))
+    			.setDefaultValue(16)
     			.setSuggestionMode(false)
-    			.setSelections(List.of("2", "4", "8", "16"))
+    			.setSelections(List.of(2, 4, 8, 16))
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
-    			.setSaveConsumer(value -> config.setCloudBlockSize(Integer.parseInt((String) value)))
+    			.setSaveConsumer(config::setCloudBlockSize)
     			.build());
     	//cloud thickness
     	clouds.addEntry(entryBuilder

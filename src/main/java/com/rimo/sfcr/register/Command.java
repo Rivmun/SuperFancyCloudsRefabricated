@@ -28,7 +28,7 @@ public class Command {
 							return 1;
 						content.getSource().sendMessage(Text.of("/sfcr statu - Show runtime config"));
 						content.getSource().sendMessage(Text.of("/sfcr [enable|disable] - Toggle SFCR server activity"));
-						content.getSource().sendMessage(Text.of("/sfcr [cloud|density] - Edit config"));
+						content.getSource().sendMessage(Text.of("/sfcr [cloud|density|biome] - Edit config"));
 						content.getSource().sendMessage(Text.of("/sfcr biome [list|add|remove] - Manage ignored biome"));
 						content.getSource().sendMessage(Text.of("/sfcr reload - Reload config, then force sync to every client"));
 						content.getSource().sendMessage(Text.of("/sfcr save - Save runtime config to file"));
@@ -81,6 +81,10 @@ public class Command {
                         content.getSource().sendMessage(Text.of("§eRain Density:    §r" + SFCReMain.config.getRainDensityPercent()));
                         content.getSource().sendMessage(Text.of("§eThunder Density: §r" + SFCReMain.config.getThunderDensityPercent()));
                         content.getSource().sendMessage(Text.of("§eBiome Affect:    §r" + SFCReMain.config.getBiomeDensityMultipler()));
+                        content.getSource().sendMessage(Text.of("§eCloud Block Size:§r" + SFCReMain.config.getCloudBlockSize()));
+                        content.getSource().sendMessage(Text.of("§eUsing Chunk:     §r" + SFCReMain.config.isBiomeDensityByChunk()));
+                        content.getSource().sendMessage(Text.of("§eUsing Loaded Chk:§r" + SFCReMain.config.isBiomeDensityUseLoadedChunk()));
+                        content.getSource().sendMessage(Text.of("§eTerrain Dodge:   §r" + SFCReMain.config.isEnableTerrainDodge()));
                         content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
 						return 1;
 					}))
@@ -110,6 +114,22 @@ public class Command {
 										return 1;
 									})
 							)
+							.then(literal("size")
+									.then(argument("size", IntegerArgumentType.integer(1, 4)).executes(content -> {
+										switch (content.getArgument("size", Integer.class)) {
+										case 1: SFCReMain.config.setCloudBlockSize(2); break;
+										case 2: SFCReMain.config.setCloudBlockSize(4); break;
+										case 3: SFCReMain.config.setCloudBlockSize(8); break;
+										case 4: SFCReMain.config.setCloudBlockSize(16); break;
+										}
+										content.getSource().sendMessage(Text.of("Cloud size changed!"));
+										return 1;
+									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud size is " + SFCReMain.config.getCloudBlockSize()));
+										return 1;
+									})
+							)
 							.then(literal("thickness")
 									.then(argument("thickness", IntegerArgumentType.integer(8, 64)).executes(content -> {
 										SFCReMain.config.setCloudLayerThickness(content.getArgument("thickness", Integer.class));
@@ -131,6 +151,13 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Sample steps is " + SFCReMain.config.getSampleSteps()));
 										return 1;
 									})
+							)
+							.then(literal("terrainDodge")
+									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
+										SFCReMain.config.setEnableTerrainDodge(content.getArgument("e", Boolean.class));
+										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
+										return 1;
+									}))
 							)
 					)
 					.then(literal("density").requires(source -> source.hasPermissionLevel(2))
@@ -203,11 +230,25 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Biome affect changed!"));
 										return 1;
 									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Biome affect percent is " + SFCReMain.config.getBiomeDensityMultipler()));
+										return 1;
+									})
 							)
-							.executes(content -> {
-								content.getSource().sendMessage(Text.of("Biome affect percent is " + SFCReMain.config.getBiomeDensityMultipler()));
-								return 1;
-							})
+							.then(literal("byChunk")
+									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
+										SFCReMain.config.setBiomeDensityByChunk(content.getArgument("e", Boolean.class));
+										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
+										return 1;
+									}))
+							)
+							.then(literal("byLoadedChunk")
+									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
+										SFCReMain.config.setBiomeDensityUseLoadedChunk(content.getArgument("e", Boolean.class));
+										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
+										return 1;
+									}))
+							)
 							.then(literal("list").executes(content -> {
 								content.getSource().sendMessage(Text.of("Server Biome Filter List: "));
 								for (String biome : SFCReMain.config.getBiomeFilterList()) {

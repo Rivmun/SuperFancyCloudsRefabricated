@@ -23,7 +23,7 @@
 	"text.autoconfig.sfcr.option.enableTerrainDodge": "Terrain Dodge",
 	"text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip": "Cloud block will no appears in higher mountains\nor buildings if enabled.\nReducing cloud block size and increasing refresh rate\ncan improve detection accuracy.",
 	"text.autoconfig.sfcr.option.debug": "DEBUG",
-	"text.autoconfig.sfcr.option.debug.@Tooltip": "Do §4NOT§r enable it unless you're tester.",
+	"text.autoconfig.sfcr.option.debug.@Tooltip": "Output debug string to log.\nDo §4NOT§r enable it unless you're tester.",
 	
 	"text.autoconfig.sfcr.category.fog": "Cloud Fog Settings",
 	"text.autoconfig.sfcr.option.enableFog": "Enable Fog",
@@ -49,7 +49,7 @@
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "Density Change Rate",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
 	"text.autoconfig.sfcr.option.enableSmoothChange": "Smooth Change (Experimental)",
-	"text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip": "WIP",
+	"text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip": "§4WARNING§r:\nBad visual and high hardware performance impact!!!\nThis function is abadoned cuz' I can handle translucent display.\nMore information see in Source.",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function.",
 	"text.autoconfig.sfcr.option.isBiomeDensityByChunk": "Biome Detect From Chunk",

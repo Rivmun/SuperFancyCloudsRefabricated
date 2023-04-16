@@ -53,9 +53,9 @@
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "Biome Affect Multipler",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "Detemine the influence of biome precipitation\nfactor on cloud density. Base on \"Common Density\".\nWhen set to 100, clouds will not appear\nin some biome like desert.\nSet to 0 will disable biome detect function.",
 	"text.autoconfig.sfcr.option.isBiomeDensityByChunk": "Biome Detect From Chunk",
-	"text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip": "Biome detect use chunk beneath cloud\ninstead of player's position.",
+	"text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip": "Biome detect use chunks' biome instead of player's current biome.\nCan improve accuracy and rationality of cloud gen.\nSupported by chunk view distance.",
 	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk": "- Use Loaded Chunk",
-	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "\"Detect From Chunk\" needs enabled.\nDistant cloud which no chunk beneath it\nwill try to detect loaded chunk nearby player\ninstead of use sample data.",
+	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "\"Detect From Chunk\" needs enabled.\nDistant cloud which no chunk beneath it\nwill try to detect loaded chunk nearby player\ninstead of use sample data.\nEnabled it can smoother cloud near and distant, \nbut will make distant flicker due to chunk change.",
 	"text.autoconfig.sfcr.option.biomeFilter": "Biome Affect Filter",
 	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormat: §omodid:biomeid§r or §o#modid:biometag§r",
 	

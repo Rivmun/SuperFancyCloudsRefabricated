@@ -52,7 +52,8 @@
   "custom": {
     "modmenu": {
       "links": {
-        "modmenu.modrinth": "https://modrinth.com/mod/superfancyclouds-refabricated"
+        "modmenu.modrinth": "https://modrinth.com/mod/superfancyclouds-refabricated",
+        "MCMOD.cn": "https://www.mcmod.cn/class/9053.html"
       }
     }
   }

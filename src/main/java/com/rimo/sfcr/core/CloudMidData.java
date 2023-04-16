@@ -26,7 +26,7 @@ public class CloudMidData extends CloudData {
 		var startWidth = Math.abs(prevData.width - nextData.width) / 2;
 		var startLength = prevData.startZ - nextData.startZ + Math.abs(prevData.width - nextData.width) / 2;
 		var minWidth = Math.min(prevData.width, nextData.width);
-		var minLength = Math.min(prevData.width, nextData.width) - startLength * 2;
+		var minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
 		var minHeight = Math.min(prevData.height, nextData.height);
 
 		for (int cx = startWidth; cx < minWidth; cx++) {
@@ -34,8 +34,8 @@ public class CloudMidData extends CloudData {
 				for (int cz = startLength; cz < minLength; cz++) {
 					if (cz < 0) cz = 0;
 					_cloudData[cx][cy][cz] = 
-							prevData._cloudData[cx][cy][cz] && 
-							nextData._cloudData[cx - startWidth][cy][cz - startLength];
+							prevData._cloudData[cx - startWidth][cy][cz - startLength] && 
+							nextData._cloudData[cx][cy][cz];
 				}
 			}
 		}

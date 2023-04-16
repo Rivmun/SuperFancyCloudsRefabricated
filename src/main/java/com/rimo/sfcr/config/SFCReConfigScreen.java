@@ -5,10 +5,12 @@ import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
 import com.rimo.sfcr.SFCReMain;
+import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -71,11 +73,21 @@ public class SFCReConfigScreen {
                 .setTooltip(new TranslatableText("text.autoconfig.sfcr.option.cloudHeight.@Tooltip"))
                 .setSaveConsumer(config::setCloudHeight)
                 .build());
+    	//cloud block size
+    	clouds.addEntry(entryBuilder
+    			.startDropdownMenu(new TranslatableText("text.autoconfig.sfcr.option.cloudBlockSize")
+    					,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return Integer.parseInt(value);}))
+    			.setDefaultValue(16)
+    			.setSuggestionMode(false)
+    			.setSelections(List.of(2, 4, 8, 16))
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip"))
+    			.setSaveConsumer(config::setCloudBlockSize)
+    			.build());
     	//cloud thickness
     	clouds.addEntry(entryBuilder
     			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.cloudLayerThickness")
     					,config.getCloudLayerThickness()
-    					,8
+    					,3
     					,64)
                 .setDefaultValue(32)
                 .setTooltip(new TranslatableText("text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip"))
@@ -119,8 +131,15 @@ public class SFCReConfigScreen {
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.sampleSteps.@Tooltip"))
     			.setSaveConsumer(config::setSampleSteps)
     			.build());
+    	//terrain dodge
+    	clouds.addEntry(entryBuilder
+    			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.enableTerrainDodge")
+    					,config.isEnableTerrainDodge())
+    			.setDefaultValue(true)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip"))
+    			.setSaveConsumer(config::setEnableTerrainDodge)
+    			.build());
     	//DEBUG
-    	/*
     	clouds.addEntry(entryBuilder
     			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.debug")
     					,config.isEnableDebug())
@@ -128,7 +147,6 @@ public class SFCReConfigScreen {
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.debug.@Tooltip"))
     			.setSaveConsumer(config::setEnableDebug)
     			.build());
-    	 */
     }
     
     private void buildFogCategory() {
@@ -200,7 +218,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(25)
-    			//.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.cloudDensity.@Tooltip"))
     			.setSaveConsumer(config::setCloudDensityPercent)
     			.build());
     	//rain density
@@ -210,7 +227,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(60)
-    			//.setTooltip(new TranslatableText("text.autoconfig.sfcr.optioon.rainDensity.@Tooltip"))
     			.setSaveConsumer(config::setRainDensityPercent)
     			.build());
     	//thunder density
@@ -220,7 +236,6 @@ public class SFCReConfigScreen {
     					,0
     					,100)
     			.setDefaultValue(90)
-    			//.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.thunderDensity.@Tooltip"))
     			.setSaveConsumer(config::setThunderDensityPercent)
     			.build());
     	//weather refresh speed 
@@ -243,6 +258,14 @@ public class SFCReConfigScreen {
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip"))
     			.setSaveConsumer(config::setDensityChangingSpeed)
     			.build());
+    	//smooth change
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.enableSmoothChange")
+    					,config.isEnableSmoothChange())
+    			.setDefaultValue(false)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip"))
+    			.setSaveConsumer(config::setEnableSmoothChange)
+    			.build());
     	//biome detect
     	density.addEntry(entryBuilder
     			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultipler")
@@ -252,6 +275,22 @@ public class SFCReConfigScreen {
     			.setDefaultValue(50)
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
     			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.build());
+    	//biome density affect by chunk
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.isBiomeDensityByChunk")
+    					,config.isBiomeDensityByChunk())
+    			.setDefaultValue(false)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityByChunk)
+    			.build());
+    	//biome density detect loaded chunk
+    	density.addEntry(entryBuilder
+    			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk")
+    					,config.isBiomeDensityUseLoadedChunk())
+    			.setDefaultValue(false)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityUseLoadedChunk)
     			.build());
     	//biome filter
     	density.addEntry(entryBuilder

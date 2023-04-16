@@ -1,13 +1,6 @@
-{ 
-	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。",
-	"text.option.cloudrendermode.superfancy": "超级华丽",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "非常慢",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "较慢",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "正常",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "较快",
-	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "非常快",
-	
+{
 	"text.autoconfig.sfcr.title": "超级华丽云：重织版",
+	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。",
 	
 	"text.autoconfig.sfcr.category.clouds": "云层设置",
 	"text.autoconfig.sfcr.option.enableMod": "启用模组",
@@ -16,16 +9,20 @@
 	"text.autoconfig.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。",
 	"text.autoconfig.sfcr.option.cloudHeight": "云高度",
 	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n安装了其他修改云高度的模组时\n（例如钠·拓展），该选项无效。",
+	"text.autoconfig.sfcr.option.cloudBlockSize": "云块大小",
+	"text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip": "定义单块云的大小，单位为方块。",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "云层厚度",
-	"text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip": "§4取值过高可能引起性能问题§r",
+	"text.autoconfig.sfcr.option.cloudLayerThickness.@Tooltip": "单位为云块。\n§4取值过高可能引起性能问题§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistance": "云层显示距离",
-	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "当“匹配视野”启用时，该选项被忽略。\n§4取值过高可能引起性能问题§r",
+	"text.autoconfig.sfcr.option.cloudRenderDistance.@Tooltip": "单位为云块。当“匹配视野”启用时，该选项被忽略。\n§4取值过高可能引起性能问题§r",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView": "云层显示距离匹配视野",
 	"text.autoconfig.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "云层显示距离将根据游戏视距自动调整，\n“云层显示距离”选项将被忽略。",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed": "云层刷新速度",
 	"text.autoconfig.sfcr.option.cloudRefreshSpeed.@Tooltip": "控制云层的常规刷新速度。",
 	"text.autoconfig.sfcr.option.sampleSteps": "云层采样步骤数",
 	"text.autoconfig.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。",
+	"text.autoconfig.sfcr.option.enableTerrainDodge": "地形回避",
+	"text.autoconfig.sfcr.option.enableTerrainDodge.@Tooltip": "启用后，云块将不会出现在较高的山体和建筑物内部。\n降低云块大小并提升常规刷新速度可提升检测精度。",
 	"text.autoconfig.sfcr.option.debug": "输出调试信息",
 	"text.autoconfig.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
 	
@@ -52,12 +49,25 @@
 	"text.autoconfig.sfcr.option.weatherRefreshSpeed.@Tooltip": "控制云层在天气改变时的刷新速度。\n刷新速度越快，密度改变越平滑。",
 	"text.autoconfig.sfcr.option.densityChangingSpeed": "云层密度变化速度",
 	"text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip": "较高的速度会使密度改变得不连贯。",
+	"text.autoconfig.sfcr.option.enableSmoothChange": "平滑变化 (实验性)",
+	"text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip": "§4警告§r:\n差劲的视觉表现及较高的性能需求。\n此功能已放弃开发，因为我无法解决半透明面的渲染问题。\n更多信息请访问项目开源地址。",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler": "群系影响百分比",
 	"text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip": "决定群系的降雨量系数对于云层密度的影响。\n基于“常规密度”设置。\n当该系数设置为 100 时，某些群系（比如沙漠）\n将不会出现云层。\n设置为 0 可禁用群系检测。",
+	"text.autoconfig.sfcr.option.isBiomeDensityByChunk": "基于区块的群系检测",
+	"text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip": "检测下方区块的群系而非使用玩家当前所处的群系。\n可提升云层生成的准确性和合理性。\n需要游戏视距支持。",
+	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk": "- 使用已加载区块",
+	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "需启用“基于区块”。\n下方没有区块的远处的云会检测靠近玩家的已加载的区块，\n而非使用采样器数据。（防止访问未加载地区）\n启用可使云层远近自然过渡，但会造成远处云层因区块加载而闪烁。",
 	"text.autoconfig.sfcr.option.biomeFilter": "群系影响过滤",
-	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r",
+	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r 或 §o#modid:biometag§r",
 	
 	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中...",
 	"text.sfcr.command.sync_succ": "[SFCRe] 同步成功！",
-	"text.sfcr.command.sync_full_succ": "[SFCRe] 设置已同步！"
+	"text.sfcr.command.sync_full_succ": "[SFCRe] 设置已同步！",
+	
+	"text.option.cloudrendermode.superfancy": "超级华丽",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_SLOW": "非常慢",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.SLOW": "较慢",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.NORMAL": "正常",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.FAST": "较快",
+	"text.autoconfig.sfcr.option.cloudRefreshSpeed.VERY_FAST": "非常快"
 }

@@ -1,5 +1,8 @@
 package com.rimo.sfcr;
 
+import com.rimo.sfcr.core.Renderer;
+import com.rimo.sfcr.core.RuntimeData;
+
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -12,15 +15,15 @@ import net.minecraft.network.PacketByteBuf;
 public class SFCReClient implements ClientModInitializer {
 
 	@Environment(EnvType.CLIENT)
-	public static final SFCReRenderer RENDERER = new SFCReRenderer();
+	public static final Renderer RENDERER = new Renderer();
 
 	@Override
 	public void onInitializeClient() {
 
 		ClientPlayNetworking.registerGlobalReceiver(SFCReMain.PACKET_CONFIG, SFCReMain::receiveConfig);
-		ClientPlayNetworking.registerGlobalReceiver(SFCReRuntimeData.PACKET_RUNTIME, SFCReRuntimeData::receiveRuntimeData);
-		ClientPlayNetworking.registerGlobalReceiver(SFCReRuntimeData.PACKET_WEATHER, SFCReRuntimeData::receiveWeather);
-		
+		ClientPlayNetworking.registerGlobalReceiver(RuntimeData.PACKET_RUNTIME, RuntimeData::receiveRuntimeData);
+		ClientPlayNetworking.registerGlobalReceiver(RuntimeData.PACKET_WEATHER, RuntimeData::receiveWeather);
+
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			RENDERER.init();
 			sendSyncRequest(true);
@@ -32,7 +35,7 @@ public class SFCReClient implements ClientModInitializer {
 			SFCReMain.config = SFCReMain.CONFIGHOLDER.getConfig();
 		});
 	}
-	
+
 	@Environment(EnvType.CLIENT)
 	public static void sendSyncRequest(boolean isFull) {
 		if (!SFCReMain.config.isEnableServerConfig())

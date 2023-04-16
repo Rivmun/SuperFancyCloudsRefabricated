@@ -111,8 +111,9 @@ public class Renderer {
 
 			//Detect Biome Change
 			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
-				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos()))) {
+					targetDownFall = CONFIG.getDownfall(world.getBiome(player.getBlockPos()).value().getPrecipitation(player.getBlockPos()));
+				}
 				isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
 			}
 		} else {
@@ -187,7 +188,7 @@ public class Renderer {
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
 			synchronized (this) {
-				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultipler() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
+				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
 				} else {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin

@@ -89,7 +89,13 @@ public class SFCReMain implements ModInitializer {
 		packet.writeInt(config.getCloudDensityPercent());
 		packet.writeInt(config.getRainDensityPercent());
 		packet.writeInt(config.getThunderDensityPercent());
-		packet.writeInt(config.getBiomeDensityMultipler());
+		packet.writeInt(config.getCloudBlockSize());
+		packet.writeInt(config.getSnowDensity());
+		packet.writeInt(config.getRainDensity());
+		packet.writeInt(config.getNoneDensity());
+		packet.writeBoolean(config.isBiomeDensityByChunk());
+		packet.writeBoolean(config.isBiomeDensityUseLoadedChunk());
+		packet.writeBoolean(config.isEnableTerrainDodge());
 		packet.writeInt(config.getBiomeFilterList().size());
 		for (String id : config.getBiomeFilterList()) {
 			packet.writeString(id);
@@ -109,7 +115,13 @@ public class SFCReMain implements ModInitializer {
 		config.setCloudDensityPercent(packet.readInt());
 		config.setRainDensityPercent(packet.readInt());
 		config.setThunderDensityPercent(packet.readInt());
-		config.setBiomeDensityMultipler(packet.readInt());
+		config.setCloudBlockSize(packet.readInt());
+		config.setSnowDensity(packet.readInt());
+		config.setRainDensity(packet.readInt());
+		config.setNoneDensity(packet.readInt());
+		config.setBiomeDensityByChunk(packet.readBoolean());
+		config.setBiomeDensityUseLoadedChunk(packet.readBoolean());
+		config.setEnableTerrainDodge(packet.readBoolean());
 		var size = packet.readInt();
 		List<String> list = new ArrayList<>();
 		while (size > 0) {

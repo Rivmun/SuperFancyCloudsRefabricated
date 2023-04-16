@@ -107,7 +107,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
-		return 1.9f - densityByWeather * 1.5f * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultipler() / 100f);
+		return 1.9f - densityByWeather * 1.5f * densityByBiome;
 	}
 
 	@SuppressWarnings("resource")
@@ -139,15 +139,15 @@ public class CloudData implements CloudDataImplement {
 									px2 -= vec.x * CONFIG.getCloudBlockSize();
 									pz2 -= vec.y * CONFIG.getCloudBlockSize();
 								}
-								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)))
-										? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall())
+								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px2, 80, (int) pz2)))
+										? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px2, 80, (int) pz2)).value().getPrecipitation(new BlockPos((int) px2, 80, (int) pz2))))
 										: getCloudDensityThreshold(densityByWeather, densityByBiome);
 							} else {
 								f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 							}
 						} else {
-							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px, 80, pz)))
-									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall())
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px, 80, (int) pz)))
+									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px, 80, (int) pz)).value().getPrecipitation(new BlockPos((int) px, 80, (int) pz))))
 									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						}
 					} else {
@@ -159,9 +159,9 @@ public class CloudData implements CloudDataImplement {
 						for (int cy = 0; cy < height; cy++) {
 							// terrain dodge (detect light level)
 							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
-											px, 
-											SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, 
-											pz + CONFIG.getCloudBlockSize() / 2		// cloud is moving...fix Z pos
+											(int) px, 
+											(int) (SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2), 
+											(int) pz + CONFIG.getCloudBlockSize() / 2		// cloud is moving...fix Z pos
 									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f
 									: false;

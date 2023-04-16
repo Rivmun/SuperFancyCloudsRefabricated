@@ -265,15 +265,36 @@ public class SFCReConfigScreen {
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.enableSmoothChange.@Tooltip"))
     			.setSaveConsumer(config::setEnableSmoothChange)
     			.build());
-    	//biome detect
+    	//precipitation info
     	density.addEntry(entryBuilder
-    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler")
-    					,config.getBiomeDensityMultipler()
+    			.startTextDescription(Text.translatable("text.autoconfig.sfcr.option.precipitationDensity.@PrefixText"))
+    			.build());
+    	//snow
+    	density.addEntry(entryBuilder
+    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.snowDensity")
+    					,config.getSnowDensity()
     					,0
     					,100)
-    			.setDefaultValue(50)
-    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
-    			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.setDefaultValue(60)
+    			.setSaveConsumer(config::setSnowDensity)
+    			.build());
+    	//rain
+    	density.addEntry(entryBuilder
+    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.rainPrecipitationDensity")
+    					,config.getRainDensity()
+    					,0
+    					,100)
+    			.setDefaultValue(90)
+    			.setSaveConsumer(config::setRainDensity)
+    			.build());
+    	//none
+    	density.addEntry(entryBuilder
+    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.noneDensity")
+    					,config.getNoneDensity()
+    					,0
+    					,100)
+    			.setDefaultValue(0)
+    			.setSaveConsumer(config::setNoneDensity)
     			.build());
     	//biome density affect by chunk
     	density.addEntry(entryBuilder

@@ -10,6 +10,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biome.Precipitation;
 
 @Config(name = "sfcr")
 public class SFCReConfig implements ConfigData {
@@ -40,7 +41,9 @@ public class SFCReConfig implements ConfigData {
 	private int thunderDensityPercent = 90;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
-	private int biomeDensityMultipler = 50;
+	private int snowDensity = 60;
+	private int rainDensity = 90;
+	private int noneDensity = 0;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = new ArrayList<>();
@@ -77,7 +80,9 @@ public class SFCReConfig implements ConfigData {
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
-	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
+	public int getSnowDensity() {return snowDensity;}
+	public int getRainDensity() {return rainDensity;}
+	public int getNoneDensity() {return noneDensity;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
 	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
@@ -114,7 +119,9 @@ public class SFCReConfig implements ConfigData {
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
-	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
+	public void setSnowDensity(int density) {snowDensity = density;}
+	public void setRainDensity(int density) {rainDensity = density;}
+	public void setNoneDensity(int density) {noneDensity = density;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
@@ -160,5 +167,15 @@ public class SFCReConfig implements ConfigData {
 			}
 		}
 		return isHas;
+	}
+
+	public float getDownfall(Precipitation i) {
+		if (i.equals(Precipitation.SNOW)) {
+			return this.getSnowDensity() / 100f;
+		} else if (i.equals(Precipitation.RAIN)) {
+			return this.getRainDensity() / 100f;
+		} else {
+			return this.getNoneDensity() / 100f;
+		}
 	}
 }

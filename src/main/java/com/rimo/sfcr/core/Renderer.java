@@ -93,7 +93,7 @@ public class Renderer {
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
-		if (!MinecraftClient.getInstance().isIntegratedServerRunning())
+//		if (!MinecraftClient.getInstance().isIntegratedServerRunning())
 			RUNTIME.clientTick(world);
 
 		//Detect Weather Change

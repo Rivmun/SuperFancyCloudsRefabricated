@@ -43,9 +43,11 @@ public class RuntimeData {
 
 	public void tick(MinecraftServer server) {
 
-		// 20 tick per second.
-		partialOffset += 1 / 20f;
-		time += 1 / 20f;
+		if (server.isDedicated()) {
+			// 20 tick per second.
+			partialOffset += 1 / 20f;
+			time += 1 / 20f;
+		}
 
 		// Weather Pre-detect
 		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();

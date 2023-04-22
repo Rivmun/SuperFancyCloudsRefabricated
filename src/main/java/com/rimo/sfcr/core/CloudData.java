@@ -129,7 +129,7 @@ public class CloudData implements CloudDataImplement {
 					var pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
 
 					// calculating density...
-					if (CONFIG.isBiomeDensityByChunk()) {
+					if (CONFIG.isEnableWeatherDensity() && CONFIG.isBiomeDensityByChunk()) {
 						if (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16)) {
 							if (CONFIG.isBiomeDensityUseLoadedChunk()) {
 								var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();
@@ -160,7 +160,7 @@ public class CloudData implements CloudDataImplement {
 							// terrain dodge (detect light level)
 							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
 											px, 
-											SFCReClient.RENDERER.cloudHeight - (CONFIG.getCloudLayerThickness() / 2 + cy) * CONFIG.getCloudBlockSize() / 2, 
+											SFCReClient.RENDERER.cloudHeight + (cy - CONFIG.getCloudLayerThickness() / 2) * CONFIG.getCloudBlockSize() / 2, 
 											pz + CONFIG.getCloudBlockSize() / 2		// cloud is moving...fix Z pos
 									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f

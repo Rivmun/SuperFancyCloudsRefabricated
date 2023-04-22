@@ -2,6 +2,7 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.SFCReClient;
 import com.rimo.sfcr.SFCReMain;
+import com.rimo.sfcr.config.SFCReConfig;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
 import com.rimo.sfcr.util.WeatherType;
 
@@ -25,6 +26,8 @@ public class RuntimeData {
 
 	public static Identifier PACKET_RUNTIME = new Identifier("sfcr", "runtime_s2c");
 	public static Identifier PACKET_WEATHER = new Identifier("sfcr", "weather_s2c");
+
+	public static SFCReConfig CONFIG = SFCReMain.CONFIGHOLDER.getConfig();
 
 	public long seed = Random.create().nextLong();
 	public double time = 0;
@@ -53,14 +56,14 @@ public class RuntimeData {
 		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
 		var currentWeather = nextWeather;
 		if (worldProperties.isThundering()) {
-			nextWeather = worldProperties.getThunderTime() / 20 < SFCReMain.CONFIGHOLDER.getConfig().getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.THUNDER;
+			nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.THUNDER;
 		} else if (worldProperties.isRaining()) {
-			nextWeather = worldProperties.getRainTime() / 20 < SFCReMain.CONFIGHOLDER.getConfig().getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
+			nextWeather = worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
 		} else {
 			if (worldProperties.getClearWeatherTime() != 0) {
-				nextWeather = worldProperties.getClearWeatherTime() / 20 < SFCReMain.CONFIGHOLDER.getConfig().getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.CLEAR;
+				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.CLEAR;
 			} else {
-				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < SFCReMain.CONFIGHOLDER.getConfig().getWeatherPreDetectTime()
+				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
 						? worldProperties.getRainTime() > worldProperties.getThunderTime() ? WeatherType.THUNDER : WeatherType.RAIN
 						: WeatherType.CLEAR;
 			}
@@ -68,6 +71,10 @@ public class RuntimeData {
 		if (nextWeather != currentWeather)
 			sendWeather(server);
 
+		if (CONFIG.isEnableDebug() && server.getTicks() % (CONFIG.getWeatherPreDetectTime() * 20) == 0) {
+			SFCReMain.LOGGER.info("thndTime: " + worldProperties.getThunderTime() + ", rainTime: " + worldProperties.getRainTime() + ", clearTime: " + worldProperties.getClearWeatherTime());
+			SFCReMain.LOGGER.info("currentWeather: " + currentWeather.toString() + ", nextWeather: " + nextWeather.toString());
+		}
 	}
 
 	public void clientTick(World world) {
@@ -78,7 +85,7 @@ public class RuntimeData {
 		nextWeather = world.isThundering() ? WeatherType.THUNDER : world.isRaining() ? WeatherType.RAIN : WeatherType.CLEAR;
 
 		// Auto Sync
-		if (lastSyncTime < time - SFCReMain.config.getSecPerSync())
+		if (lastSyncTime < time - CONFIG.getSecPerSync())
 			SFCReClient.sendSyncRequest(false);
 	}
 
@@ -87,11 +94,11 @@ public class RuntimeData {
 	}
 
 	public void checkFullOffset() {
-		fullOffset += (int) partialOffset / SFCReMain.config.getCloudBlockSize();
+		fullOffset += (int) partialOffset / CONFIG.getCloudBlockSize();
 	}
 
 	public void checkPartialOffset() {
-		partialOffset = partialOffset % SFCReMain.config.getCloudBlockSize();
+		partialOffset = partialOffset % CONFIG.getCloudBlockSize();
 	}
 
 	public RuntimeData getInstance() {
@@ -122,7 +129,7 @@ public class RuntimeData {
 			SFCReMain.RUNTIME.lastSyncTime = SFCReMain.RUNTIME.time;
 		}
 
-		if (SFCReMain.config.isEnableDebug())
+		if (CONFIG.isEnableDebug())
 			client.getMessageHandler().onGameMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
 	}
 

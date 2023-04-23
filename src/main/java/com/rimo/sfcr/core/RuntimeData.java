@@ -64,7 +64,7 @@ public class RuntimeData {
 				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.CLEAR;
 			} else {
 				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
-						? worldProperties.getRainTime() > worldProperties.getThunderTime() ? WeatherType.THUNDER : WeatherType.RAIN
+						? worldProperties.getRainTime() < worldProperties.getThunderTime() ? WeatherType.RAIN : WeatherType.THUNDER
 						: WeatherType.CLEAR;
 			}
 		}
@@ -72,6 +72,7 @@ public class RuntimeData {
 			sendWeather(server);
 
 		if (CONFIG.isEnableDebug() && server.getTicks() % (CONFIG.getWeatherPreDetectTime() * 20) == 0) {
+			SFCReMain.LOGGER.info("isThnd: " + worldProperties.isThundering() + ", isRain: " + worldProperties.isRaining());
 			SFCReMain.LOGGER.info("thndTime: " + worldProperties.getThunderTime() + ", rainTime: " + worldProperties.getRainTime() + ", clearTime: " + worldProperties.getClearWeatherTime());
 			SFCReMain.LOGGER.info("currentWeather: " + currentWeather.toString() + ", nextWeather: " + nextWeather.toString());
 		}
@@ -82,7 +83,9 @@ public class RuntimeData {
 		// Fix up partial offset...
 		partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 		time += MinecraftClient.getInstance().getLastFrameDuration() / 20f;
-		nextWeather = world.isThundering() ? WeatherType.THUNDER : world.isRaining() ? WeatherType.RAIN : WeatherType.CLEAR;
+
+		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && lastSyncTime != 0)		// Only runs when connected to a server without SFCR
+			nextWeather = world.isThundering() ? WeatherType.THUNDER : world.isRaining() ? WeatherType.RAIN : WeatherType.CLEAR;
 
 		// Auto Sync
 		if (lastSyncTime < time - CONFIG.getSecPerSync())

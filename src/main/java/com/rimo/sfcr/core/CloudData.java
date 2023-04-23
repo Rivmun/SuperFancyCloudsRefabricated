@@ -161,7 +161,7 @@ public class CloudData implements CloudDataImplement {
 							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
 											px, 
 											SFCReClient.RENDERER.cloudHeight + (cy - CONFIG.getCloudLayerThickness() / 2) * CONFIG.getCloudBlockSize() / 2, 
-											pz + CONFIG.getCloudBlockSize() / 2		// cloud is moving...fix Z pos
+											pz + CONFIG.getCloudBlockSize() / 4		// cloud is moving...fix Z pos
 									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f
 									: false;

@@ -93,8 +93,7 @@ public class Renderer {
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
-//		if (!MinecraftClient.getInstance().isIntegratedServerRunning())
-			RUNTIME.clientTick(world);
+		RUNTIME.clientTick(world);
 
 		//Detect Weather Change
 		if (CONFIG.isEnableWeatherDensity()) {
@@ -225,7 +224,7 @@ public class Renderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll, cloudHeight - 15 - CONFIG.getCloudLayerThickness() / 2, zScroll + SFCReMain.RUNTIME.partialOffset);
+					matrices.translate(xScroll + 0.01f, cloudHeight + 0.01f - CONFIG.getCloudLayerThickness() / 2f * CONFIG.getCloudBlockSize() / 2, zScroll + SFCReMain.RUNTIME.partialOffset);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {

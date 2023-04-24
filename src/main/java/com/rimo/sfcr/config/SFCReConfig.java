@@ -14,6 +14,11 @@ import net.minecraft.world.biome.Biome;
 
 @Config(name = "sfcr")
 public class SFCReConfig implements ConfigData {
+
+	public static List<String> DEF_BIOME_FILTER_LIST = new ArrayList<String>(List.of(
+			"#minecraft:is_river"
+	));
+
 	//----CLOUDS, GENERAL----
 	private boolean enableMod = true;
 	private boolean enableServerConfig = false;
@@ -44,8 +49,8 @@ public class SFCReConfig implements ConfigData {
 	private int biomeDensityMultipler = 50;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
-	private List<String> biomeFilterList = new ArrayList<>();
-	
+	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
+
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
 	public boolean isEnableServerConfig() {return enableServerConfig;}
@@ -82,7 +87,7 @@ public class SFCReConfig implements ConfigData {
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
 	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
-	
+
 	//input func.
 	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
 	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
@@ -119,18 +124,12 @@ public class SFCReConfig implements ConfigData {
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
-	
-	
-	SFCReConfig(){
-		biomeFilterList.add("minecraft:river");
-		biomeFilterList.add("minecraft:frozen_river");
-	}
-	
+
 	//When nofog, need this to extend frustum.
 	public int getMaxFogDistanceWhenNoFog() {
 		return (int) Math.pow(cloudRenderDistance / 3f / this.getCloudBlockSize(), 2);
 	}
-	
+
 	//exchanged speed enum.
 	public int getNumFromSpeedEnum(CloudRefreshSpeed value) {
 		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
@@ -147,7 +146,7 @@ public class SFCReConfig implements ConfigData {
 			return 20;
 		}
 	}
-	
+
 	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
 		var isHas = false;
 		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {

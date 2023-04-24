@@ -1,6 +1,5 @@
 package com.rimo.sfcr.config;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
@@ -295,12 +294,7 @@ public class SFCReConfigScreen {
     	density.addEntry(entryBuilder
     			.startStrList(Text.translatable("text.autoconfig.sfcr.option.biomeFilter")
     					,config.getBiomeFilterList())
-    			.setDefaultValue(() -> {
-    				List<String> list = new ArrayList<>();
-    				list.add("minecraft:river");
-    				list.add("minecraft:frozen_river");
-    				return list;
-    			})
+    			.setDefaultValue(SFCReConfig.DEF_BIOME_FILTER_LIST)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeFilter.@Tooltip"))
     			.setSaveConsumer(config::setBiomeFilterList)
     			.build());

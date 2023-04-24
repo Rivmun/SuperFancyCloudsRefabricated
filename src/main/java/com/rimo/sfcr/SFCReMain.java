@@ -94,7 +94,6 @@ public class SFCReMain implements ModInitializer {
 		packet.writeInt(config.getCloudBlockSize());
 		packet.writeBoolean(config.isBiomeDensityByChunk());
 		packet.writeBoolean(config.isBiomeDensityUseLoadedChunk());
-		packet.writeBoolean(config.isEnableTerrainDodge());
 		packet.writeInt(config.getBiomeFilterList().size());
 		for (String id : config.getBiomeFilterList()) {
 			packet.writeString(id);
@@ -118,7 +117,6 @@ public class SFCReMain implements ModInitializer {
 		config.setCloudBlockSize(packet.readInt());
 		config.setBiomeDensityByChunk(packet.readBoolean());
 		config.setBiomeDensityUseLoadedChunk(packet.readBoolean());
-		config.setEnableTerrainDodge(packet.readBoolean());
 		var size = packet.readInt();
 		List<String> list = new ArrayList<>();
 		while (size > 0) {

@@ -55,10 +55,12 @@ public class RuntimeData {
 		// Weather Pre-detect
 		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
 		var currentWeather = nextWeather;
-		if (worldProperties.isThundering()) {
-			nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.THUNDER;
-		} else if (worldProperties.isRaining()) {
-			nextWeather = worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
+		if (worldProperties.isRaining()) {
+			if (worldProperties.isThundering()) {
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.THUNDER;
+			} else {
+				nextWeather = worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
+			}
 		} else {
 			if (worldProperties.getClearWeatherTime() != 0) {
 				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.CLEAR;
@@ -84,7 +86,7 @@ public class RuntimeData {
 		partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 		time += MinecraftClient.getInstance().getLastFrameDuration() / 20f;
 
-		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && lastSyncTime != 0)		// Only runs when connected to a server without SFCR
+		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && lastSyncTime == 0)		// Only runs when connected to a server without sync
 			nextWeather = world.isThundering() ? WeatherType.THUNDER : world.isRaining() ? WeatherType.RAIN : WeatherType.CLEAR;
 
 		// Auto Sync
@@ -92,8 +94,8 @@ public class RuntimeData {
 			SFCReClient.sendSyncRequest(false);
 	}
 
-	public void end() {
-		// Do nothing here...
+	public void clientEnd() {
+		lastSyncTime = 0;
 	}
 
 	public void checkFullOffset() {

@@ -84,7 +84,6 @@ public class Command {
                         content.getSource().sendMessage(Text.of("§eCloud Block Size:§r" + SFCReMain.config.getCloudBlockSize()));
                         content.getSource().sendMessage(Text.of("§eUsing Chunk:     §r" + SFCReMain.config.isBiomeDensityByChunk()));
                         content.getSource().sendMessage(Text.of("§eUsing Loaded Chk:§r" + SFCReMain.config.isBiomeDensityUseLoadedChunk()));
-                        content.getSource().sendMessage(Text.of("§eTerrain Dodge:   §r" + SFCReMain.config.isEnableTerrainDodge()));
                         content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
 						return 1;
 					}))
@@ -151,13 +150,6 @@ public class Command {
 										content.getSource().sendMessage(Text.of("Sample steps is " + SFCReMain.config.getSampleSteps()));
 										return 1;
 									})
-							)
-							.then(literal("terrainDodge")
-									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-										SFCReMain.config.setEnableTerrainDodge(content.getArgument("e", Boolean.class));
-										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
-										return 1;
-									}))
 							)
 					)
 					.then(literal("density").requires(source -> source.hasPermissionLevel(2))

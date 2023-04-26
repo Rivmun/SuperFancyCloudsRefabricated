@@ -7,7 +7,6 @@ import com.rimo.sfcr.config.SFCReConfig;
 import com.rimo.sfcr.util.CloudDataType;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
@@ -27,9 +26,6 @@ public class Renderer {
 
 	private static final RuntimeData RUNTIME = SFCReMain.RUNTIME;
 	private static final SFCReConfig CONFIG = SFCReMain.CONFIGHOLDER.getConfig();
-
-	private static final boolean hasCloudsHeightModifier
-			= FabricLoader.getInstance().isModLoaded("sodium-extra");
 
 	private static final float DENSITY_GATE_RANGE = 0.0500000f;
 	private float cloudDensityByWeather = 0f;
@@ -162,13 +158,7 @@ public class Renderer {
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 
-		if ((!MinecraftClient.getInstance().isIntegratedServerRunning() && CONFIG.isEnableServerConfig())
-				|| (!MinecraftClient.getInstance().isIntegratedServerRunning() && !CONFIG.isEnableServerConfig() && !hasCloudsHeightModifier)
-				|| (MinecraftClient.getInstance().isIntegratedServerRunning() && !hasCloudsHeightModifier)) {
-			cloudHeight = CONFIG.getCloudHeight();
-		} else {
-			cloudHeight = world.getDimensionEffects().getCloudsHeight();
-		}
+		cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
 
 		if (!Float.isNaN(cloudHeight)) {
 			//Setup render system
@@ -224,7 +214,7 @@ public class Renderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll + 0.01f, cloudHeight + 0.01f - CONFIG.getCloudLayerThickness() / 2f * CONFIG.getCloudBlockSize() / 2, zScroll + SFCReMain.RUNTIME.partialOffset);
+					matrices.translate(xScroll + 0.01f, cloudHeight + 0.01f - CONFIG.getCloudLayerThickness() / 2f * CONFIG.getCloudBlockSize() / 2f, zScroll + SFCReMain.RUNTIME.partialOffset);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {

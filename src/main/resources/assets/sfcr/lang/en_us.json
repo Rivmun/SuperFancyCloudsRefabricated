@@ -7,7 +7,7 @@
 	"text.autoconfig.sfcr.option.enableServer": "Sync with Server",
 	"text.autoconfig.sfcr.option.enableServer.@Tooltip": "When enabled, your sampler / height / density etc.\nwill synchronized with server if you connect to\na server which installed SFCR.",
 	"text.autoconfig.sfcr.option.cloudHeight": "Cloud Height",
-	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nIt will invalid when other mod which \nmodify cloud height are installed (such as Sodium-Extra).",
+	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nSet negative value to use vanilla height.",
 	"text.autoconfig.sfcr.option.cloudBlockSize": "Cloud Block Size",
 	"text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip": "Define how big a cloud block is. \nMeasure in block.",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "Cloud Thickness",

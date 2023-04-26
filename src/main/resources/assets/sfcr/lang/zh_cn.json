@@ -8,7 +8,7 @@
 	"text.autoconfig.sfcr.option.enableServer": "服务器同步",
 	"text.autoconfig.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。",
 	"text.autoconfig.sfcr.option.cloudHeight": "云高度",
-	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n安装了其他修改云高度的模组时\n（例如钠·拓展），该选项无效。",
+	"text.autoconfig.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n键入负值以使用原版高度",
 	"text.autoconfig.sfcr.option.cloudBlockSize": "云块大小",
 	"text.autoconfig.sfcr.option.cloudBlockSize.@Tooltip": "定义单块云的大小，单位为方块。",
 	"text.autoconfig.sfcr.option.cloudLayerThickness": "云层厚度",

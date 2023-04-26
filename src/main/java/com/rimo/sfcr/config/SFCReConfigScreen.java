@@ -63,10 +63,8 @@ public class SFCReConfigScreen {
     			.build());
     	//cloud height
     	clouds.addEntry(entryBuilder
-    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.cloudHeight")
-    					,config.getCloudHeight()
-    					,96
-    					,384)
+    			.startIntField(Text.translatable("text.autoconfig.sfcr.option.cloudHeight")
+    					,config.getCloudHeight())
                 .setDefaultValue(192)
                 .setTooltip(Text.translatable("text.autoconfig.sfcr.option.cloudHeight.@Tooltip"))
                 .setSaveConsumer(config::setCloudHeight)

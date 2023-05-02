@@ -38,6 +38,8 @@ public class SFCReConfig implements ConfigData {
 	private int fogMinDistance = 2;
 	private int fogMaxDistance = 4;
 	//----DENSITY CHANGE----
+	private float densityThreshold = 1.3f;
+	private float thresholdMultiplier = 1f;
 	private boolean enableWeatherDensity = true;
 	private boolean enableSmoothChange = false;
 	private int weatherPreDetectTime = 10;
@@ -46,7 +48,7 @@ public class SFCReConfig implements ConfigData {
 	private int thunderDensityPercent = 90;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
-	private int biomeDensityMultipler = 50;
+	private int biomeDensityMultiplier = 50;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
@@ -58,7 +60,6 @@ public class SFCReConfig implements ConfigData {
 	public int getCloudHeight() {return cloudHeight;}
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
-	@SuppressWarnings("resource")
 	public int getCloudRenderDistance() {
 		if (cloudRenderDistanceFitToView && MinecraftClient.getInstance().player != null) {
 			return MinecraftClient.getInstance().options.getClampedViewDistance() * 12;
@@ -75,6 +76,8 @@ public class SFCReConfig implements ConfigData {
 	public boolean isFogAutoDistance() {return fogAutoDistance;}
 	public int getFogMinDistance() {return fogMinDistance;}
 	public int getFogMaxDistance() {return fogMaxDistance;}
+	public float getDensityThreshold() {return densityThreshold;}
+	public float getThresholdMultiplier() {return thresholdMultiplier;}
 	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public int getWeatherPreDetectTime() {return weatherPreDetectTime;}
@@ -83,7 +86,7 @@ public class SFCReConfig implements ConfigData {
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
-	public int getBiomeDensityMultipler() {return biomeDensityMultipler;}
+	public int getBiomeDensityMultiplier() {return biomeDensityMultiplier;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
 	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
@@ -112,6 +115,8 @@ public class SFCReConfig implements ConfigData {
 			fogMaxDistance = max;
 		}
 	}
+	public void setDensityThreshold(float density) {densityThreshold = density;}
+	public void setThresholdMultiplier(float multipler) {thresholdMultiplier = multipler;}
 	public void setEnableWeatherDensity(boolean isEnable) {enableWeatherDensity = isEnable;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setWeatherPreDetectTime(int time) {weatherPreDetectTime = time;}
@@ -120,7 +125,7 @@ public class SFCReConfig implements ConfigData {
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
-	public void setBiomeDensityMultipler(int multipler) {biomeDensityMultipler = multipler;}
+	public void setBiomeDensityMultiplier(int multipler) {biomeDensityMultiplier = multipler;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}

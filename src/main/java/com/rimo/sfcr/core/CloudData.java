@@ -107,7 +107,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
-		return 1.9f - densityByWeather * 1.5f * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultipler() / 100f);
+		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultiplier() / 100f) * 2;
 	}
 
 	@SuppressWarnings("resource")

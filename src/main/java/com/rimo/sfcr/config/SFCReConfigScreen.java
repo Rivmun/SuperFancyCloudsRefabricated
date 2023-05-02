@@ -185,6 +185,26 @@ public class SFCReConfigScreen {
     }
     
     private void buildDensityCategory() {
+    	// threshold
+    	density.addEntry(entryBuilder
+    			.startFloatField(Text.translatable("text.autoconfig.sfcr.option.densityThreshold")
+    					, config.getDensityThreshold())
+    			.setDefaultValue(1.3f)
+    			.setMax(2f)
+    			.setMin(-1f)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.densityThreshold.@Tooltip"))
+    			.setSaveConsumer(config::setDensityThreshold)
+    			.build());
+    	// threshold multiplier
+    	density.addEntry(entryBuilder
+    			.startFloatField(Text.translatable("text.autoconfig.sfcr.option.thresholdMultiplier")
+    					, config.getThresholdMultiplier())
+    			.setDefaultValue(1f)
+    			.setMax(3f)
+    			.setMin(0f)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.thresholdMultiplier.@Tooltip"))
+    			.setSaveConsumer(config::setThresholdMultiplier)
+    			.build());
     	//weather
     	density.addEntry(entryBuilder
     			.startBooleanToggle(Text.translatable("text.autoconfig.sfcr.option.enableWeatherDensity")
@@ -264,13 +284,13 @@ public class SFCReConfigScreen {
     			.build());
     	//biome detect
     	density.addEntry(entryBuilder
-    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler")
-    					,config.getBiomeDensityMultipler()
+    			.startIntSlider(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultiplier")
+    					,config.getBiomeDensityMultiplier()
     					,0
     					,100)
     			.setDefaultValue(50)
-    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
-    			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.biomeDensityMultiplier.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityMultiplier)
     			.build());
     	//biome density affect by chunk
     	density.addEntry(entryBuilder

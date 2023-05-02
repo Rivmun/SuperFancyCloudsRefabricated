@@ -27,7 +27,7 @@ public class Renderer {
 	private static final RuntimeData RUNTIME = SFCReMain.RUNTIME;
 	private static final SFCReConfig CONFIG = SFCReMain.CONFIGHOLDER.getConfig();
 
-	private static final float DENSITY_GATE_RANGE = 0.0500000f;
+//	private static final float DENSITY_GATE_RANGE = 0.0500000f;
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
 	private float targetDownFall = 1f;
@@ -37,7 +37,7 @@ public class Renderer {
 
 	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
 	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed()) / 2;
+	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed());		// / 2;
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -95,20 +95,24 @@ public class Renderer {
 		if (CONFIG.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 50f - DENSITY_GATE_RANGE;
+						|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f;
+						//|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f - DENSITY_GATE_RANGE;
 			} else if (world.isRaining()) {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.RAIN && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather > CONFIG.getRainDensityPercent() / 50f + DENSITY_GATE_RANGE || cloudDensityByWeather < CONFIG.getRainDensityPercent() / 50f - DENSITY_GATE_RANGE;
+						|| cloudDensityByWeather != CONFIG.getRainDensityPercent() / 100f;
+						//|| cloudDensityByWeather > CONFIG.getRainDensityPercent() / 100f + DENSITY_GATE_RANGE || cloudDensityByWeather < CONFIG.getRainDensityPercent() / 100f - DENSITY_GATE_RANGE;
 			} else {		//Clear...
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 50f + DENSITY_GATE_RANGE;
+						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f;
+						//|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f + DENSITY_GATE_RANGE;
 			}
 
 			//Detect Biome Change
 			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
 				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
 					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-				isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE; 
+				//isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE;
+				isBiomeChange = cloudDensityByBiome != targetDownFall;
 			}
 		} else {
 			isWeatherChange = false;
@@ -125,15 +129,15 @@ public class Renderer {
 			if (CONFIG.isEnableWeatherDensity()) {
 				if (isWeatherChange) {
 					switch (RUNTIME.nextWeather) {
-						case THUNDER: cloudDensityByWeather = nextDensityStep(CONFIG.getThunderDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed); break;
-						case RAIN: cloudDensityByWeather = nextDensityStep(CONFIG.getRainDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed); break;
-						case CLEAR: cloudDensityByWeather = nextDensityStep(CONFIG.getCloudDensityPercent() / 50f, cloudDensityByWeather, densityChangingSpeed); break;
+						case THUNDER: cloudDensityByWeather = nextDensityStep(CONFIG.getThunderDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed); break;
+						case RAIN: cloudDensityByWeather = nextDensityStep(CONFIG.getRainDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed); break;
+						case CLEAR: cloudDensityByWeather = nextDensityStep(CONFIG.getCloudDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed); break;
 					}
 				} else {
 					switch (RUNTIME.nextWeather) {
-						case THUNDER: cloudDensityByWeather = CONFIG.getThunderDensityPercent() / 50f; break;
-						case RAIN: cloudDensityByWeather = CONFIG.getRainDensityPercent() / 50f; break;
-						case CLEAR: cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 50f; break;
+						case THUNDER: cloudDensityByWeather = CONFIG.getThunderDensityPercent() / 100f; break;
+						case RAIN: cloudDensityByWeather = CONFIG.getRainDensityPercent() / 100f; break;
+						case CLEAR: cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f; break;
 					}
 				}
 				//Density Change by Biome
@@ -143,7 +147,7 @@ public class Renderer {
 					cloudDensityByBiome = 0.5f;		//Output common value if use chunk.
 				}
 			} else {		//Initialize if disabled detect in rain/thunder.
-				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 50f;
+				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f;
 				cloudDensityByBiome = 0f;
 			}
 
@@ -176,7 +180,7 @@ public class Renderer {
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
 			synchronized (this) {
-				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultipler() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
+				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultiplier() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
 				} else {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
@@ -384,15 +388,9 @@ public class Renderer {
 		return ColorHelper.Argb.getArgb(a, r, g, b);
 	}
 
-	/* 
-	 * @Param tg - target to approach
-	 * @Param cr - current value
-	 * @Param spd - value of change speed
-	 * 
-	 * @Comment needs to be improve.
-	 */
-	private static float nextDensityStep(float tg, float cr, float spd) {
-		return cr + (tg - cr) / spd;
+	private float nextDensityStep(float target, float current, float speed) {
+		//return current + (target - current) / speed;
+		return Math.abs(target - current) > 1f / speed ? (target > current ? current + 1f / speed : current - 1f / speed) : target;
 	}
 
 	//Update Setting.

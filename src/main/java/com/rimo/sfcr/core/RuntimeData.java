@@ -127,10 +127,15 @@ public class RuntimeData {
 			return;
 
 		synchronized (SFCReMain.RUNTIME) {
-			SFCReMain.RUNTIME.time = packet.readDouble();
-			SFCReMain.RUNTIME.fullOffset = packet.readInt();
-			SFCReMain.RUNTIME.partialOffset = packet.readDouble();
-	
+			try {
+				SFCReMain.RUNTIME.time = packet.readDouble();
+				SFCReMain.RUNTIME.fullOffset = packet.readInt();
+				SFCReMain.RUNTIME.partialOffset = packet.readDouble();
+			} catch (Exception e) {
+				client.getMessageHandler().onGameMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
+				SFCReMain.config.setEnableServerConfig(false);
+				SFCReMain.CONFIGHOLDER.save();
+			}
 			SFCReMain.RUNTIME.lastSyncTime = SFCReMain.RUNTIME.time;
 		}
 

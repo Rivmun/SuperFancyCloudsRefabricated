@@ -12,6 +12,7 @@ import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Shader;
+import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
@@ -27,7 +28,6 @@ public class Renderer {
 	private static final RuntimeData RUNTIME = SFCReMain.RUNTIME;
 	private static final SFCReConfig CONFIG = SFCReMain.CONFIGHOLDER.getConfig();
 
-//	private static final float DENSITY_GATE_RANGE = 0.0500000f;
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
 	private float targetDownFall = 1f;
@@ -37,7 +37,7 @@ public class Renderer {
 
 	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
 	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed());		// / 2;
+	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed()) * 2;
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -72,7 +72,7 @@ public class Renderer {
 		if (!CONFIG.isEnableMod())
 			return;
 
-		if (MinecraftClient.getInstance().isIntegratedServerRunning() && MinecraftClient.getInstance().isPaused())
+		if (MinecraftClient.getInstance().isInSingleplayer() && MinecraftClient.getInstance().isPaused())
 			return;
 
 		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
@@ -96,22 +96,18 @@ public class Renderer {
 			if (world.isThundering()) {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
 						|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f;
-						//|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f - DENSITY_GATE_RANGE;
 			} else if (world.isRaining()) {
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.RAIN && CONFIG.getWeatherPreDetectTime() != 0
 						|| cloudDensityByWeather != CONFIG.getRainDensityPercent() / 100f;
-						//|| cloudDensityByWeather > CONFIG.getRainDensityPercent() / 100f + DENSITY_GATE_RANGE || cloudDensityByWeather < CONFIG.getRainDensityPercent() / 100f - DENSITY_GATE_RANGE;
 			} else {		//Clear...
 				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
 						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f;
-						//|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f + DENSITY_GATE_RANGE;
 			}
 
 			//Detect Biome Change
 			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
 				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
 					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
-				//isBiomeChange = cloudDensityByBiome > targetDownFall + DENSITY_GATE_RANGE || cloudDensityByBiome < targetDownFall - DENSITY_GATE_RANGE;
 				isBiomeChange = cloudDensityByBiome != targetDownFall;
 			}
 		} else {
@@ -180,6 +176,10 @@ public class Renderer {
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
 			synchronized (this) {
+
+				if (!MinecraftClient.getInstance().isInSingleplayer() || !MinecraftClient.getInstance().isPaused())
+					SFCReMain.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+
 				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultiplier() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
 				} else {
@@ -218,7 +218,7 @@ public class Renderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll + 0.01f, cloudHeight + 0.01f - CONFIG.getCloudLayerThickness() / 2f * CONFIG.getCloudBlockSize() / 2f, zScroll + SFCReMain.RUNTIME.partialOffset);
+					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMain.RUNTIME.partialOffset);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -253,7 +253,7 @@ public class Renderer {
 		}
 	}
 
-	public BufferBuilder builder = new BufferBuilder(2097152);
+	public BufferBuilder builder = Tessellator.getInstance().getBuffer();
 
 	private final float[][] normals = {
 			{1, 0, 0},
@@ -389,7 +389,6 @@ public class Renderer {
 	}
 
 	private float nextDensityStep(float target, float current, float speed) {
-		//return current + (target - current) / speed;
 		return Math.abs(target - current) > 1f / speed ? (target > current ? current + 1f / speed : current - 1f / speed) : target;
 	}
 

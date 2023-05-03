@@ -46,11 +46,9 @@ public class RuntimeData {
 
 	public void tick(MinecraftServer server) {
 
-		if (server.isDedicated()) {
-			// 20 tick per second.
-			partialOffset += 1 / 20f;
-			time += 1 / 20f;
-		}
+		if (server.isDedicated())
+			partialOffset += 1 / 20f * 0.25f * 0.25f;		// 20 tick per second.
+		time += 1 / 20f;
 
 		// Weather Pre-detect
 		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
@@ -81,17 +79,15 @@ public class RuntimeData {
 	}
 
 	public void clientTick(World world) {
-
-		// Fix up partial offset...
-		partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
-		time += MinecraftClient.getInstance().getLastFrameDuration() / 20f;
-
-		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && lastSyncTime == 0)		// Only runs when connected to a server without sync
+		// Weather Detect (Client) - Only runs when connected to a server without sync
+		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && lastSyncTime == 0)
 			nextWeather = world.isThundering() ? WeatherType.THUNDER : world.isRaining() ? WeatherType.RAIN : WeatherType.CLEAR;
 
 		// Auto Sync
-		if (lastSyncTime < time - CONFIG.getSecPerSync())
+		if (lastSyncTime < time - CONFIG.getSecPerSync()) {
 			SFCReClient.sendSyncRequest(false);
+			lastSyncTime = time;
+		}
 	}
 
 	public void clientEnd() {

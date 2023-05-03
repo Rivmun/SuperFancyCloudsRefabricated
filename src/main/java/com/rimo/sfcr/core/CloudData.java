@@ -110,7 +110,6 @@ public class CloudData implements CloudDataImplement {
 		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * (1 - (1 - densityByBiome) * CONFIG.getBiomeDensityMultiplier() / 100f) * 2;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public void collectCloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
 		try {
@@ -160,7 +159,7 @@ public class CloudData implements CloudDataImplement {
 							// terrain dodge (detect light level)
 							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
 											px, 
-											SFCReClient.RENDERER.cloudHeight + (cy - CONFIG.getCloudLayerThickness() / 2) * CONFIG.getCloudBlockSize() / 2, 
+											SFCReClient.RENDERER.cloudHeight + cy * CONFIG.getCloudBlockSize() / 2 - CONFIG.getCloudBlockSize() / 4, 
 											pz + CONFIG.getCloudBlockSize() / 4		// cloud is moving...fix Z pos
 									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f

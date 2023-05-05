@@ -56,11 +56,9 @@ public class SFCReMain implements ModInitializer {
 
 	//Debug
 	public static void exceptionCatcher(Exception e) {
-		if (config.isEnableDebug()) {
-			SFCReMain.LOGGER.error(e.toString());
-			for (StackTraceElement i : e.getStackTrace()) {
-				SFCReMain.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
-			}
+		SFCReMain.LOGGER.error(e.toString());
+		for (StackTraceElement i : e.getStackTrace()) {
+			SFCReMain.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
 		}
 	}
 
@@ -95,7 +93,6 @@ public class SFCReMain implements ModInitializer {
 		packet.writeInt(config.getNoneDensity());
 		packet.writeBoolean(config.isBiomeDensityByChunk());
 		packet.writeBoolean(config.isBiomeDensityUseLoadedChunk());
-		packet.writeBoolean(config.isEnableTerrainDodge());
 		packet.writeInt(config.getBiomeFilterList().size());
 		for (String id : config.getBiomeFilterList()) {
 			packet.writeString(id);
@@ -106,28 +103,37 @@ public class SFCReMain implements ModInitializer {
 	public static void receiveConfig(MinecraftClient client, ClientPlayNetworkHandler handler, PacketByteBuf packet, PacketSender sender) {
 		if (!config.isEnableServerConfig())
 			return;
-		SFCReMain.RUNTIME.seed = packet.readLong();
-		config.setSecPerSync(packet.readInt());
-		config.setCloudHeight(packet.readInt());
-		config.setCloudLayerThickness(packet.readInt());
-		config.setSampleSteps(packet.readInt());
-		config.setDensityChangingSpeed(packet.readEnumConstant(CloudRefreshSpeed.class));
-		config.setCloudDensityPercent(packet.readInt());
-		config.setRainDensityPercent(packet.readInt());
-		config.setThunderDensityPercent(packet.readInt());
-		config.setCloudBlockSize(packet.readInt());
-		config.setSnowDensity(packet.readInt());
-		config.setRainDensity(packet.readInt());
-		config.setNoneDensity(packet.readInt());
-		config.setBiomeDensityByChunk(packet.readBoolean());
-		config.setBiomeDensityUseLoadedChunk(packet.readBoolean());
-		config.setEnableTerrainDodge(packet.readBoolean());
-		var size = packet.readInt();
 		List<String> list = new ArrayList<>();
-		while (size > 0) {
-			list.add(packet.readString());
-			size--;
+		try {
+			SFCReMain.RUNTIME.seed = packet.readLong();
+			config.setSecPerSync(packet.readInt());
+			config.setCloudHeight(packet.readInt());
+			config.setCloudLayerThickness(packet.readInt());
+			config.setSampleSteps(packet.readInt());
+			config.setDensityChangingSpeed(packet.readEnumConstant(CloudRefreshSpeed.class));
+			config.setCloudDensityPercent(packet.readInt());
+			config.setRainDensityPercent(packet.readInt());
+			config.setThunderDensityPercent(packet.readInt());
+			config.setCloudBlockSize(packet.readInt());
+			config.setSnowDensity(packet.readInt());
+			config.setRainDensity(packet.readInt());
+			config.setNoneDensity(packet.readInt());
+			config.setBiomeDensityByChunk(packet.readBoolean());
+			config.setBiomeDensityUseLoadedChunk(packet.readBoolean());
+			var size = packet.readInt();
+			while (size > 0) {
+				list.add(packet.readString());
+				size--;
+			} 
+		} catch (Exception e) {
+			client.getMessageHandler().onGameMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
+			CONFIGHOLDER.load();		// reset config & disable sync
+			config = CONFIGHOLDER.getConfig();
+			config.setEnableServerConfig(false);
+			CONFIGHOLDER.save();
+			return;
 		}
+
 		config.setBiomeFilterList(list);
 		SFCReClient.RENDERER.updateRenderData(config);
 		SFCReClient.RENDERER.init();		// Reset renderer.

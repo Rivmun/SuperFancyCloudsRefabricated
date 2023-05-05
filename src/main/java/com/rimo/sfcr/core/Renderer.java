@@ -37,7 +37,7 @@ public class Renderer {
 
 	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
 	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed()) * 2;
+	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed());
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -396,6 +396,6 @@ public class Renderer {
 	public void updateRenderData(SFCReConfig config) {
 		normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
 		weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
-		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed()) / 2;
+		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
 	}	
 }

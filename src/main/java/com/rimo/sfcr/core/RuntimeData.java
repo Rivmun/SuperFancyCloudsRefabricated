@@ -57,7 +57,9 @@ public class RuntimeData {
 			if (worldProperties.isThundering()) {
 				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.THUNDER;
 			} else {
-				nextWeather = worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
+						? WeatherType.THUNDER
+						: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.CLEAR : WeatherType.RAIN;
 			}
 		} else {
 			if (worldProperties.getClearWeatherTime() != 0) {
@@ -74,7 +76,7 @@ public class RuntimeData {
 		if (CONFIG.isEnableDebug() && server.getTicks() % (CONFIG.getWeatherPreDetectTime() * 20) == 0) {
 			SFCReMain.LOGGER.info("isThnd: " + worldProperties.isThundering() + ", isRain: " + worldProperties.isRaining());
 			SFCReMain.LOGGER.info("thndTime: " + worldProperties.getThunderTime() + ", rainTime: " + worldProperties.getRainTime() + ", clearTime: " + worldProperties.getClearWeatherTime());
-			SFCReMain.LOGGER.info("currentWeather: " + currentWeather.toString() + ", nextWeather: " + nextWeather.toString());
+			SFCReMain.LOGGER.info("nextWeather: " + nextWeather.toString());
 		}
 	}
 
@@ -145,6 +147,8 @@ public class RuntimeData {
 		for (ServerPlayerEntity player : PlayerLookup.all(server)) {
 			ServerPlayNetworking.send(player, PACKET_WEATHER, packet);
 		}
+		if (CONFIG.isEnableDebug())
+			SFCReMain.LOGGER.info("Sent weather forecast '" + SFCReMain.RUNTIME.nextWeather.toString() + "' to allPlayers.");
 	}
 
 	public static void receiveWeather(MinecraftClient client, ClientPlayNetworkHandler handler, PacketByteBuf packet, PacketSender sender) {

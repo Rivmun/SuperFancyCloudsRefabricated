@@ -57,11 +57,9 @@ public class SFCReMain implements ModInitializer {
 
 	//Debug
 	public static void exceptionCatcher(Exception e) {
-		if (config.isEnableDebug()) {
-			SFCReMain.LOGGER.error(e.toString());
-			for (StackTraceElement i : e.getStackTrace()) {
-				SFCReMain.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
-			}
+		SFCReMain.LOGGER.error(e.toString());
+		for (StackTraceElement i : e.getStackTrace()) {
+			SFCReMain.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
 		}
 	}
 

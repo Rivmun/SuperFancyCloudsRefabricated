@@ -199,7 +199,7 @@ public class SFCReConfigScreen {
     	density.addEntry(entryBuilder
     			.startFloatField(Text.translatable("text.autoconfig.sfcr.option.thresholdMultiplier")
     					, config.getThresholdMultiplier())
-    			.setDefaultValue(1f)
+    			.setDefaultValue(1.5f)
     			.setMax(3f)
     			.setMin(0f)
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.thresholdMultiplier.@Tooltip"))
@@ -269,7 +269,7 @@ public class SFCReConfigScreen {
     			.startEnumSelector(Text.translatable("text.autoconfig.sfcr.option.densityChangingSpeed")
     					,CloudRefreshSpeed.class
     					,config.getDensityChangingSpeed())
-    			.setDefaultValue(CloudRefreshSpeed.NORMAL)
+    			.setDefaultValue(CloudRefreshSpeed.SLOW)
     			.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
     			.setTooltip(Text.translatable("text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip"))
     			.setSaveConsumer(config::setDensityChangingSpeed)

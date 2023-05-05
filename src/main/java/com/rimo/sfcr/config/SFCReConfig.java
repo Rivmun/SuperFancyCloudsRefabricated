@@ -39,7 +39,7 @@ public class SFCReConfig implements ConfigData {
 	private int fogMaxDistance = 4;
 	//----DENSITY CHANGE----
 	private float densityThreshold = 1.3f;
-	private float thresholdMultiplier = 1f;
+	private float thresholdMultiplier = 1.5f;
 	private boolean enableWeatherDensity = true;
 	private boolean enableSmoothChange = false;
 	private int weatherPreDetectTime = 10;
@@ -47,7 +47,7 @@ public class SFCReConfig implements ConfigData {
 	private int rainDensityPercent = 60;
 	private int thunderDensityPercent = 90;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
-	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.NORMAL;
+	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
 	private int biomeDensityMultiplier = 50;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;

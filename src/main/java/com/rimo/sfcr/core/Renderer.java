@@ -207,8 +207,8 @@ public class Renderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 3f / CONFIG.getCloudBlockSize(), 2) / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 3f / CONFIG.getCloudBlockSize(), 2));
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48, 2) * CONFIG.getCloudBlockSize() / 16 / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48, 2) * CONFIG.getCloudBlockSize() / 16);
 						}
 					} else {
 						BackgroundRenderer.clearFog();

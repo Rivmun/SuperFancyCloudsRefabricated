@@ -31,6 +31,7 @@ public class SFCReClient implements ClientModInitializer {
 		ClientTickEvents.START_CLIENT_TICK.register((client) -> RENDERER.tick());
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			RENDERER.clean();
+			SFCReMain.RUNTIME.clientEnd();
 			SFCReMain.CONFIGHOLDER.load();
 			SFCReMain.config = SFCReMain.CONFIGHOLDER.getConfig();
 		});

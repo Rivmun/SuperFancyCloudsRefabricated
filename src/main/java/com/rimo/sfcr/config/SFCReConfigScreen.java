@@ -1,6 +1,5 @@
 package com.rimo.sfcr.config;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
@@ -65,10 +64,8 @@ public class SFCReConfigScreen {
     			.build());
     	//cloud height
     	clouds.addEntry(entryBuilder
-    			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.cloudHeight")
-    					,config.getCloudHeight()
-    					,96
-    					,384)
+    			.startIntField(new TranslatableText("text.autoconfig.sfcr.option.cloudHeight")
+    					,config.getCloudHeight())
                 .setDefaultValue(192)
                 .setTooltip(new TranslatableText("text.autoconfig.sfcr.option.cloudHeight.@Tooltip"))
                 .setSaveConsumer(config::setCloudHeight)
@@ -189,6 +186,26 @@ public class SFCReConfigScreen {
     }
     
     private void buildDensityCategory() {
+    	// threshold
+    	density.addEntry(entryBuilder
+    			.startFloatField(new TranslatableText("text.autoconfig.sfcr.option.densityThreshold")
+    					, config.getDensityThreshold())
+    			.setDefaultValue(1.3f)
+    			.setMax(2f)
+    			.setMin(-1f)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.densityThreshold.@Tooltip"))
+    			.setSaveConsumer(config::setDensityThreshold)
+    			.build());
+    	// threshold multiplier
+    	density.addEntry(entryBuilder
+    			.startFloatField(new TranslatableText("text.autoconfig.sfcr.option.thresholdMultiplier")
+    					, config.getThresholdMultiplier())
+    			.setDefaultValue(1.5f)
+    			.setMax(3f)
+    			.setMin(0f)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.thresholdMultiplier.@Tooltip"))
+    			.setSaveConsumer(config::setThresholdMultiplier)
+    			.build());
     	//weather
     	density.addEntry(entryBuilder
     			.startBooleanToggle(new TranslatableText("text.autoconfig.sfcr.option.enableWeatherDensity")
@@ -253,7 +270,7 @@ public class SFCReConfigScreen {
     			.startEnumSelector(new TranslatableText("text.autoconfig.sfcr.option.densityChangingSpeed")
     					,CloudRefreshSpeed.class
     					,config.getDensityChangingSpeed())
-    			.setDefaultValue(CloudRefreshSpeed.NORMAL)
+    			.setDefaultValue(CloudRefreshSpeed.SLOW)
     			.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.densityChangingSpeed.@Tooltip"))
     			.setSaveConsumer(config::setDensityChangingSpeed)
@@ -268,13 +285,13 @@ public class SFCReConfigScreen {
     			.build());
     	//biome detect
     	density.addEntry(entryBuilder
-    			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultipler")
-    					,config.getBiomeDensityMultipler()
+    			.startIntSlider(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultiplier")
+    					,config.getBiomeDensityMultiplier()
     					,0
     					,100)
     			.setDefaultValue(50)
-    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultipler.@Tooltip"))
-    			.setSaveConsumer(config::setBiomeDensityMultipler)
+    			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeDensityMultiplier.@Tooltip"))
+    			.setSaveConsumer(config::setBiomeDensityMultiplier)
     			.build());
     	//biome density affect by chunk
     	density.addEntry(entryBuilder
@@ -296,12 +313,7 @@ public class SFCReConfigScreen {
     	density.addEntry(entryBuilder
     			.startStrList(new TranslatableText("text.autoconfig.sfcr.option.biomeFilter")
     					,config.getBiomeFilterList())
-    			.setDefaultValue(() -> {
-    				List<String> list = new ArrayList<>();
-    				list.add("minecraft:river");
-    				list.add("minecraft:frozen_river");
-    				return list;
-    			})
+    			.setDefaultValue(SFCReConfig.DEF_BIOME_FILTER_LIST)
     			.setTooltip(new TranslatableText("text.autoconfig.sfcr.option.biomeFilter.@Tooltip"))
     			.setSaveConsumer(config::setBiomeFilterList)
     			.build());

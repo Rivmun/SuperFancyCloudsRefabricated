@@ -60,7 +60,7 @@
 	"text.autoconfig.sfcr.option.isBiomeDensityByChunk": "基于区块的群系检测",
 	"text.autoconfig.sfcr.option.isBiomeDensityByChunk.@Tooltip": "检测下方区块的群系而非使用玩家当前所处的群系。\n可提升云层生成的准确性和合理性。\n需要游戏视距支持。",
 	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk": "- 使用已加载区块",
-	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "需启用“基于区块”。\n下方没有区块的远处的云会检测靠近玩家的已加载的区块，\n而非使用采样器数据。（防止访问未加载地区）\n启用可使云层远近自然过渡，但会造成远处云层因区块加载而闪烁。",
+	"text.autoconfig.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "需启用“基于区块”。\n下方没有区块的远处的云会检测靠近玩家的已加载的区块，\n而非使用采样器数据。\n启用可使云层远近自然过渡，但会造成远处云层因区块加载而闪烁。",
 	"text.autoconfig.sfcr.option.biomeFilter": "群系影响过滤",
 	"text.autoconfig.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r 或 §o#modid:biometag§r",
 	

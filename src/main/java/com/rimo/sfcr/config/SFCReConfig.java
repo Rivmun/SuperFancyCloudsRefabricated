@@ -7,7 +7,6 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.tag.TagKey;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
@@ -60,13 +59,7 @@ public class SFCReConfig implements ConfigData {
 	public int getCloudHeight() {return cloudHeight;}
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
-	public int getCloudRenderDistance() {
-		if (cloudRenderDistanceFitToView && MinecraftClient.getInstance().player != null) {
-			return MinecraftClient.getInstance().options.getClampedViewDistance() * 12;
-		} else {
-			return cloudRenderDistance;
-		}
-	}
+	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
@@ -130,12 +123,11 @@ public class SFCReConfig implements ConfigData {
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 
-	//When nofog, need this to extend frustum.
-	public int getMaxFogDistanceWhenNoFog() {
-		return (int) Math.pow(cloudRenderDistance / 3f / this.getCloudBlockSize(), 2);
+	//conversion
+	public int getAutoFogMaxDistance() {
+		return (int) (cloudRenderDistance / 48f * cloudRenderDistance / 48f * cloudBlockSize / 16f);
 	}
 
-	//exchanged speed enum.
 	public int getNumFromSpeedEnum(CloudRefreshSpeed value) {
 		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
 			return 5;

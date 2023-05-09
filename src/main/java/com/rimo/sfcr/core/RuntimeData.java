@@ -47,7 +47,7 @@ public class RuntimeData {
 	public void tick(MinecraftServer server) {
 
 		if (server.isDedicated())
-			partialOffset += 1 / 20f * 0.25f * 0.25f;		// 20 tick per second.
+			partialOffset += 1 / 20f * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;		// 20 tick per second.
 		time += 1 / 20f;
 
 		// Weather Pre-detect

@@ -11,13 +11,13 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.Shader;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Matrix4f;
@@ -165,12 +165,7 @@ public class Renderer {
 			RenderSystem.disableCull();
 			RenderSystem.enableBlend();
 			RenderSystem.enableDepthTest();
-			RenderSystem.blendFuncSeparate(
-					GlStateManager.SrcFactor.SRC_ALPHA,
-					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA,
-					GlStateManager.SrcFactor.ONE,
-					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA
-			);
+			RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
@@ -178,7 +173,7 @@ public class Renderer {
 			synchronized (this) {
 
 				if (!MinecraftClient.getInstance().isInSingleplayer() || !MinecraftClient.getInstance().isPaused())
-					SFCReMain.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+					SFCReMain.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;
 
 				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultiplier() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
@@ -214,11 +209,11 @@ public class Renderer {
 						BackgroundRenderer.clearFog();
 					}
 
-					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
-
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
 					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMain.RUNTIME.partialOffset);
+
+					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -228,8 +223,7 @@ public class Renderer {
 							RenderSystem.colorMask(true, true, true, true);
 						}
 
-						Shader shaderProgram = RenderSystem.getShader();
-						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, shaderProgram);
+						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
 					}
 
 					VertexBuffer.unbind();
@@ -256,12 +250,12 @@ public class Renderer {
 	public BufferBuilder builder = Tessellator.getInstance().getBuffer();
 
 	private final float[][] normals = {
-			{1, 0, 0},
-			{-1, 0, 0},
-			{0, 1, 0},
-			{0, -1, 0},
-			{0, 0, 1},
-			{0, 0, -1},
+			{1, 0, 0},		//r
+			{-1, 0, 0},		//l
+			{0, 1, 0},		//u
+			{0, -1, 0},		//d
+			{0, 0, 1},		//f
+			{0, 0, -1},		//b
 	};
 
 	private final int[] colors = {
@@ -274,11 +268,16 @@ public class Renderer {
 	};
 
 	// Building mesh
-	@SuppressWarnings("resource")
 	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
-		
+		Vec3d camVec = new Vec3d(
+				-Math.sin(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
+				-Math.tan(MinecraftClient.getInstance().gameRenderer.getCamera().getPitch() / 180f * Math.PI),
+				 Math.cos(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
+		).normalize();
+		var cullCount = 0;
+
 		for (CloudData data : cloudDataGroup) {
 			try {
 				int vertCount = data.vertexList.size() / 3;
@@ -289,6 +288,16 @@ public class Renderer {
 					var x = data.vertexList.getFloat(origin) * CONFIG.getCloudBlockSize();
 					var y = data.vertexList.getFloat(origin + 1) * CONFIG.getCloudBlockSize() / 2;
 					var z = data.vertexList.getFloat(origin + 2) * CONFIG.getCloudBlockSize();
+
+					// Culling unsight faces
+					if (i % 4 == 0) {		// every 4 vertex making a face.
+						if (camVec.dotProduct(new Vec3d(x, y + cloudHeight - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y, z).normalize())
+								<= Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI)) {
+							i += 3;
+							cullCount += 1;
+							continue;
+						}
+					}
 
 					int normIndex = data.normalList.getByte(i / 4);
 					var norm = normals[normIndex];
@@ -316,6 +325,7 @@ public class Renderer {
 				data.tick();
 			}
 		}
+		MinecraftClient.getInstance().player.sendMessage(Text.of("Culled: " + cullCount), true);		// debug
 
 		try {
 			return builder.end();

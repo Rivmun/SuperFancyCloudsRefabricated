@@ -155,7 +155,7 @@ public class CloudData implements CloudDataImplement {
 							// terrain dodge (detect light level)
 							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
 											px, 
-											SFCReClient.RENDERER.cloudHeight + (cy + 1) * CONFIG.getCloudBlockSize() / 2, 
+											SFCReClient.RENDERER.cloudHeight + (cy - 1) * CONFIG.getCloudBlockSize() / 2, 
 											pz + CONFIG.getCloudBlockSize() / 4		// cloud is moving...fix Z pos
 									)) == 15
 									? getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f

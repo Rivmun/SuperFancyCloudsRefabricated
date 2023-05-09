@@ -17,7 +17,6 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Matrix4f;
@@ -56,7 +55,8 @@ public class Renderer {
 	public double xScroll;
 	public double zScroll;
 
-	public BufferBuilder.BuiltBuffer cb;
+	public int cullStateCount = 0;
+	public int cullStateShown = 0;
 
 	public void init() {
 		CloudData.initSampler(SFCReMain.RUNTIME.seed);
@@ -276,7 +276,6 @@ public class Renderer {
 				-Math.tan(MinecraftClient.getInstance().gameRenderer.getCamera().getPitch() / 180f * Math.PI),
 				 Math.cos(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
 		).normalize();
-		var cullCount = 0;
 
 		for (CloudData data : cloudDataGroup) {
 			try {
@@ -294,8 +293,10 @@ public class Renderer {
 						if (camVec.dotProduct(new Vec3d(x, y + cloudHeight - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y, z).normalize())
 								<= Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI)) {
 							i += 3;
-							cullCount += 1;
+							cullStateCount += 1;
 							continue;
+						} else {
+							cullStateShown += 1;
 						}
 					}
 
@@ -325,7 +326,6 @@ public class Renderer {
 				data.tick();
 			}
 		}
-		MinecraftClient.getInstance().player.sendMessage(Text.of("Culled: " + cullCount), true);		// debug
 
 		try {
 			return builder.end();

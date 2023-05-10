@@ -10,6 +10,8 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.Camera.Projection;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
@@ -55,7 +57,7 @@ public class Renderer {
 	public double xScroll;
 	public double zScroll;
 
-	public int cullStateCount = 0;
+	public int cullStateSkipped = 0;
 	public int cullStateShown = 0;
 
 	public void init() {
@@ -269,13 +271,19 @@ public class Renderer {
 
 	// Building mesh
 	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
+
+		float[][] verCache = new float[4][3];		// Cache for culling calculation...
+		boolean isInsight = false;
+		Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+		Vec3d camVec = new Vec3d(
+				-Math.sin(camera.getYaw()   / 180f * Math.PI),
+				-Math.tan(camera.getPitch() / 180f * Math.PI),
+				 Math.cos(camera.getYaw()   / 180f * Math.PI)
+		).normalize();
+		double fovCos = Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI);
+
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
-		Vec3d camVec = new Vec3d(
-				-Math.sin(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
-				-Math.tan(MinecraftClient.getInstance().gameRenderer.getCamera().getPitch() / 180f * Math.PI),
-				 Math.cos(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
-		).normalize();
 
 		for (CloudData data : cloudDataGroup) {
 			try {
@@ -284,29 +292,43 @@ public class Renderer {
 
 				for (int i = 0; i < vertCount; i++) {
 					int origin = i * 3;
-					var x = data.vertexList.getFloat(origin) * CONFIG.getCloudBlockSize();
-					var y = data.vertexList.getFloat(origin + 1) * CONFIG.getCloudBlockSize() / 2;
-					var z = data.vertexList.getFloat(origin + 2) * CONFIG.getCloudBlockSize();
+					verCache[i % 4][0] = data.vertexList.getFloat(origin) * CONFIG.getCloudBlockSize();
+					verCache[i % 4][1] = data.vertexList.getFloat(origin + 1) * CONFIG.getCloudBlockSize() / 2;
+					verCache[i % 4][2] = data.vertexList.getFloat(origin + 2) * CONFIG.getCloudBlockSize();
 
-					// Culling unsight faces
-					if (i % 4 == 0) {		// every 4 vertex making a face.
-						if (camVec.dotProduct(new Vec3d(x, y + cloudHeight - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y, z).normalize())
-								<= Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI)) {
-							i += 3;
-							cullStateCount += 1;
-							continue;
+					// Position Culling
+					if (camVec.dotProduct(new Vec3d(		// circle culling
+							verCache[i % 4][0] + 0.01f,
+							verCache[i % 4][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - camera.getPos().y,
+							verCache[i % 4][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
+									).normalize()) > fovCos)
+						isInsight = true;
+
+					if (i % 4 == 3) {		// every 4 vertex making a face. catch it at tail.
+						if (isInsight) {
+							int normIndex = data.normalList.getByte(i / 4);
+							var nx = normals[normIndex][0];
+							var ny = normals[normIndex][1];
+							var nz = normals[normIndex][2];
+	
+							// Normal Culling
+							if (new Vec3d(nx, ny, nz).dotProduct(new Vec3d(
+									verCache[0][0] + 0.01f,
+									verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - camera.getPos().y,
+									verCache[0][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
+											).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
+								for (int j = 0; j < 4; j++) {
+									builder.vertex(verCache[j][0], verCache[j][1], verCache[j][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+								}
+								cullStateShown += 1;
+							} else {
+								cullStateSkipped += 1;
+							}
+							isInsight = false;
 						} else {
-							cullStateShown += 1;
+							cullStateSkipped += 1;
 						}
 					}
-
-					int normIndex = data.normalList.getByte(i / 4);
-					var norm = normals[normIndex];
-					var nx = norm[0];
-					var ny = norm[1];
-					var nz = norm[2];
-
-					builder.vertex(x, y, z).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
 				}
 			} catch (Exception e) {
 				SFCReMain.exceptionCatcher(e);
@@ -330,6 +352,7 @@ public class Renderer {
 		try {
 			return builder.end();
 		} catch (Exception e) {
+			SFCReMain.exceptionCatcher(e);
 			return null;
 		}
 	}

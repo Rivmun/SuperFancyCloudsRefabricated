@@ -15,14 +15,14 @@ import com.rimo.sfcr.SFCReMain;
 public abstract class DebugHudMixin {
 	@Inject(method = "getLeftText", at = @At("RETURN"))
 	public List<String> getLeftText(CallbackInfoReturnable<List<String>> callback) {
-    	List<String> list = callback.getReturnValue();
+		List<String> list = callback.getReturnValue();
 
-    	// Add Debug Strings
-        if (SFCReMain.config.isEnableMod())
-        	list.add("[SFCR] Mesh Built: " + SFCReClient.RENDERER.cullStateShown + " / " + (SFCReClient.RENDERER.cullStateSkipped + SFCReClient.RENDERER.cullStateShown) + " faces, " + SFCReClient.RENDERER.cullStateSkipped + " Skipped.");
-        SFCReClient.RENDERER.cullStateSkipped = 0;		// reset counter
-        SFCReClient.RENDERER.cullStateShown = 0;
+		// Add Debug Strings
+		if (SFCReMain.config.isEnableMod())
+			list.add("[SFCR] Mesh Built: " + SFCReClient.RENDERER.cullStateShown + " / " + (SFCReClient.RENDERER.cullStateSkipped + SFCReClient.RENDERER.cullStateShown) + " faces, " + SFCReClient.RENDERER.cullStateSkipped + " Skipped.");
+		SFCReClient.RENDERER.cullStateSkipped = 0;		// reset counter
+		SFCReClient.RENDERER.cullStateShown = 0;
 
-        return list;
+		return list;
 	}
 }

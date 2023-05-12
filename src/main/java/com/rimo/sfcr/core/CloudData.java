@@ -129,21 +129,17 @@ public class CloudData implements CloudDataImplement {
 
 					// calculating density...
 					if (CONFIG.isEnableWeatherDensity() && CONFIG.isBiomeDensityByChunk()) {
-						if (!world.getChunkManager().isChunkLoaded((int) px / 16, (int) pz / 16)) {
-							if (CONFIG.isBiomeDensityUseLoadedChunk()) {
-								var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();
-								var px2 = px;
-								var pz2 = pz;
-								while (!world.getChunkManager().isChunkLoaded((int) px2 / 16, (int) pz2 / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
-									px2 -= vec.x * CONFIG.getCloudBlockSize();
-									pz2 -= vec.y * CONFIG.getCloudBlockSize();
-								}
-								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)))
-										? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall())
-										: getCloudDensityThreshold(densityByWeather, densityByBiome);
-							} else {
-								f = getCloudDensityThreshold(densityByWeather, densityByBiome);
+						if (CONFIG.isBiomeDensityUseLoadedChunk()) {
+							var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();		// stepping pos near towards to player
+							var px2 = px;
+							var pz2 = pz;
+							while (!world.getChunkManager().isChunkLoaded((int) px2 / 16, (int) pz2 / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
+								px2 -= vec.x * CONFIG.getCloudBlockSize();
+								pz2 -= vec.y * CONFIG.getCloudBlockSize();
 							}
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)))
+									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall())
+									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						} else {
 							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px, 80, pz)))
 									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall())

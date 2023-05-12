@@ -9,7 +9,8 @@
   "client": [
     "WorldRendererMixin",
     "GameRendererMixin",
-    "GameOptionsMixin"
+    "GameOptionsMixin",
+    "DebugHudMixin"
   ],
   "server": [],
   "injectors": {

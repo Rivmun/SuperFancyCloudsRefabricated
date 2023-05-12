@@ -11,7 +11,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.Shader;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
@@ -56,7 +55,8 @@ public class Renderer {
 	public double xScroll;
 	public double zScroll;
 
-	public BufferBuilder.BuiltBuffer cb;
+	public int cullStateSkipped = 0;
+	public int cullStateShown = 0;
 
 	public void init() {
 		CloudData.initSampler(SFCReMain.RUNTIME.seed);
@@ -115,7 +115,6 @@ public class Renderer {
 			isBiomeChange = false;
 		}
 
-
 		//Refresh Processing...
 		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
 			moveTimer = timeOffset;
@@ -165,12 +164,7 @@ public class Renderer {
 			RenderSystem.disableCull();
 			RenderSystem.enableBlend();
 			RenderSystem.enableDepthTest();
-			RenderSystem.blendFuncSeparate(
-					GlStateManager.SrcFactor.SRC_ALPHA,
-					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA,
-					GlStateManager.SrcFactor.ONE,
-					GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA
-			);
+			RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
@@ -178,7 +172,7 @@ public class Renderer {
 			synchronized (this) {
 
 				if (!MinecraftClient.getInstance().isInSingleplayer() || !MinecraftClient.getInstance().isPaused())
-					SFCReMain.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+					SFCReMain.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;
 
 				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && CONFIG.getBiomeDensityMultiplier() != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
@@ -207,18 +201,18 @@ public class Renderer {
 							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48, 2) * CONFIG.getCloudBlockSize() / 16 / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * (float) Math.pow(CONFIG.getCloudRenderDistance() / 48, 2) * CONFIG.getCloudBlockSize() / 16);
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 						}
 					} else {
 						BackgroundRenderer.clearFog();
 					}
 
-					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
-
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
 					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMain.RUNTIME.partialOffset);
+
+					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -228,8 +222,7 @@ public class Renderer {
 							RenderSystem.colorMask(true, true, true, true);
 						}
 
-						Shader shaderProgram = RenderSystem.getShader();
-						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, shaderProgram);
+						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
 					}
 
 					VertexBuffer.unbind();
@@ -256,12 +249,12 @@ public class Renderer {
 	public BufferBuilder builder = Tessellator.getInstance().getBuffer();
 
 	private final float[][] normals = {
-			{1, 0, 0},
-			{-1, 0, 0},
-			{0, 1, 0},
-			{0, -1, 0},
-			{0, 0, 1},
-			{0, 0, -1},
+			{1, 0, 0},		//r
+			{-1, 0, 0},		//l
+			{0, 1, 0},		//u
+			{0, -1, 0},		//d
+			{0, 0, 1},		//f
+			{0, 0, -1},		//b
 	};
 
 	private final int[] colors = {
@@ -274,29 +267,63 @@ public class Renderer {
 	};
 
 	// Building mesh
-	@SuppressWarnings("resource")
 	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
+
+		Vec3d camVec = new Vec3d(
+				-Math.sin(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
+				-Math.tan(MinecraftClient.getInstance().gameRenderer.getCamera().getPitch() / 180f * Math.PI),
+				 Math.cos(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
+		).normalize();
+		double fovCos = Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI * CONFIG.getCullRadianMultiplier());
+
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
-		
+
 		for (CloudData data : cloudDataGroup) {
 			try {
-				int vertCount = data.vertexList.size() / 3;
 				var colorModifier = getCloudColor(MinecraftClient.getInstance().world.getTimeOfDay(), data);
+				int normCount = data.normalList.size();
 
-				for (int i = 0; i < vertCount; i++) {
-					int origin = i * 3;
-					var x = data.vertexList.getFloat(origin) * CONFIG.getCloudBlockSize();
-					var y = data.vertexList.getFloat(origin + 1) * CONFIG.getCloudBlockSize() / 2;
-					var z = data.vertexList.getFloat(origin + 2) * CONFIG.getCloudBlockSize();
+				for (int i = 0; i < normCount; i++) {
+					int normIndex = data.normalList.getByte(i);		// exacting data...
+					var nx = normals[normIndex][0];
+					var ny = normals[normIndex][1];
+					var nz = normals[normIndex][2];
+					float[][] verCache = new float[4][3];
+					for (int j = 0; j < 4; j++) {
+						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3) * CONFIG.getCloudBlockSize();
+						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1) * CONFIG.getCloudBlockSize() / 2;
+						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2) * CONFIG.getCloudBlockSize();
+					}
 
-					int normIndex = data.normalList.getByte(i / 4);
-					var norm = normals[normIndex];
-					var nx = norm[0];
-					var ny = norm[1];
-					var nz = norm[2];
+					// Normal Culling
+					if (!CONFIG.isEnableNormalCull() || new Vec3d(nx, ny, nz).dotProduct(new Vec3d(
+							verCache[0][0] + 0.01f,
+							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y,
+							verCache[0][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
+									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
+						// Position Culling
+						var isInsight = false;
+						for (int j = 0; j < 4; j++) {
+							if (camVec.dotProduct(new Vec3d(
+									verCache[j][0] + 0.01f,
+									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y,
+									verCache[j][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
+											).normalize()) > fovCos)
+								isInsight = true;
+						}
 
-					builder.vertex(x, y, z).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+						if (isInsight) {
+							for (int j = 0; j < 4; j++) {
+								builder.vertex(verCache[j][0], verCache[j][1], verCache[j][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+							}
+							cullStateShown++;
+						} else {
+							cullStateSkipped++;
+						}
+					} else {
+						cullStateSkipped++;
+					}
 				}
 			} catch (Exception e) {
 				SFCReMain.exceptionCatcher(e);
@@ -320,6 +347,7 @@ public class Renderer {
 		try {
 			return builder.end();
 		} catch (Exception e) {
+			SFCReMain.exceptionCatcher(e);
 			return null;
 		}
 	}

@@ -63,18 +63,6 @@ public class SFCReMain implements ModInitializer {
 		}
 	}
 
-	//Push to Mixin.
-	public static int getFogDistance() {
-		if (config.isEnableFog()) {
-			return config.getFogMaxDistance();
-		}
-		return config.getMaxFogDistanceWhenNoFog();
-	}
-	//Push to Mixin.
-	public static boolean getModEnabled() {
-		return config.isEnableMod();
-	}
-
 	public static void sendConfig(ServerPlayerEntity player, MinecraftServer server) {
 		if (!config.isEnableMod())
 			return;

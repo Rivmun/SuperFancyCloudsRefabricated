@@ -20,9 +20,9 @@ public abstract class WorldRendererMixin {
 	@Shadow
 	private @Nullable ClientWorld world;
 
-	@Inject(method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FDDD)V", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
 	public void renderSFC(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-		if (SFCReMain.getModEnabled() && world.getDimension().hasSkyLight()) {
+		if (SFCReMain.config.isEnableMod() && world.getDimension().hasSkyLight()) {
 			SFCReClient.RENDERER.render(world, matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ);
 			ci.cancel();
 			return;

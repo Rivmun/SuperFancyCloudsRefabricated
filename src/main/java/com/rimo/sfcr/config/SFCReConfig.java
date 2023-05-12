@@ -6,7 +6,6 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.tag.TagKey;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
@@ -18,10 +17,17 @@ public class SFCReConfig implements ConfigData {
 			"#minecraft:is_river"
 	));
 
-	//----CLOUDS, GENERAL----
+	//----GENERAL----
 	private boolean enableMod = true;
 	private boolean enableServerConfig = false;
+	private boolean enableFog = true;
+	private boolean enableWeatherDensity = true;
 	private int secPerSync = 30;		// Banned in config screen on client.
+	private boolean enableNormalCull = true;
+	private float cullRadianMultiplier = 1.0f;
+	private boolean enableSmoothChange = false;
+	private boolean enableDebug = false;
+	//----CLOUDS----
 	private int cloudHeight = 192;
 	private int cloudBlockSize = 16;
 	private int cloudLayerThickness = 32;
@@ -30,17 +36,13 @@ public class SFCReConfig implements ConfigData {
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private int sampleSteps = 3;
 	private boolean enableTerrainDodge = true;
-	private boolean enableDebug = false;
 	//----FOG----
-	private boolean enableFog = true;
 	private boolean fogAutoDistance = true;
 	private int fogMinDistance = 2;
 	private int fogMaxDistance = 4;
-	//----DENSITY CHANGE----
+	//----DYNAMIC----
 	private float densityThreshold = 1.3f;
 	private float thresholdMultiplier = 1.5f;
-	private boolean enableWeatherDensity = true;
-	private boolean enableSmoothChange = false;
 	private int weatherPreDetectTime = 10;
 	private int cloudDensityPercent = 25;
 	private int rainDensityPercent = 60;
@@ -59,17 +61,13 @@ public class SFCReConfig implements ConfigData {
 	public int getCloudHeight() {return cloudHeight;}
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
-	public int getCloudRenderDistance() {
-		if (cloudRenderDistanceFitToView && MinecraftClient.getInstance().player != null) {
-			return MinecraftClient.getInstance().options.getViewDistance() * 12;
-		} else {
-			return cloudRenderDistance;
-		}
-	}
+	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public int getSampleSteps() {return sampleSteps;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
+	public boolean isEnableNormalCull() {return enableNormalCull;}
+	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableFog() {return enableFog;}
 	public boolean isFogAutoDistance() {return fogAutoDistance;}
@@ -102,6 +100,8 @@ public class SFCReConfig implements ConfigData {
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
+	public void setEnableNormalCull(boolean isEnable) {enableNormalCull = isEnable;}
+	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
 	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
@@ -129,12 +129,11 @@ public class SFCReConfig implements ConfigData {
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 
-	//When nofog, need this to extend frustum.
-	public int getMaxFogDistanceWhenNoFog() {
-		return (int) Math.pow(cloudRenderDistance / 3f / this.getCloudBlockSize(), 2);
+	//conversion
+	public int getAutoFogMaxDistance() {
+		return (int) (cloudRenderDistance / 48f * cloudRenderDistance / 48f * cloudBlockSize / 16f);
 	}
 
-	//exchanged speed enum.
 	public int getNumFromSpeedEnum(CloudRefreshSpeed value) {
 		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
 			return 5;

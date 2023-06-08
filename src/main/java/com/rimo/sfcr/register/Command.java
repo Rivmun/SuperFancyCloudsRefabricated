@@ -71,21 +71,21 @@ public class Command {
 					)
 					.then(literal("statu").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 						content.getSource().sendMessage(Text.of("- - - - - SFCR Mod Statu - - - - -"));
-                        content.getSource().sendMessage(Text.of("§eStatu:           §r" + SFCReMain.config.isEnableMod()));
-                        content.getSource().sendMessage(Text.of("§eCloud height:    §r" + SFCReMain.config.getCloudHeight()));
-                        content.getSource().sendMessage(Text.of("§eSample Step:     §r" + SFCReMain.config.getSampleSteps()));
-                        content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r" + SFCReMain.config.getWeatherPreDetectTime() / 20));
-                        content.getSource().sendMessage(Text.of("§eChanging Speed:  §r" + SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getDensityChangingSpeed())));
-                        content.getSource().sendMessage(Text.of("§eCommon Density:  §r" + SFCReMain.config.getCloudDensityPercent()));
-                        content.getSource().sendMessage(Text.of("§eRain Density:    §r" + SFCReMain.config.getRainDensityPercent()));
-                        content.getSource().sendMessage(Text.of("§eThunder Density: §r" + SFCReMain.config.getThunderDensityPercent()));
-                        content.getSource().sendMessage(Text.of("§eCloud Block Size:§r" + SFCReMain.config.getCloudBlockSize()));
-                        content.getSource().sendMessage(Text.of("§eSnow Area Dens.: §r" + SFCReMain.config.getSnowDensity()));
-                        content.getSource().sendMessage(Text.of("§eRain Area Dens.: §r" + SFCReMain.config.getRainDensity()));
-                        content.getSource().sendMessage(Text.of("§eOther Area Dens.:§r" + SFCReMain.config.getNoneDensity()));
-                        content.getSource().sendMessage(Text.of("§eUsing Chunk:     §r" + SFCReMain.config.isBiomeDensityByChunk()));
-                        content.getSource().sendMessage(Text.of("§eUsing Loaded Chk:§r" + SFCReMain.config.isBiomeDensityUseLoadedChunk()));
-                        content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
+						content.getSource().sendMessage(Text.of("§eStatu:           §r" + SFCReMain.config.isEnableMod()));
+						content.getSource().sendMessage(Text.of("§eCloud height:    §r" + SFCReMain.config.getCloudHeight()));
+						content.getSource().sendMessage(Text.of("§eSample Step:     §r" + SFCReMain.config.getSampleSteps()));
+						content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r" + SFCReMain.config.getWeatherPreDetectTime() / 20));
+						content.getSource().sendMessage(Text.of("§eChanging Speed:  §r" + SFCReMain.config.getNumFromSpeedEnum(SFCReMain.config.getDensityChangingSpeed())));
+						content.getSource().sendMessage(Text.of("§eCommon Density:  §r" + SFCReMain.config.getCloudDensityPercent()));
+						content.getSource().sendMessage(Text.of("§eRain Density:    §r" + SFCReMain.config.getRainDensityPercent()));
+						content.getSource().sendMessage(Text.of("§eThunder Density: §r" + SFCReMain.config.getThunderDensityPercent()));
+						content.getSource().sendMessage(Text.of("§eCloud Block Size:§r" + SFCReMain.config.getCloudBlockSize()));
+						content.getSource().sendMessage(Text.of("§eSnow Area Dens.: §r" + SFCReMain.config.getSnowDensity()));
+						content.getSource().sendMessage(Text.of("§eRain Area Dens.: §r" + SFCReMain.config.getRainDensity()));
+						content.getSource().sendMessage(Text.of("§eOther Area Dens.:§r" + SFCReMain.config.getNoneDensity()));
+						content.getSource().sendMessage(Text.of("§eUsing Chunk:     §r" + SFCReMain.config.isBiomeDensityByChunk()));
+						content.getSource().sendMessage(Text.of("§eUsing Loaded Chk:§r" + SFCReMain.config.isBiomeDensityUseLoadedChunk()));
+						content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
 						return 1;
 					}))
 					.then(literal("enable").requires(source -> source.hasPermissionLevel(2))

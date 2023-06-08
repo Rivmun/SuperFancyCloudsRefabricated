@@ -187,7 +187,7 @@ public class Renderer {
 				if (cb != null) {
 					if (cloudBuffer != null)
 						cloudBuffer.close();
-					cloudBuffer = new VertexBuffer();
+					cloudBuffer = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
 					cloudBuffer.bind();
 					cloudBuffer.upload(cb);
 					VertexBuffer.unbind();
@@ -304,21 +304,21 @@ public class Renderer {
 							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y,
 							verCache[0][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
 									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
-						// Position Culling
-						var isInsight = false;
-						for (int j = 0; j < 4; j++) {
+						// Viewport Culling
+						int j = -1;
+						while (++j < 4) {
 							if (camVec.dotProduct(new Vec3d(
 									verCache[j][0] + 0.01f,
 									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y,
 									verCache[j][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
-											).normalize()) > fovCos)
-								isInsight = true;
+											).normalize()) > fovCos) {
+								for (int k = 0; k < 4; k++)
+									builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+								break;
+							}
 						}
 
-						if (isInsight) {
-							for (int j = 0; j < 4; j++) {
-								builder.vertex(verCache[j][0], verCache[j][1], verCache[j][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
-							}
+						if (j < 4) {
 							cullStateShown++;
 						} else {
 							cullStateSkipped++;

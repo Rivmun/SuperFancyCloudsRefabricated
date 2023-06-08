@@ -2,11 +2,11 @@ package com.rimo.sfcr.config;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;

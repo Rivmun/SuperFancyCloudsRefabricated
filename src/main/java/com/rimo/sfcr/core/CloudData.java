@@ -1,5 +1,8 @@
 package com.rimo.sfcr.core;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 import com.rimo.sfcr.SFCReClient;
 import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.config.SFCReConfig;
@@ -7,10 +10,12 @@ import com.rimo.sfcr.util.CloudDataType;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.noise.OctavePerlinNoiseSampler;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.world.gen.random.SimpleRandom;
+import net.minecraft.world.gen.ChunkRandom;
 
 public class CloudData implements CloudDataImplement {
 
@@ -50,7 +55,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	public static void initSampler(long seed) {
-		cloudNoise = new SimplexNoiseSampler(new SimpleRandom(seed));
+		cloudNoise = new SimplexNoiseSampler(new Random(seed));
 	}
 
 	public void tick() {
@@ -81,20 +86,20 @@ public class CloudData implements CloudDataImplement {
 	private double getCloudSample(double startX, double startZ, double timeOffset, double cx, double cy, double cz) {
 		double cloudVal = cloudNoise.sample(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
-				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
+//				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				(startZ + cz - RUNTIME.fullOffset) * baseFreq
 		);
 		if (CONFIG.getSampleSteps() > 1) {
 			double cloudVal1 = cloudNoise.sample(
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
+//					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					(startZ + cz - RUNTIME.fullOffset) * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (CONFIG.getSampleSteps() > 2) {
 				cloudVal2 = cloudNoise.sample(
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-						0,
+//						0,
 						(startZ + cz - RUNTIME.fullOffset) * l2Freq
 				);
 				//Smooth floor function...
@@ -118,31 +123,32 @@ public class CloudData implements CloudDataImplement {
 
 			double timeOffset = Math.floor(RUNTIME.time / 6) * 6;
 
-			var world = MinecraftClient.getInstance().world;
-			var f = 0.5f;		// origin
+			ClientWorld world = MinecraftClient.getInstance().world;
+			float f = 0.5f;		// origin
 
 			for (int cx = 0; cx < width; cx++) {
 				for (int cz = 0; cz < width; cz++) {
 
-					var px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
-					var pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
+					double px = (startX - width / 2 + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
+					double pz = (startZ - width / 2 + cz + 0.5f) * CONFIG.getCloudBlockSize();
 
 					// calculating density...
 					if (CONFIG.isEnableWeatherDensity() && CONFIG.isBiomeDensityByChunk()) {
 						if (CONFIG.isBiomeDensityUseLoadedChunk()) {
-							var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();		// stepping pos near towards to player
-							var px2 = px;
-							var pz2 = pz;
+							Vec3f vec = new Vec3f(cx - width / 2, cz - width / 2, 0);		// stepping pos near towards to player
+							vec.normalize();
+							double px2 = px;
+							double pz2 = pz;
 							while (!world.getChunkManager().isChunkLoaded((int) px2 / 16, (int) pz2 / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
-								px2 -= vec.x * CONFIG.getCloudBlockSize();
-								pz2 -= vec.y * CONFIG.getCloudBlockSize();
+								px2 -= vec.getX() * CONFIG.getCloudBlockSize();
+								pz2 -= vec.getY() * CONFIG.getCloudBlockSize();
 							}
-							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)))
-									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).value().getDownfall())
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px2, 80, pz2)).getCategory())
+									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px2, 80, pz2)).getDownfall())
 									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						} else {
-							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px, 80, pz)))
-									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).value().getDownfall())
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(px, 80, pz)).getCategory())
+									? getCloudDensityThreshold(densityByWeather, world.getBiome(new BlockPos(px, 80, pz)).getDownfall())
 									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						}
 					} else {

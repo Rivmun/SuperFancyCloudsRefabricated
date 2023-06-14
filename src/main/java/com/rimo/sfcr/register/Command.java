@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.SFCReMain;
 import com.rimo.sfcr.core.RuntimeData;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
+import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
@@ -35,14 +36,14 @@ public class Command {
 					})
 					.then(literal("sync")
 							.executes(content -> {
-								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getMinecraftServer());
 								SFCReMain.LOGGER.info("[SFCRe] cb: Send sync data to " + content.getSource().getDisplayName().getString());
 								content.getSource().sendFeedback(Text.of("Manual requesting sync..."), false);
 								return 1;
 							})
 							.then(literal("full").executes(content -> {
-								SFCReMain.sendConfig(content.getSource().getPlayer(), content.getSource().getServer());
-								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getServer());
+								SFCReMain.sendConfig(content.getSource().getPlayer(), content.getSource().getMinecraftServer());
+								RuntimeData.sendRuntimeData(content.getSource().getPlayer(), content.getSource().getMinecraftServer());
 								SFCReMain.LOGGER.info("[SFCRe] cb: Send full sync data to " + content.getSource().getDisplayName().getString());
 								content.getSource().sendFeedback(Text.of("Manual requesting sync..."), false);
 								return 1;
@@ -59,9 +60,9 @@ public class Command {
 									})
 							)
 							.then(literal("toAllPlayers").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
-								for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
-									SFCReMain.sendConfig(player, content.getSource().getServer());
-									RuntimeData.sendRuntimeData(player, content.getSource().getServer());
+								for (ServerPlayerEntity player : content.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
+									SFCReMain.sendConfig(player, content.getSource().getMinecraftServer());
+									RuntimeData.sendRuntimeData(player, content.getSource().getMinecraftServer());
 									player.sendMessage(Text.of("[SFCRe] Force sync request came from server..."), false);
 								}
 								content.getSource().sendFeedback(Text.of("Force sync complete!"), false);
@@ -249,7 +250,7 @@ public class Command {
 							}))
 							.then(literal("add")
 									.then(argument("id", StringArgumentType.string()).executes(content -> {
-										var list = SFCReMain.config.getBiomeFilterList();
+										List<String> list = SFCReMain.config.getBiomeFilterList();
 										list.add(content.getArgument("id", String.class));
 										SFCReMain.config.setBiomeFilterList(list);
 										content.getSource().sendFeedback(Text.of("Biome added!"), false);
@@ -258,7 +259,7 @@ public class Command {
 							)
 							.then(literal("remove")
 									.then(argument("id", StringArgumentType.string()).executes(content -> {
-										var list = SFCReMain.config.getBiomeFilterList();
+										List<String> list = SFCReMain.config.getBiomeFilterList();
 										list.remove(content.getArgument("id", String.class));
 										SFCReMain.config.setBiomeFilterList(list);
 										content.getSource().sendFeedback(Text.of("Biome removed!"), false);

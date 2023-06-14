@@ -6,16 +6,13 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
-import net.minecraft.tag.TagKey;
-import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 
 @Config(name = "sfcr")
 public class SFCReConfig implements ConfigData {
-
-	public static List<String> DEF_BIOME_FILTER_LIST = new ArrayList<String>(List.of(
-			"#minecraft:is_river"
-	));
+	SFCReConfig() {
+		biomeFilterList.add("RIVER");
+	}
 
 	//----GENERAL----
 	private boolean enableMod = true;
@@ -52,7 +49,7 @@ public class SFCReConfig implements ConfigData {
 	private int biomeDensityMultiplier = 50;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
-	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
+	private List<String> biomeFilterList = new ArrayList<String>();
 
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
@@ -150,18 +147,7 @@ public class SFCReConfig implements ConfigData {
 		}
 	}
 
-	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
-		var isHas = false;
-		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {
-			isHas = true;
-		} else {
-			for (TagKey<Biome> tag : biome.streamTags().toList()) {
-				if (this.getBiomeFilterList().contains("#" + tag.id().toString())) {
-					isHas = true;
-					break;
-				}
-			}
-		}
-		return isHas;
+	public boolean isFilterListHasBiome(Biome.Category biomeCategory) {
+		return this.getBiomeFilterList().contains(biomeCategory.toString());
 	}
 }

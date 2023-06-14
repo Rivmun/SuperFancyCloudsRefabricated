@@ -1,5 +1,7 @@
 package com.rimo.sfcr.config;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
@@ -34,7 +36,7 @@ public class SFCReConfigScreen {
 	public Screen buildScreen() {
 		buildGeneralCategory();
 		buildCloudsCategory();
-		buildFogCategory();
+		//buildFogCategory();
 		buildDensityCategory();
 		builder.setTransparentBackground(true);
 
@@ -136,7 +138,14 @@ public class SFCReConfigScreen {
 						,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return Integer.parseInt(value);}))
 				.setDefaultValue(16)
 				.setSuggestionMode(false)
-				.setSelections(List.of(2, 4, 8, 16))
+				.setSelections(() -> {
+					List<Integer> list = new ArrayList<Integer>();
+					list.add(2);
+					list.add(4);
+					list.add(8);
+					list.add(16);
+					return list.iterator();
+				})
 				.setTooltip(new TranslatableText("text.sfcr.option.cloudBlockSize.@Tooltip"))
 				.setSaveConsumer(config::setCloudBlockSize)
 				.build());
@@ -367,7 +376,6 @@ public class SFCReConfigScreen {
 		density.addEntry(entryBuilder
 				.startStrList(new TranslatableText("text.sfcr.option.biomeFilter")
 						,config.getBiomeFilterList())
-				.setDefaultValue(SFCReConfig.DEF_BIOME_FILTER_LIST)
 				.setTooltip(new TranslatableText("text.sfcr.option.biomeFilter.@Tooltip"))
 				.setSaveConsumer(config::setBiomeFilterList)
 				.build());

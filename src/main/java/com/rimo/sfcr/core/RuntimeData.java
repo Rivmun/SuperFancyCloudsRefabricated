@@ -22,6 +22,7 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
+import net.minecraft.world.level.ServerWorldProperties;
 
 public class RuntimeData {
 
@@ -52,8 +53,8 @@ public class RuntimeData {
 		time += 1 / 20f;
 
 		// Weather Pre-detect
-		var worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
-		var currentWeather = nextWeather;
+		ServerWorldProperties worldProperties = ((ServerWorldAccessor) server.getWorld(worldKey)).getWorldProperties();
+		WeatherType currentWeather = nextWeather;
 		if (worldProperties.isRaining()) {
 			if (worldProperties.isThundering()) {
 				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? WeatherType.RAIN : WeatherType.THUNDER;

@@ -3,12 +3,12 @@ package com.rimo.sfcr;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.rimo.sfcr.config.SFCReConfig;
 import com.rimo.sfcr.core.RuntimeData;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
 
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.Log4J2LoggerFactory;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
@@ -31,7 +31,7 @@ import net.minecraft.util.Identifier;
 
 public class SFCReMain implements ModInitializer {
 
-	public static final Logger LOGGER = LoggerFactory.getLogger("sfcr");
+	public static final InternalLogger LOGGER = Log4J2LoggerFactory.getInstance("sfcr");
 	public static final ConfigHolder<SFCReConfig> CONFIGHOLDER = AutoConfig.register(SFCReConfig.class, GsonConfigSerializer::new);
 	public static final RuntimeData RUNTIME = new RuntimeData();
 	public static SFCReConfig config = CONFIGHOLDER.getConfig();
@@ -104,7 +104,7 @@ public class SFCReMain implements ModInitializer {
 			config.setCloudBlockSize(packet.readInt());
 			config.setBiomeDensityByChunk(packet.readBoolean());
 			config.setBiomeDensityUseLoadedChunk(packet.readBoolean());
-			var size = packet.readInt();
+			int size = packet.readInt();
 			while (size > 0) {
 				list.add(packet.readString());
 				size--;
@@ -127,7 +127,7 @@ public class SFCReMain implements ModInitializer {
 	}
 
 	public static void receiveSyncRequest(MinecraftServer server, ServerPlayerEntity player, ServerPlayNetworkHandler handler, PacketByteBuf packet, PacketSender sender) {
-		var isFull = packet.readBoolean();
+		boolean isFull = packet.readBoolean();
 		if (isFull)
 			SFCReMain.sendConfig(player, server);
 		RuntimeData.sendRuntimeData(player, server);

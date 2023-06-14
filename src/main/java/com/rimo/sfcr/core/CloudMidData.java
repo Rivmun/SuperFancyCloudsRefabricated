@@ -23,11 +23,11 @@ public class CloudMidData extends CloudData {
 	public void collectCloudData(CloudData prevData, CloudData nextData) {
 
 		// Get same block
-		var startWidth = Math.abs(prevData.width - nextData.width) / 2;
-		var startLength = prevData.startZ - nextData.startZ + Math.abs(prevData.width - nextData.width) / 2;
-		var minWidth = Math.min(prevData.width, nextData.width);
-		var minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
-		var minHeight = Math.min(prevData.height, nextData.height);
+		int startWidth = Math.abs(prevData.width - nextData.width) / 2;
+		int startLength = prevData.startZ - nextData.startZ + Math.abs(prevData.width - nextData.width) / 2;
+		int minWidth = Math.min(prevData.width, nextData.width);
+		int minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
+		int minHeight = Math.min(prevData.height, nextData.height);
 
 		for (int cx = startWidth; cx < minWidth; cx++) {
 			for (int cy = 0; cy < minHeight; cy++) {

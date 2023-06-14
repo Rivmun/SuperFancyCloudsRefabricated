@@ -23,11 +23,11 @@ public class CloudFadeData extends CloudData {
 	@Override
 	public void collectCloudData(CloudData prevData, CloudData nextData) {
 
-		var startWidth = prevData.startX - nextData.startX;
-		var startLength = prevData.startZ - nextData.startZ;
-		var minWidth = Math.min(prevData.width, nextData.width) - Math.abs(startWidth) * 2;
-		var minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
-		var minHeight = Math.min(prevData.height, nextData.height);
+		int startWidth = prevData.startX - nextData.startX;
+		int startLength = prevData.startZ - nextData.startZ;
+		int minWidth = Math.min(prevData.width, nextData.width) - Math.abs(startWidth) * 2;
+		int minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
+		int minHeight = Math.min(prevData.height, nextData.height);
 
 		// Remove same block
 		for (int cx = startWidth; cx < minWidth; cx++) {

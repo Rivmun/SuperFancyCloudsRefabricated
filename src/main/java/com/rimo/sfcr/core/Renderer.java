@@ -8,18 +8,14 @@ import com.rimo.sfcr.util.CloudDataType;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 
 public class Renderer {
@@ -82,10 +78,10 @@ public class Renderer {
 		if (isProcessingData)
 			return;
 
-		var player = MinecraftClient.getInstance().player;
-		var world = MinecraftClient.getInstance().world;
-		var xScroll = (int) (player.getX() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
-		var zScroll = (int) (player.getZ() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
+		ClientPlayerEntity player = MinecraftClient.getInstance().player;
+		ClientWorld world = MinecraftClient.getInstance().world;
+		int xScroll = (int) (player.getX() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
+		int zScroll = (int) (player.getZ() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
@@ -106,8 +102,8 @@ public class Renderer {
 
 			//Detect Biome Change
 			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
-				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = world.getBiome(player.getBlockPos()).value().getDownfall();
+				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos()).getCategory()))
+					targetDownFall = world.getBiome(player.getBlockPos()).getDownfall();
 				isBiomeChange = cloudDensityByBiome != targetDownFall; 
 			}
 		} else {
@@ -155,19 +151,21 @@ public class Renderer {
 		}
 	}
 
-	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
+	public void render(MatrixStack matrices, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 
-		cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+		cloudHeight = CONFIG.getCloudHeight() < 0 ? MinecraftClient.getInstance().world.getSkyProperties().getCloudsHeight() : CONFIG.getCloudHeight();
 
 		if (!Float.isNaN(cloudHeight)) {
 			//Setup render system
 			RenderSystem.disableCull();
 			RenderSystem.enableBlend();
+//			RenderSystem.enableAlphaTest();
 			RenderSystem.enableDepthTest();
+//			RenderSystem.defaultAlphaFunc();
 			RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.depthMask(true);
 
-			Vec3d cloudColor = world.getCloudsColor(tickDelta);
+			Vec3d cloudColor = MinecraftClient.getInstance().world.getCloudsColor(tickDelta);
 
 			synchronized (this) {
 
@@ -180,40 +178,40 @@ public class Renderer {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				}
 
-				var cb = rebuildCloudMesh();
+				BufferBuilder cb = rebuildCloudMesh();
 
 				if (cb != null) {
 					if (cloudBuffer != null)
 						cloudBuffer.close();
-					cloudBuffer = new VertexBuffer();
-					cloudBuffer.bind();
+					cloudBuffer = new VertexBuffer(VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
 					cloudBuffer.upload(cb);
-					VertexBuffer.unbind();
 				}
 
 				//Setup shader
 				if (cloudBuffer != null) {
-					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
-					RenderSystem.setShaderTexture(0, whiteTexture);
+					MinecraftClient.getInstance().getTextureManager().bindTexture(whiteTexture);
 					if (CONFIG.isEnableFog()) {
-						BackgroundRenderer.setFogBlack();
-						if (!CONFIG.isFogAutoDistance()) {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
-						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
-						}
+//						BackgroundRenderer.setFogBlack();
+//						if (!CONFIG.isFogAutoDistance()) {
+//							RenderSystem.fogStart(RenderSystem.getFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
+//							RenderSystem.fogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
+//						} else {
+//							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
+//							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
+//						}
+						RenderSystem.enableFog();
 					} else {
-						BackgroundRenderer.clearFog();
+//						BackgroundRenderer.clearFog();
+						RenderSystem.disableFog();
 					}
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
 					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMain.RUNTIME.partialOffset);
 
-					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
+					RenderSystem.color4f((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 					cloudBuffer.bind();
+					VertexFormats.POSITION_TEXTURE_COLOR_NORMAL.startDrawing(0);;
 
 					for (int s = 0; s < 2; ++s) {
 						if (s == 0) {
@@ -222,16 +220,19 @@ public class Renderer {
 							RenderSystem.colorMask(true, true, true, true);
 						}
 
-						cloudBuffer.setShader(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
+						cloudBuffer.draw(matrices.peek().getModel(),7);
 					}
 
 					VertexBuffer.unbind();
+					VertexFormats.POSITION_TEXTURE_COLOR_NORMAL.endDrawing();
 					matrices.pop();
 
 					//Restore render system
-					RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+					RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+//					RenderSystem.disableAlphaTest();
 					RenderSystem.enableCull();
 					RenderSystem.disableBlend();
+					RenderSystem.disableFog();
 				}
 			}
 		}
@@ -257,13 +258,13 @@ public class Renderer {
 			{0, 0, -1},		//b
 	};
 
-	private final int[] colors = {
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.95f), (int) (255 * 0.9f), (int) (255 * 0.9f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.75f), (int) (255 * 0.75f), (int) (255 * 0.75f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 255, 255, 255),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.6f), (int) (255 * 0.6f), (int) (255 * 0.6f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.92f), (int) (255 * 0.85f), (int) (255 * 0.85f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f)),
+	private final int[][] colors = {
+			{(int) (255 * 0.8f), (int) (255 * 0.95f), (int) (255 * 0.9f), (int) (255 * 0.9f)},
+			{(int) (255 * 0.8f), (int) (255 * 0.75f), (int) (255 * 0.75f), (int) (255 * 0.75f)},
+			{(int) (255 * 0.8f), 255, 255, 255},
+			{(int) (255 * 0.8f), (int) (255 * 0.6f), (int) (255 * 0.6f), (int) (255 * 0.6f)},
+			{(int) (255 * 0.8f), (int) (255 * 0.92f), (int) (255 * 0.85f), (int) (255 * 0.85f)},
+			{(int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f)},
 	};
 
 	// Building mesh
@@ -277,18 +278,18 @@ public class Renderer {
 		double fovCos = Math.cos(MinecraftClient.getInstance().options.fov / 180f * Math.PI * CONFIG.getCullRadianMultiplier());
 
 		builder.clear();
-		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
+		builder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
 
 		for (CloudData data : cloudDataGroup) {
 			try {
-				var colorModifier = getCloudColor(MinecraftClient.getInstance().world.getTimeOfDay(), data);
+				float[] colorModifier = getCloudColor(MinecraftClient.getInstance().world.getTimeOfDay(), data);
 				int normCount = data.normalList.size();
 
 				for (int i = 0; i < normCount; i++) {
 					int normIndex = data.normalList.getByte(i);		// exacting data...
-					var nx = normals[normIndex][0];
-					var ny = normals[normIndex][1];
-					var nz = normals[normIndex][2];
+					float nx = normals[normIndex][0];
+					float ny = normals[normIndex][1];
+					float nz = normals[normIndex][2];
 					float[][] verCache = new float[4][3];
 					for (int j = 0; j < 4; j++) {
 						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3) * CONFIG.getCloudBlockSize();
@@ -303,20 +304,25 @@ public class Renderer {
 							verCache[0][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
 									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
 						// Position Culling
-						var isInsight = false;
-						for (int j = 0; j < 4; j++) {
+						int j = -1;
+						while (++j < 4) {
 							if (camVec.dotProduct(new Vec3d(
 									verCache[j][0] + 0.01f,
 									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - MinecraftClient.getInstance().gameRenderer.getCamera().getPos().y,
 									verCache[j][2] + SFCReMain.RUNTIME.partialOffset + 0.7f
-											).normalize()) > fovCos)
-								isInsight = true;
+											).normalize()) > fovCos) {
+								for (int k = 0; k < 4; k++)
+									builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(
+											colors[normIndex][1] * colorModifier[1],
+											colors[normIndex][2] * colorModifier[2],
+											colors[normIndex][3] * colorModifier[3],
+											colors[normIndex][0] * colorModifier[0]
+									).normal(nx, ny, nz).next();
+								break;
+							}
 						}
 
-						if (isInsight) {
-							for (int j = 0; j < 4; j++) {
-								builder.vertex(verCache[j][0], verCache[j][1], verCache[j][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
-							}
+						if (j < 4) {
 							cullStateShown++;
 						} else {
 							cullStateSkipped++;
@@ -390,31 +396,31 @@ public class Renderer {
 		isProcessingData = false;
 	}
 	
-	private int getCloudColor(long worldTime, CloudData data) {
-		int a = 255, r = 255, g = 255, b = 255;
+	private float[] getCloudColor(long worldTime, CloudData data) {
+		float[] m = {1, 1, 1, 1};
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
 		switch (data.getDataType()) {
-			case NORMAL, TRANS_MID_BODY: break;
-			case TRANS_IN: a = (int) (255 - 255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
-			case TRANS_OUT: a = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_IN: m[0] = 1 - data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f; break;
+			case TRANS_OUT: m[0] = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			default: break;
 		}
 
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
 			t = t > 22500 ? t - 22000 : t + 1500; 
-			r = (int) (255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			m[1] = (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			m[2] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1); 
+			m[3] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
 			t -= 11500;
-			r = (int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1)); 
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			m[1] = (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			m[2] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1); 
+			m[3] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		}
 
-		return ColorHelper.Argb.getArgb(a, r, g, b);
+		return m;
 	}
 
 	private float nextDensityStep(float target, float current, float speed) {

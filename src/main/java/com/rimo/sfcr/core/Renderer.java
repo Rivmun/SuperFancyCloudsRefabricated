@@ -159,9 +159,9 @@ public class Renderer {
 			//Setup render system
 			RenderSystem.disableCull();
 			RenderSystem.enableBlend();
-//			RenderSystem.enableAlphaTest();
+			RenderSystem.enableAlphaTest();
 			RenderSystem.enableDepthTest();
-//			RenderSystem.defaultAlphaFunc();
+			RenderSystem.defaultAlphaFunc();
 			RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
 			RenderSystem.depthMask(true);
 
@@ -178,7 +178,7 @@ public class Renderer {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				}
 
-				BufferBuilder cb = rebuildCloudMesh();
+				BufferBuilder cb = rebuildCloudMesh(cloudColor);
 
 				if (cb != null) {
 					if (cloudBuffer != null)
@@ -191,17 +191,15 @@ public class Renderer {
 				if (cloudBuffer != null) {
 					MinecraftClient.getInstance().getTextureManager().bindTexture(whiteTexture);
 					if (CONFIG.isEnableFog()) {
-//						BackgroundRenderer.setFogBlack();
-//						if (!CONFIG.isFogAutoDistance()) {
-//							RenderSystem.fogStart(RenderSystem.getFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
-//							RenderSystem.fogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
-//						} else {
-//							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
-//							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
-//						}
 						RenderSystem.enableFog();
+						if (!CONFIG.isFogAutoDistance()) {
+							RenderSystem.fogStart(MinecraftClient.getInstance().gameRenderer.getViewDistance() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
+							RenderSystem.fogEnd(MinecraftClient.getInstance().gameRenderer.getViewDistance() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
+						} else {
+							RenderSystem.fogStart(MinecraftClient.getInstance().gameRenderer.getViewDistance() * CONFIG.getAutoFogMaxDistance() / 2);
+							RenderSystem.fogEnd(MinecraftClient.getInstance().gameRenderer.getViewDistance() * CONFIG.getAutoFogMaxDistance());
+						}
 					} else {
-//						BackgroundRenderer.clearFog();
 						RenderSystem.disableFog();
 					}
 
@@ -209,7 +207,6 @@ public class Renderer {
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
 					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMain.RUNTIME.partialOffset);
 
-					RenderSystem.color4f((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 					cloudBuffer.bind();
 					VertexFormats.POSITION_TEXTURE_COLOR_NORMAL.startDrawing(0);;
 
@@ -229,7 +226,7 @@ public class Renderer {
 
 					//Restore render system
 					RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-//					RenderSystem.disableAlphaTest();
+					RenderSystem.disableAlphaTest();
 					RenderSystem.enableCull();
 					RenderSystem.disableBlend();
 					RenderSystem.disableFog();
@@ -258,17 +255,17 @@ public class Renderer {
 			{0, 0, -1},		//b
 	};
 
-	private final int[][] colors = {
-			{(int) (255 * 0.8f), (int) (255 * 0.95f), (int) (255 * 0.9f), (int) (255 * 0.9f)},
-			{(int) (255 * 0.8f), (int) (255 * 0.75f), (int) (255 * 0.75f), (int) (255 * 0.75f)},
-			{(int) (255 * 0.8f), 255, 255, 255},
-			{(int) (255 * 0.8f), (int) (255 * 0.6f), (int) (255 * 0.6f), (int) (255 * 0.6f)},
-			{(int) (255 * 0.8f), (int) (255 * 0.92f), (int) (255 * 0.85f), (int) (255 * 0.85f)},
-			{(int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f)},
+	private final float[][] colors = {
+			{0.8f, 0.95f, 0.9f, 0.9f},
+			{0.8f, 0.75f, 0.75f, 0.75f},
+			{0.8f, 1, 1, 1},
+			{0.8f, 0.6f, 0.6f, 0.6f},
+			{0.8f, 0.92f, 0.85f, 0.85f},
+			{0.8f, 0.8f, 0.8f, 0.8f},
 	};
 
 	// Building mesh
-	private BufferBuilder rebuildCloudMesh() {
+	private BufferBuilder rebuildCloudMesh(Vec3d cloudColor) {
 
 		Vec3d camVec = new Vec3d(
 				-Math.sin(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
@@ -313,9 +310,9 @@ public class Renderer {
 											).normalize()) > fovCos) {
 								for (int k = 0; k < 4; k++)
 									builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(
-											colors[normIndex][1] * colorModifier[1],
-											colors[normIndex][2] * colorModifier[2],
-											colors[normIndex][3] * colorModifier[3],
+											(float) cloudColor.x * colors[normIndex][1] * colorModifier[1],
+											(float) cloudColor.y * colors[normIndex][2] * colorModifier[2],
+											(float) cloudColor.z * colors[normIndex][3] * colorModifier[3],
 											colors[normIndex][0] * colorModifier[0]
 									).normal(nx, ny, nz).next();
 								break;

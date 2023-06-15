@@ -1,6 +1,5 @@
 package com.rimo.sfcr.core;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 import com.rimo.sfcr.SFCReClient;
@@ -13,13 +12,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3f;
-import net.minecraft.util.math.noise.OctavePerlinNoiseSampler;
-import net.minecraft.util.math.noise.SimplexNoiseSampler;
+import net.minecraft.util.math.noise.PerlinNoiseSampler;
 import net.minecraft.world.gen.ChunkRandom;
 
 public class CloudData implements CloudDataImplement {
 
-	private static SimplexNoiseSampler cloudNoise;
+	private static PerlinNoiseSampler cloudNoise;
 
 	protected static final RuntimeData RUNTIME = SFCReMain.RUNTIME.getInstance();
 	protected static final SFCReConfig CONFIG = SFCReMain.CONFIGHOLDER.getConfig();
@@ -55,7 +53,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	public static void initSampler(long seed) {
-		cloudNoise = new SimplexNoiseSampler(new Random(seed));
+		cloudNoise = new PerlinNoiseSampler(new ChunkRandom(seed));
 	}
 
 	public void tick() {
@@ -86,21 +84,27 @@ public class CloudData implements CloudDataImplement {
 	private double getCloudSample(double startX, double startZ, double timeOffset, double cx, double cy, double cz) {
 		double cloudVal = cloudNoise.sample(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
-//				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
-				(startZ + cz - RUNTIME.fullOffset) * baseFreq
+				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
+				(startZ + cz - RUNTIME.fullOffset) * baseFreq,
+				0.1d,
+				1d
 		);
 		if (CONFIG.getSampleSteps() > 1) {
 			double cloudVal1 = cloudNoise.sample(
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-//					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-					(startZ + cz - RUNTIME.fullOffset) * l1Freq
+					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
+					(startZ + cz - RUNTIME.fullOffset) * l1Freq,
+					0.1d,
+					1d
 			);
 			double cloudVal2 = 1;
 			if (CONFIG.getSampleSteps() > 2) {
 				cloudVal2 = cloudNoise.sample(
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-//						0,
-						(startZ + cz - RUNTIME.fullOffset) * l2Freq
+						0,
+						(startZ + cz - RUNTIME.fullOffset) * l2Freq,
+						0.1d,
+						1d
 				);
 				//Smooth floor function...
 				cloudVal2 *= 3;

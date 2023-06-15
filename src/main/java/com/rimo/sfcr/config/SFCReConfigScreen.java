@@ -1,7 +1,6 @@
 package com.rimo.sfcr.config;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.rimo.sfcr.SFCReClient;
@@ -36,7 +35,7 @@ public class SFCReConfigScreen {
 	public Screen buildScreen() {
 		buildGeneralCategory();
 		buildCloudsCategory();
-		//buildFogCategory();
+		buildFogCategory();
 		buildDensityCategory();
 		builder.setTransparentBackground(true);
 

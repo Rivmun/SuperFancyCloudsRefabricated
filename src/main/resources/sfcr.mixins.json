@@ -8,6 +8,7 @@
   ],
   "client": [
     "WorldRendererMixin",
+    "GameRendererMixin",
     "GameOptionsMixin",
     "DebugHudMixin"
   ],

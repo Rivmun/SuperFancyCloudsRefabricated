@@ -30,7 +30,7 @@
 	"text.sfcr.option.cloudRenderDistanceFitToView": "Cloud Render Distance Fit to View",
 	"text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "\"Cloud Render Distance\" will be ignore when enabled.",
 	"text.sfcr.option.sampleSteps": "Cloud Sample Steps",
-	"text.sfcr.option.sampleSteps.@Tooltip": "Control how many steps that Cloud-Sampler will use.\nHigh value make clouds more realistic,\nbut will reduce performance (and amount).",
+	"text.sfcr.option.sampleSteps.@Tooltip": "Control how many steps that Cloud-Sampler will use.\nHigh value make clouds more realistic,\nbut will reduce performance (and amount).\nDO §4NOT§r use value 3 on 1.16.5 cuz' it's causing sampler output strangely.",
 	"text.sfcr.option.enableTerrainDodge": "Terrain Dodge",
 	"text.sfcr.option.enableTerrainDodge.@Tooltip": "Cloud block will no appears in higher mountains\nor buildings if enabled.\nReducing cloud block size and increasing refresh rate\ncan improve detection accuracy.",
 
@@ -68,7 +68,7 @@
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk": "- Use Loaded Chunk",
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "\"Detect From Chunk\" needs enabled.\nDistant cloud which no chunk beneath it\nwill try to detect loaded chunk nearby player\ninstead of use sample data.\nEnabled it can smoother cloud near and distant, \nbut will make distant flicker due to chunk change.",
 	"text.sfcr.option.biomeFilter": "Biome Affect Filter",
-	"text.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormat: §omodid:biomeid§r or §o#modid:biometag§r",
+	"text.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nBased on §obiome category§r",
 
 	"text.sfcr.command.sync_request": "[SFCRe] Requesting sync to server...",
 	"text.sfcr.command.sync_succ": "[SFCRe] Sync successfully!",

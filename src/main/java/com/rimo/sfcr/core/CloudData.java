@@ -13,7 +13,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3f;
 import net.minecraft.util.math.noise.PerlinNoiseSampler;
-import net.minecraft.world.gen.ChunkRandom;
 
 public class CloudData implements CloudDataImplement {
 
@@ -53,7 +52,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	public static void initSampler(long seed) {
-		cloudNoise = new PerlinNoiseSampler(new ChunkRandom(seed));
+		cloudNoise = new PerlinNoiseSampler(new Random(seed));
 	}
 
 	public void tick() {
@@ -86,7 +85,7 @@ public class CloudData implements CloudDataImplement {
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				(startZ + cz - RUNTIME.fullOffset) * baseFreq,
-				0.1d,
+				0.01d,
 				1d
 		);
 		if (CONFIG.getSampleSteps() > 1) {
@@ -94,7 +93,7 @@ public class CloudData implements CloudDataImplement {
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					(startZ + cz - RUNTIME.fullOffset) * l1Freq,
-					0.1d,
+					0.01d,
 					1d
 			);
 			double cloudVal2 = 1;
@@ -103,7 +102,7 @@ public class CloudData implements CloudDataImplement {
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
 						(startZ + cz - RUNTIME.fullOffset) * l2Freq,
-						0.1d,
+						0.01d,
 						1d
 				);
 				//Smooth floor function...

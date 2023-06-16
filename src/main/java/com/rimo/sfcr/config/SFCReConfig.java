@@ -6,6 +6,8 @@ import com.rimo.sfcr.util.CloudRefreshSpeed;
 
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.Text;
 import net.minecraft.world.biome.Biome;
 
 @Config(name = "sfcr")
@@ -25,13 +27,13 @@ public class SFCReConfig implements ConfigData {
 	private boolean enableSmoothChange = false;
 	private boolean enableDebug = false;
 	//----CLOUDS----
-	private int cloudHeight = 192;
-	private int cloudBlockSize = 16;
+	private int cloudHeight = -1;
+	private int cloudBlockSize = 8;
 	private int cloudLayerThickness = 32;
 	private int cloudRenderDistance = 96;
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
-	private int sampleSteps = 3;
+	private int sampleSteps = 2;
 	private boolean enableTerrainDodge = true;
 	//----FOG----
 	private boolean fogAutoDistance = true;

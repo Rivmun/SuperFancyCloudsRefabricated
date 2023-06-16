@@ -31,7 +31,7 @@
 	"text.sfcr.option.cloudRenderDistanceFitToView": "云层显示距离匹配视野",
 	"text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip": "云层显示距离将根据游戏视距自动调整，\n“云层显示距离”选项将被忽略。",
 	"text.sfcr.option.sampleSteps": "云层采样步骤数",
-	"text.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。",
+	"text.sfcr.option.sampleSteps.@Tooltip": "控制用于生成云层的噪声采样数量。\n更高的数值能够获得更真实的云层，\n但会降低性能（和数量）。\n1.16.5版本§4请勿§r设置为3，它会使采样器的输出很奇怪。",
 	"text.sfcr.option.enableTerrainDodge": "地形回避",
 	"text.sfcr.option.enableTerrainDodge.@Tooltip": "启用后，云块将不会出现在较高的山体和建筑物内部。\n降低云块大小并提升常规刷新速度可提升检测精度。",
 
@@ -69,7 +69,7 @@
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk": "- 使用已加载区块",
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "需启用“基于区块”。\n下方没有区块的远处的云会检测靠近玩家的已加载的区块，\n而非使用采样器数据。\n启用可使云层远近自然过渡，但会造成远处云层因区块加载而闪烁。",
 	"text.sfcr.option.biomeFilter": "群系影响过滤",
-	"text.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r 或 §o#modid:biometag§r",
+	"text.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n此功能基于§obiome category§r工作。",
 
 	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中...",
 	"text.sfcr.command.sync_succ": "[SFCRe] 同步成功！",

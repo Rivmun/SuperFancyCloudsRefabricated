@@ -122,7 +122,7 @@ public class SFCReConfigScreen {
 						,config.getCloudHeight()
 						,-1
 						,384)
-				.setDefaultValue(192)
+				.setDefaultValue(-1)
 				.setTextGetter(value -> {
 					if (value < 0)
 						return new TranslatableText("text.sfcr.option.cloudHeight.followVanilla");
@@ -135,7 +135,7 @@ public class SFCReConfigScreen {
 		clouds.addEntry(entryBuilder
 				.startDropdownMenu(new TranslatableText("text.sfcr.option.cloudBlockSize")
 						,TopCellElementBuilder.of(config.getCloudBlockSize(), value -> {return Integer.parseInt(value);}))
-				.setDefaultValue(16)
+				.setDefaultValue(8)
 				.setSuggestionMode(false)
 				.setSelections(() -> {
 					List<Integer> list = new ArrayList<Integer>();
@@ -184,7 +184,7 @@ public class SFCReConfigScreen {
 						,config.getSampleSteps()
 						,1
 						,3)
-				.setDefaultValue(3)
+				.setDefaultValue(2)
 				.setTextGetter(value -> {return Text.of(value.toString());})
 				.setTooltip(new TranslatableText("text.sfcr.option.sampleSteps.@Tooltip"))
 				.setSaveConsumer(config::setSampleSteps)

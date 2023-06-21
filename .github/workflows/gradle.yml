@@ -4,7 +4,7 @@
 # against bad commits.
 
 name: build
-on: [pull_request, push]
+on: workflow_dispatch
 
 jobs:
   build:
@@ -31,11 +31,13 @@ jobs:
         run: chmod +x ./gradlew
       - name: build
         run: ./gradlew build
-      - name: capture build artifacts
+      - name: capture build artifacts fabric
         uses: actions/upload-artifact@v3
         with:
           name: Artifacts-fabric
           path: fabric/build/libs/
+      - name: capture build artifacts forge
+        uses: actions/upload-artifact@v3
         with:
           name: Artifacts-forge
           path: forge/build/libs/

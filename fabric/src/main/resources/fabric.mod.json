@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "sfcr",
+  "version": "${version}",
+  "name": "SuperFancyClouds: Rearchitected",
+  "description": "A client/server side mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
+  "authors": [
+    "Rimo"
+  ],
+  "contributors": [
+    "ami-wishes"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/superfancyclouds-refabricated",
+    "sources": "https://github.com/Rivmun/SuperFancyCloudsRefabricated",
+    "issues": "https://github.com.Rivemun/SuperFancyCloudsRefabricated/issues"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.rimo.sfcr.SFCReFabric"
+    ],
+    "client": [
+      "com.rimo.sfcr.SFCReFabric"
+    ],
+    "server": [
+      "com.rimo.sfcr.SFCReFabric"
+    ],
+    "modmenu": [
+      "com.rimo.sfcr.SFCReModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "sfcr-common.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=1.16.5",
+    "architectury": ">=1.32.67",
+    "cloth-config2":"*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.modrinth": "https://modrinth.com/mod/superfancyclouds-refabricated",
+        "MCMOD.cn": "https://www.mcmod.cn/class/9053.html"
+      }
+    }
+  }
+}

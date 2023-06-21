@@ -1,0 +1,43 @@
+modLoader = "javafml"
+loaderVersion = "[36,)"
+issueTrackerURL = "https://github.com/Rivmun/SuperFancyCloudsRefabricated/issues"
+license = "MIT"
+
+[[mods]]
+modId = "sfcr"
+version = "${version}"
+displayName = "SuperFancyClouds: Rearchitected"
+authors = "Rimo"
+credits = "Ami-Wishes"
+description = '''
+A client/server side mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.
+'''
+logoFile = "icon.png"
+
+[[dependencies.sfcr]]
+modId = "forge"
+mandatory = true
+versionRange = "[36,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.5,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "architectury"
+mandatory = true
+versionRange = "[1.32.67,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "cloth-config"
+mandatory = true
+versionRange = "[4.16.91,)"
+ordering = "AFTER"
+side = "BOTH"

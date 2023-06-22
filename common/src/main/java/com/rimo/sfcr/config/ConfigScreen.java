@@ -38,7 +38,7 @@ public class ConfigScreen {
 		//Update when saving
 		builder.setSavingRunnable(() -> {
 			if (config.isCloudRenderDistanceFitToView())
-				config.setCloudRenderDistance(MinecraftClient.getInstance().options.getClampedViewDistance() * 12);
+				config.setCloudRenderDistance(MinecraftClient.getInstance().options.getViewDistance().getValue() * 12);
 			config.setFogDisance(fogMin, fogMax);
 			SFCReMod.COMMON_CONFIG_HOLDER.save();
 			SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();

@@ -29,7 +29,10 @@ public class Event {
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
 			SFCReMod.RENDERER.clean();
 			SFCReMod.RUNTIME.clientEnd();
-			SFCReMod.COMMON_CONFIG_HOLDER.load();
+			if (SFCReMod.COMMON_CONFIG.isEnableServerConfig()) {
+				SFCReMod.COMMON_CONFIG_HOLDER.load();
+				SFCReMod.updateConfig();
+			}
 		});
 	}
 }

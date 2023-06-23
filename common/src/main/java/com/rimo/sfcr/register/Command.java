@@ -75,19 +75,23 @@ public class Command {
 					)
 					.then(literal("statu").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 						content.getSource().sendFeedback(Text.of("- - - - - SFCR Mod Statu - - - - -"), false);
-                        content.getSource().sendFeedback(Text.of("§eStatu:           §r" + SFCReMod.COMMON_CONFIG.isEnableMod()), false);
-                        content.getSource().sendFeedback(Text.of("§eCloud height:    §r" + SFCReMod.COMMON_CONFIG.getCloudHeight()), false);
-                        content.getSource().sendFeedback(Text.of("§eSample Step:     §r" + SFCReMod.COMMON_CONFIG.getSampleSteps()), false);
-                        content.getSource().sendFeedback(Text.of("§ePre-Detect Time: §r" + SFCReMod.COMMON_CONFIG.getWeatherPreDetectTime() / 20), false);
-                        content.getSource().sendFeedback(Text.of("§eChanging Speed:  §r" + SFCReMod.COMMON_CONFIG.getNumFromSpeedEnum(SFCReMod.COMMON_CONFIG.getDensityChangingSpeed())), false);
-                        content.getSource().sendFeedback(Text.of("§eCommon Density:  §r" + SFCReMod.COMMON_CONFIG.getCloudDensityPercent()), false);
-                        content.getSource().sendFeedback(Text.of("§eRain Density:    §r" + SFCReMod.COMMON_CONFIG.getRainDensityPercent()), false);
-                        content.getSource().sendFeedback(Text.of("§eThunder Density: §r" + SFCReMod.COMMON_CONFIG.getThunderDensityPercent()), false);
-                        content.getSource().sendFeedback(Text.of("§eBiome Affect:    §r" + SFCReMod.COMMON_CONFIG.getBiomeDensityMultiplier()), false);
-                        content.getSource().sendFeedback(Text.of("§eCloud Block Size:§r" + SFCReMod.COMMON_CONFIG.getCloudBlockSize()), false);
-                        content.getSource().sendFeedback(Text.of("§eUsing Chunk:     §r" + SFCReMod.COMMON_CONFIG.isBiomeDensityByChunk()), false);
-                        content.getSource().sendFeedback(Text.of("§eUsing Loaded Chk:§r" + SFCReMod.COMMON_CONFIG.isBiomeDensityUseLoadedChunk()), false);
-                        content.getSource().sendFeedback(Text.of("Type [/sfcr biome list] to check ignored biome list."), false);
+						content.getSource().sendFeedback(Text.of("§eStatu:           §r" + SFCReMod.COMMON_CONFIG.isEnableMod()), false);
+						content.getSource().sendFeedback(Text.of("§eCloud height:    §r" + SFCReMod.COMMON_CONFIG.getCloudHeight()), false);
+						content.getSource().sendFeedback(Text.of("§eCloud Block Size:§r" + SFCReMod.COMMON_CONFIG.getCloudBlockSize()), false);
+						content.getSource().sendFeedback(Text.of("§eCloud Thickness: §r" + SFCReMod.COMMON_CONFIG.getCloudLayerThickness()), false);
+						content.getSource().sendFeedback(Text.of("§eSample Step:     §r" + SFCReMod.COMMON_CONFIG.getSampleSteps()), false);
+						content.getSource().sendFeedback(Text.of("§eDynamic Density: §r" + SFCReMod.COMMON_CONFIG.isEnableWeatherDensity()), false);
+						content.getSource().sendFeedback(Text.of("§eDensity Threshld:§r" + SFCReMod.COMMON_CONFIG.getDensityThreshold()), false);
+						content.getSource().sendFeedback(Text.of("§eThrshld Multiplr:§r" + SFCReMod.COMMON_CONFIG.getThresholdMultiplier()), false);
+						content.getSource().sendFeedback(Text.of("§ePre-Detect Time: §r" + SFCReMod.COMMON_CONFIG.getWeatherPreDetectTime() / 20), false);
+						content.getSource().sendFeedback(Text.of("§eChanging Speed:  §r" + SFCReMod.COMMON_CONFIG.getNumFromSpeedEnum(SFCReMod.COMMON_CONFIG.getDensityChangingSpeed())), false);
+						content.getSource().sendFeedback(Text.of("§eCommon Density:  §r" + SFCReMod.COMMON_CONFIG.getCloudDensityPercent()), false);
+						content.getSource().sendFeedback(Text.of("§eRain Density:    §r" + SFCReMod.COMMON_CONFIG.getRainDensityPercent()), false);
+						content.getSource().sendFeedback(Text.of("§eThunder Density: §r" + SFCReMod.COMMON_CONFIG.getThunderDensityPercent()), false);
+						content.getSource().sendFeedback(Text.of("§eBiome Affect:    §r" + SFCReMod.COMMON_CONFIG.getBiomeDensityMultiplier()), false);
+						content.getSource().sendFeedback(Text.of("§eUsing Chunk:     §r" + SFCReMod.COMMON_CONFIG.isBiomeDensityByChunk()), false);
+						content.getSource().sendFeedback(Text.of("§eUsing Loaded Chk:§r" + SFCReMod.COMMON_CONFIG.isBiomeDensityUseLoadedChunk()), false);
+						content.getSource().sendFeedback(Text.of("Type [/sfcr biome list] to check ignored biome list."), false);
 						return 1;
 					}))
 					.then(literal("enable").requires(source -> source.hasPermissionLevel(2))
@@ -293,12 +297,14 @@ public class Command {
 					)
 					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.load();
+						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Reloading complete!"), false);
 						return 1;
 					}))
 					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.save();
+						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Config saving complete!"), false);
 						return 1;

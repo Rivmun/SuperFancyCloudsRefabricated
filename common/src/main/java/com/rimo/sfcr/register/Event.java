@@ -31,7 +31,7 @@ public class Event {
 			SFCReMod.RUNTIME.clientEnd();
 			if (SFCReMod.COMMON_CONFIG.isEnableServerConfig()) {
 				SFCReMod.COMMON_CONFIG_HOLDER.load();
-				SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+				SFCReMod.updateConfig();
 			}
 		});
 	}

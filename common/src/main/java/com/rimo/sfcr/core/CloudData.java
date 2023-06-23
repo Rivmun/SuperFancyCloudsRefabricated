@@ -17,8 +17,8 @@ public class CloudData implements CloudDataImplement {
 
 	private static PerlinNoiseSampler cloudNoise;
 
-	protected static final Runtime RUNTIME = SFCReMod.RUNTIME.getInstance();
-	protected static final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	protected final Runtime RUNTIME = SFCReMod.RUNTIME;
+	protected final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private final CloudDataType dataType;
 	private float lifeTime;

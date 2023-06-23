@@ -50,4 +50,12 @@ public class SFCReMod {
 			SFCReMod.LOGGER.error(i.getClassName() + ":" + i.getLineNumber());
 		}
 	}
+
+	//Applying config changes to other module
+	public static void updateConfig() {
+		COMMON_CONFIG = COMMON_CONFIG_HOLDER.getConfig();
+		RUNTIME.updateConfig(COMMON_CONFIG);
+		if (RENDERER != null)
+			RENDERER.updateConfig(COMMON_CONFIG);
+	}
 }

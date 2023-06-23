@@ -9,7 +9,6 @@ import com.rimo.sfcr.network.ConfigSyncMessage;
 import com.rimo.sfcr.network.RuntimeSyncMessage;
 import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import java.util.List;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -123,10 +122,10 @@ public class Command {
 							.then(literal("size")
 									.then(argument("size", IntegerArgumentType.integer(1, 4)).executes(content -> {
 										switch (content.getArgument("size", Integer.class)) {
-										case 1: SFCReMod.COMMON_CONFIG.setCloudBlockSize(2); break;
-										case 2: SFCReMod.COMMON_CONFIG.setCloudBlockSize(4); break;
-										case 3: SFCReMod.COMMON_CONFIG.setCloudBlockSize(8); break;
-										case 4: SFCReMod.COMMON_CONFIG.setCloudBlockSize(16); break;
+											case 1 -> SFCReMod.COMMON_CONFIG.setCloudBlockSize(2);
+											case 2 -> SFCReMod.COMMON_CONFIG.setCloudBlockSize(4);
+											case 3 -> SFCReMod.COMMON_CONFIG.setCloudBlockSize(8);
+											case 4 -> SFCReMod.COMMON_CONFIG.setCloudBlockSize(16);
 										}
 										content.getSource().sendFeedback(Text.of("Cloud size changed!"), false);
 										return 1;
@@ -195,11 +194,11 @@ public class Command {
 							.then(literal("changingspeed")
 									.then(argument("changingspeed", IntegerArgumentType.integer(1, 5)).executes(content -> {
 										switch (content.getArgument("changingspeed", Integer.class)) {
-										case 1: SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_SLOW); break;
-										case 2: SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.SLOW); break;
-										case 3: SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.NORMAL); break;
-										case 4: SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.FAST); break;
-										case 5: SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_FAST); break;
+											case 1 -> SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_SLOW);
+											case 2 -> SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.SLOW);
+											case 3 -> SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.NORMAL);
+											case 4 -> SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.FAST);
+											case 5 -> SFCReMod.COMMON_CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_FAST);
 										}
 										content.getSource().sendFeedback(Text.of("Changing speed changed!"), false);
 										return 1;
@@ -297,14 +296,14 @@ public class Command {
 					)
 					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.load();
-						SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Reloading complete!"), false);
 						return 1;
 					}))
 					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.save();
-						SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Config saving complete!"), false);
 						return 1;

@@ -5,7 +5,7 @@ import com.rimo.sfcr.core.Runtime;
 import dev.architectury.networking.NetworkManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 import java.util.function.Supplier;
 
@@ -42,13 +42,13 @@ public class RuntimeSyncMessage {
 				SFCReMod.RUNTIME.fullOffset = this.fullOffset;
 				SFCReMod.RUNTIME.partialOffset = this.partialOffset;
 			} catch (Exception e) {
-				MinecraftClient.getInstance().player.sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
+				MinecraftClient.getInstance().player.sendMessage(new TranslatableText("text.sfcr.command.sync_fail"), false);
 				SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
 				SFCReMod.COMMON_CONFIG_HOLDER.save();
 			}
 		}
 
 		if (SFCReMod.COMMON_CONFIG.isEnableDebug())
-			MinecraftClient.getInstance().player.sendMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
+			MinecraftClient.getInstance().player.sendMessage(new TranslatableText("text.sfcr.command.sync_succ"), false);
 	}
 }

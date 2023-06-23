@@ -214,7 +214,7 @@ public class Renderer {
 							RenderSystem.colorMask(true, true, true, true);
 						}
 
-						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
+						cloudBuffer.setShader(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
 					}
 
 					VertexBuffer.unbind();
@@ -259,14 +259,14 @@ public class Renderer {
 	};
 
 	// Building mesh
-	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
+	private BufferBuilder rebuildCloudMesh() {
 
 		Vec3d camVec = new Vec3d(
 				-Math.sin(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
 				-Math.tan(MinecraftClient.getInstance().gameRenderer.getCamera().getPitch() / 180f * Math.PI),
 				 Math.cos(MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
 		).normalize();
-		double fovCos = Math.cos(MinecraftClient.getInstance().options.getFov().getValue() / 180f * Math.PI * CONFIG.getCullRadianMultiplier());
+		double fovCos = Math.cos(MinecraftClient.getInstance().options.fov / 180f * Math.PI * CONFIG.getCullRadianMultiplier());
 
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
@@ -337,7 +337,8 @@ public class Renderer {
 		}
 
 		try {
-			return builder.end();
+			builder.end();
+			return builder;
 		} catch (Exception e) {
 			SFCReMod.exceptionCatcher(e);
 			return null;

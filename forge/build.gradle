@@ -32,7 +32,7 @@ dependencies {
     modApi "dev.architectury:architectury-forge:${rootProject.architectury_version}"
 
     //Cloth Config
-    implementation "me.shedaniel.cloth:cloth-config-forge:${rootProject.cloth_config_version}"
+    //implementation "me.shedaniel.cloth:cloth-config-forge:${rootProject.cloth_config_version}"
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }

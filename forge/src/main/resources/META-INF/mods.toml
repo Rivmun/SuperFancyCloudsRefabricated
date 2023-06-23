@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[43,)"
+loaderVersion = "[40,)"
 issueTrackerURL = "https://github.com/Rivmun/SuperFancyCloudsRefabricated/issues"
 license = "MIT"
 
@@ -17,21 +17,21 @@ logoFile = "icon.png"
 [[dependencies.sfcr]]
 modId = "forge"
 mandatory = true
-versionRange = "[43,)"
+versionRange = "[40,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.sfcr]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.19.2,)"
+versionRange = "[1.18.2,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.sfcr]]
 modId = "architectury"
 mandatory = true
-versionRange = "[6.5.77,)"
+versionRange = "[4.11.91,)"
 ordering = "AFTER"
 side = "BOTH"
 

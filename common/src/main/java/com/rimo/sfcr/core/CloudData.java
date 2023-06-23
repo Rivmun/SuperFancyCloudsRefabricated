@@ -9,7 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.world.gen.random.SimpleRandom;
 
 public class CloudData implements CloudDataImplement {
 
@@ -49,7 +49,7 @@ public class CloudData implements CloudDataImplement {
 	}
 
 	public static void initSampler(long seed) {
-		cloudNoise = new SimplexNoiseSampler(Random.create(seed));
+		cloudNoise = new SimplexNoiseSampler(new SimpleRandom(seed));
 	}
 
 	public void tick() {

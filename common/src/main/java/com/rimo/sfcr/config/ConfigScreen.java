@@ -24,7 +24,7 @@ public class ConfigScreen {
 	ConfigCategory fog = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
 
-	CommonConfig config = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig config = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
 
 	private int fogMin, fogMax;
 
@@ -40,9 +40,11 @@ public class ConfigScreen {
 			if (config.isCloudRenderDistanceFitToView())
 				config.setCloudRenderDistance(MinecraftClient.getInstance().options.getClampedViewDistance() * 12);
 			config.setFogDisance(fogMin, fogMax);
+
+			//Update config
 			SFCReMod.COMMON_CONFIG_HOLDER.save();
-			SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
-			SFCReMod.RENDERER.updateRenderData(config);
+			SFCReMod.updateConfig();
+
 			if (config.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
 				Network.sendSyncRequest(true);
 		});

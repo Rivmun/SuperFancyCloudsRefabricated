@@ -19,10 +19,10 @@ public class SFCReMod {
 	public static final InternalLogger LOGGER = Log4J2LoggerFactory.getInstance("sfcr");
 
 	public static final ConfigHolder<CommonConfig> COMMON_CONFIG_HOLDER = AutoConfig.register(CommonConfig.class, GsonConfigSerializer::new);
-	public static final CommonConfig COMMON_CONFIG = COMMON_CONFIG_HOLDER.getConfig();
+	public static CommonConfig COMMON_CONFIG = COMMON_CONFIG_HOLDER.getConfig();
 
 	public static final Runtime RUNTIME = new Runtime();
-	public static final Renderer RENDERER = new Renderer();
+	public static Renderer RENDERER;
 
 	public static void init() {
 		Network.init();
@@ -30,6 +30,7 @@ public class SFCReMod {
 	}
 
 	public static void initClient() {
+		RENDERER = new Renderer();
 		Network.initClient();
 		Event.registerClient();
 	}

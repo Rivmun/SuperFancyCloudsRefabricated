@@ -45,6 +45,7 @@ public class ConfigScreen {
 				config.setCloudRenderDistance(MinecraftClient.getInstance().options.viewDistance * 12);
 			config.setFogDisance(fogMin, fogMax);
 			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
 			SFCReMod.RENDERER.updateRenderData(config);
 			if (config.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
 				Network.sendSyncRequest(true);

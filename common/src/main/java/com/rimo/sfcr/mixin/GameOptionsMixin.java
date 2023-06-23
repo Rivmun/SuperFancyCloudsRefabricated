@@ -22,6 +22,7 @@ public abstract class GameOptionsMixin {
 		if (SFCReMod.COMMON_CONFIG.isCloudRenderDistanceFitToView()) {
 			SFCReMod.COMMON_CONFIG.setCloudRenderDistance(viewDistance * 12);
 			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
 		}
 		ci.cancel();
 	}

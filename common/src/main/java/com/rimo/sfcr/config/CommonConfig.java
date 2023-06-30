@@ -16,6 +16,7 @@ public class CommonConfig extends CoreConfig implements ConfigData {
 	private boolean enableFog = true;
 	private boolean enableNormalCull = true;
 	private float cullRadianMultiplier = 1.0f;
+	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	//----CLOUDS----
 	private int cloudRenderDistance = 96;
@@ -40,6 +41,7 @@ public class CommonConfig extends CoreConfig implements ConfigData {
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public boolean isEnableNormalCull() {return enableNormalCull;}
 	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
+	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableFog() {return enableFog;}
 	public boolean isFogAutoDistance() {return fogAutoDistance;}
 	public int getFogMinDistance() {return fogMinDistance;}
@@ -58,6 +60,7 @@ public class CommonConfig extends CoreConfig implements ConfigData {
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableNormalCull(boolean isEnable) {enableNormalCull = isEnable;}
 	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
+	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
 	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
 	public void setFogDisance(int min, int max) {

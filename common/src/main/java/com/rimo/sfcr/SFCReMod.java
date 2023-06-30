@@ -41,6 +41,8 @@ public class SFCReMod {
 
 	public static void setCommonConfig(CoreConfig commonConfig) {
 		COMMON_CONFIG.setCoreConfig(commonConfig);
+		if (RENDERER != null)
+			RENDERER.updateConfig(COMMON_CONFIG);
 	}
 
 	//Debug
@@ -51,11 +53,4 @@ public class SFCReMod {
 		}
 	}
 
-	//Applying config changes to other module
-	public static void updateConfig() {
-		COMMON_CONFIG = COMMON_CONFIG_HOLDER.getConfig();
-		RUNTIME.updateConfig(COMMON_CONFIG);
-		if (RENDERER != null)
-			RENDERER.updateConfig(COMMON_CONFIG);
-	}
 }

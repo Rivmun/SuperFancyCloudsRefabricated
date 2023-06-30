@@ -18,9 +18,10 @@ public abstract class DebugHudMixin {
 
 		// Add Debug Strings
 		if (SFCReMod.COMMON_CONFIG.isEnableMod())
-			list.add("[SFCR] Mesh Built: " + SFCReMod.RENDERER.cullStateShown + " / " + (SFCReMod.RENDERER.cullStateSkipped + SFCReMod.RENDERER.cullStateShown) + " faces, " + SFCReMod.RENDERER.cullStateSkipped + " Skipped.");
-		SFCReMod.RENDERER.cullStateSkipped = 0;		// reset counter
-		SFCReMod.RENDERER.cullStateShown = 0;
+			list.add("[SFCR] Mesh Built: " +
+					 SFCReMod.RENDERER.cullStateShown + " / " +
+					(SFCReMod.RENDERER.cullStateSkipped + SFCReMod.RENDERER.cullStateShown) + " faces, " +
+					 SFCReMod.RENDERER.cullStateSkipped + " Skipped.");
 
 		return list;
 	}

@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
+import net.minecraft.world.LightType;
 import net.minecraft.world.gen.random.SimpleRandom;
 
 public class CloudData implements CloudDataImplement {
@@ -38,7 +39,7 @@ public class CloudData implements CloudDataImplement {
 		startX = (int) (scrollX / CONFIG.getCloudBlockSize());
 		startZ = (int) (scrollZ / CONFIG.getCloudBlockSize()) - RUNTIME.fullOffset;
 		_cloudData = new boolean[width][height][width];
-		
+
 		collectCloudData(scrollX, scrollZ, densityByWeather, densityByBiome);
 	}
 
@@ -152,7 +153,7 @@ public class CloudData implements CloudDataImplement {
 					if (CONFIG.isEnableTerrainDodge()) {
 						for (int cy = 0; cy < height; cy++) {
 							// terrain dodge (detect light level)
-							_cloudData[cx][cy][cz] = world.getLightLevel(new BlockPos(
+							_cloudData[cx][cy][cz] = world.getLightLevel(LightType.SKY, new BlockPos(
 									px,
 									SFCReMod.RENDERER.cloudHeight + (cy - 2) * CONFIG.getCloudBlockSize() / 2f,
 									pz + CONFIG.getCloudBlockSize() / 4f        // cloud is moving...fix Z pos

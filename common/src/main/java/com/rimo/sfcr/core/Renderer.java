@@ -384,6 +384,7 @@ public class Renderer {
 				this.zScroll = scrollZ;
 			}
 			RUNTIME.checkPartialOffset();
+			timeRebuild = CONFIG.getRebuildInterval();		//Instant refresh once to prevent flicker.
 		} catch (Exception e) {		// Debug
 			SFCReMod.exceptionCatcher(e);
 		}

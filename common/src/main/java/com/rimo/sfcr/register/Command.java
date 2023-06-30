@@ -296,14 +296,12 @@ public class Command {
 					)
 					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.load();
-						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Reloading complete!"), false);
 						return 1;
 					}))
 					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
 						SFCReMod.COMMON_CONFIG_HOLDER.save();
-						SFCReMod.updateConfig();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendFeedback(Text.of("Config saving complete!"), false);
 						return 1;

@@ -84,7 +84,9 @@ public class CoreConfig {
 		this.rainDensityPercent              = config.rainDensityPercent;
 		this.thunderDensityPercent           = config.thunderDensityPercent;
 		this.densityChangingSpeed            = config.densityChangingSpeed;
-
+		this.snowDensity					 = config.snowDensity;
+		this.rainDensity					 = config.rainDensity;
+		this.noneDensity					 = config.noneDensity;
 		this.isBiomeDensityByChunk           = config.isBiomeDensityByChunk;
 		this.isBiomeDensityUseLoadedChunk    = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList                 = config.biomeFilterList;
@@ -120,6 +122,7 @@ public class CoreConfig {
 		}
 		return isHas;
 	}
+
 	public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;

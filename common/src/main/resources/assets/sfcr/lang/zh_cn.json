@@ -1,6 +1,6 @@
 {
-	"text.sfcr.title": "超级华丽云：重织版",
-	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方 Fabric 移植版，使原版的云朵更立体更动态。",
+	"text.sfcr.title": "超级华丽云：重筑版",
+	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方多平台移植版，使原版的云朵更立体更动态。",
 
 	"text.sfcr.category.general": "一般",
 	"text.sfcr.option.enableMod": "启用模组",
@@ -11,10 +11,12 @@
 	"text.sfcr.option.enableFog.@Tooltip": "用迷雾使云向视野边缘过渡。",
 	"text.sfcr.option.enableWeatherDensity": "动态云层密度",
 	"text.sfcr.option.enableWeatherDensity.@Tooltip": "使云的密度随当前天气与群系变化。",
-	"text.sfcr.option.cullRadianMultiplier": "面剔除角度倍率",
-	"text.sfcr.option.cullRadianMultiplier.@Tooltip": "如果你的宽荧幕左右两边没有云，可以尝试调高该数值。",
-	"text.sfcr.option.enableNormalCull": "法线面剔除",
+	"text.sfcr.option.cullRadianMultiplier": "视野剔除的角倍率",
+	"text.sfcr.option.cullRadianMultiplier.@Tooltip": "如果你的宽荧幕左右两边没有云，可以尝试调高该数值。\n设为最大可禁用视野剔除。",
+	"text.sfcr.option.enableNormalCull": "法线剔除",
 	"text.sfcr.option.enableNormalCull.@Tooltip": "剔除不面向玩家的云层面。\n已知问题：玩家移动时该剔除会有略微的延迟。",
+	"text.sfcr.option.rebuildInterval": "云层模型重建间隔",
+	"text.sfcr.option.rebuildInterval.@Tooltip": "控制云层模型重建（刷新颜色和形状）的间隔时间。\n间隔越大，模组对游戏性能的影响就越小。\n但较大的值可能会引起渲染延迟。",
 	"text.sfcr.option.debug": "输出调试信息",
 	"text.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
 
@@ -85,6 +87,7 @@
 	"text.sfcr.option.cloudRefreshSpeed.FAST": "较快",
 	"text.sfcr.option.cloudRefreshSpeed.VERY_FAST": "非常快",
 
-	"text.sfcr.second": "%s秒",
-	"text.sfcr.disabled": "已经用"
+	"text.sfcr.second": "%s 秒",
+	"text.sfcr.frame": "%s 帧",
+	"text.sfcr.disabled": "已禁用"
 }

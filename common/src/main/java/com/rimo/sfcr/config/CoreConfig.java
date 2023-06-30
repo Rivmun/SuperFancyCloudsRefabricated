@@ -72,22 +72,24 @@ public class CoreConfig {
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 
 	public void setCoreConfig(CoreConfig config) {
-		this.cloudHeight                     = config.cloudHeight;
-		this.cloudBlockSize                  = config.cloudBlockSize;
-		this.cloudLayerThickness             = config.cloudLayerThickness;
-		this.sampleSteps                     = config.sampleSteps;
-		this.densityThreshold                = config.densityThreshold;
-		this.thresholdMultiplier             = config.thresholdMultiplier;
-		this.enableWeatherDensity            = config.enableWeatherDensity;
-		this.weatherPreDetectTime            = config.weatherPreDetectTime;
-		this.cloudDensityPercent             = config.cloudDensityPercent;
-		this.rainDensityPercent              = config.rainDensityPercent;
-		this.thunderDensityPercent           = config.thunderDensityPercent;
-		this.densityChangingSpeed            = config.densityChangingSpeed;
-
-		this.isBiomeDensityByChunk           = config.isBiomeDensityByChunk;
-		this.isBiomeDensityUseLoadedChunk    = config.isBiomeDensityUseLoadedChunk;
-		this.biomeFilterList                 = config.biomeFilterList;
+		this.cloudHeight					= config.cloudHeight;
+		this.cloudBlockSize					= config.cloudBlockSize;
+		this.cloudLayerThickness			= config.cloudLayerThickness;
+		this.sampleSteps					= config.sampleSteps;
+		this.densityThreshold				= config.densityThreshold;
+		this.thresholdMultiplier			= config.thresholdMultiplier;
+		this.enableWeatherDensity			= config.enableWeatherDensity;
+		this.weatherPreDetectTime			= config.weatherPreDetectTime;
+		this.cloudDensityPercent			= config.cloudDensityPercent;
+		this.rainDensityPercent				= config.rainDensityPercent;
+		this.thunderDensityPercent			= config.thunderDensityPercent;
+		this.densityChangingSpeed			= config.densityChangingSpeed;
+		this.snowDensity					= config.snowDensity;
+		this.rainDensity					= config.rainDensity;
+		this.noneDensity					= config.noneDensity;
+		this.isBiomeDensityByChunk			= config.isBiomeDensityByChunk;
+		this.isBiomeDensityUseLoadedChunk	= config.isBiomeDensityUseLoadedChunk;
+		this.biomeFilterList				= config.biomeFilterList;
 	}
 
 	public int getNumFromSpeedEnum(CloudRefreshSpeed value) {
@@ -120,6 +122,7 @@ public class CoreConfig {
 		}
 		return isHas;
 	}
+
 	public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;

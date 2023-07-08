@@ -14,13 +14,14 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 
 public class Renderer {
 
 	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private CommonConfig config = SFCReMod.COMMON_CONFIG;
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
 
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
@@ -29,9 +30,9 @@ public class Renderer {
 	private boolean isBiomeChange = false;
 	public float cloudHeight;
 
-	private int normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
-	private int weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
+	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
+	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
+	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed());
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -44,6 +45,7 @@ public class Renderer {
 
 	public int moveTimer = 40;
 	public double time;
+	private double timeRebuild;
 
 	public double xScroll;
 	public double zScroll;
@@ -61,7 +63,7 @@ public class Renderer {
 		if (MinecraftClient.getInstance().player == null)
 			return;
 
-		if (!config.isEnableMod())
+		if (!CONFIG.isEnableMod())
 			return;
 
 		if (MinecraftClient.getInstance().isInSingleplayer() && MinecraftClient.getInstance().isPaused())
@@ -76,30 +78,30 @@ public class Renderer {
 
 		var player = MinecraftClient.getInstance().player;
 		var world = MinecraftClient.getInstance().world;
-		var xScroll = (int) (player.getX() / config.getCloudBlockSize()) * config.getCloudBlockSize();
-		var zScroll = (int) (player.getZ() / config.getCloudBlockSize()) * config.getCloudBlockSize();
+		var xScroll = (int) (player.getX() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
+		var zScroll = (int) (player.getZ() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
 
 		int timeOffset = (int) (Math.floor(time / 6) * 6);
 
 		RUNTIME.clientTick(world);
 
 		//Detect Weather Change
-		if (config.isEnableWeatherDensity()) {
+		if (CONFIG.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && config.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather < config.getThunderDensityPercent() / 100f;
+				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
+						|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f;
 			} else if (world.isRaining()) {
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.RAIN && config.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather != config.getRainDensityPercent() / 100f;
+				isWeatherChange = RUNTIME.nextWeather != WeatherType.RAIN && CONFIG.getWeatherPreDetectTime() != 0
+						|| cloudDensityByWeather != CONFIG.getRainDensityPercent() / 100f;
 			} else {		//Clear...
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && config.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather > config.getCloudDensityPercent() / 100f;
+				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
+						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f;
 			}
 
 			//Detect Biome Change
-			if (!config.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
-				if (!config.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = config.getDownfall(world.getBiome(player.getBlockPos()).value().getPrecipitation(player.getBlockPos()));
+			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
+				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
+					targetDownFall = CONFIG.getDownfall(world.getBiome(player.getBlockPos()).value().getPrecipitation(player.getBlockPos()));
 				isBiomeChange = cloudDensityByBiome != targetDownFall;
 			}
 		} else {
@@ -113,35 +115,35 @@ public class Renderer {
 			isProcessingData = true;
 
 			//Density Change by Weather
-			if (config.isEnableWeatherDensity()) {
+			if (CONFIG.isEnableWeatherDensity()) {
 				if (isWeatherChange) {
 					switch (RUNTIME.nextWeather) {
-						case THUNDER -> cloudDensityByWeather = nextDensityStep(config.getThunderDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
-						case RAIN -> cloudDensityByWeather = nextDensityStep(config.getRainDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
-						case CLEAR -> cloudDensityByWeather = nextDensityStep(config.getCloudDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
+						case THUNDER -> cloudDensityByWeather = nextDensityStep(CONFIG.getThunderDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
+						case RAIN -> cloudDensityByWeather = nextDensityStep(CONFIG.getRainDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
+						case CLEAR -> cloudDensityByWeather = nextDensityStep(CONFIG.getCloudDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
 					}
 				} else {
 					switch (RUNTIME.nextWeather) {
-						case THUNDER -> cloudDensityByWeather = config.getThunderDensityPercent() / 100f;
-						case RAIN -> cloudDensityByWeather = config.getRainDensityPercent() / 100f;
-						case CLEAR -> cloudDensityByWeather = config.getCloudDensityPercent() / 100f;
+						case THUNDER -> cloudDensityByWeather = CONFIG.getThunderDensityPercent() / 100f;
+						case RAIN -> cloudDensityByWeather = CONFIG.getRainDensityPercent() / 100f;
+						case CLEAR -> cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f;
 					}
 				}
 				//Density Change by Biome
-				if (!config.isBiomeDensityByChunk()) {
+				if (!CONFIG.isBiomeDensityByChunk()) {
 					cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
 				} else {
 					cloudDensityByBiome = 0.5f;		//Output common value if use chunk.
 				}
 			} else {		//Initialize if disabled detect in rain/thunder.
-				cloudDensityByWeather = config.getCloudDensityPercent() / 100f;
+				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f;
 				cloudDensityByBiome = 0f;
 			}
 
 			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
 			dataProcessThread.start();
 
-			if (config.isEnableDebug()) {
+			if (CONFIG.isEnableDebug()) {
 				SFCReMod.LOGGER.info("wc: " + isWeatherChange + ", bc: " + isBiomeChange + ", wd: " + cloudDensityByWeather + ", bd: " + cloudDensityByBiome);
 			}
 		}
@@ -149,7 +151,7 @@ public class Renderer {
 
 	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
 
-		cloudHeight = config.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : config.getCloudHeight();
+		cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
 
 		if (!Float.isNaN(cloudHeight)) {
 			//Setup render system
@@ -164,7 +166,7 @@ public class Renderer {
 			synchronized (this) {
 
 				if (!MinecraftClient.getInstance().isInSingleplayer() || !MinecraftClient.getInstance().isPaused())
-					SFCReMod.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f * config.getCloudBlockSize() / 16f;
+					SFCReMod.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;
 
 				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
@@ -172,29 +174,33 @@ public class Renderer {
 					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
 				}
 
-				var cb = rebuildCloudMesh();
+				if (++timeRebuild > CONFIG.getRebuildInterval()) {
+					timeRebuild = 0;
+					BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer());
 
-				if (cb != null) {
-					if (cloudBuffer != null)
-						cloudBuffer.close();
-					cloudBuffer = new VertexBuffer();
-					cloudBuffer.bind();
-					cloudBuffer.upload(cb);
-					VertexBuffer.unbind();
+					if (cb != null) {
+						if (cloudBuffer != null)
+							cloudBuffer.close();
+						cloudBuffer = new VertexBuffer();
+
+						cloudBuffer.bind();
+						cloudBuffer.upload(cb);
+						VertexBuffer.unbind();
+					}
 				}
 
 				//Setup shader
 				if (cloudBuffer != null) {
 					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalProgram);
 					RenderSystem.setShaderTexture(0, whiteTexture);
-					if (config.isEnableFog()) {
+					if (CONFIG.isEnableFog()) {
 						BackgroundRenderer.setFogBlack();
-						if (!config.isFogAutoDistance()) {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getFogMinDistance() * config.getCloudBlockSize() / 16);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getFogMaxDistance() * config.getCloudBlockSize() / 16);
+						if (!CONFIG.isFogAutoDistance()) {
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
 						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * config.getAutoFogMaxDistance() / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * config.getAutoFogMaxDistance());
+							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
+							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 						}
 					} else {
 						BackgroundRenderer.clearFog();
@@ -202,7 +208,7 @@ public class Renderer {
 
 					matrices.push();
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll + 0.01f, cloudHeight - config.getCloudBlockSize() + 0.01f, zScroll + SFCReMod.RUNTIME.partialOffset);
+					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMod.RUNTIME.partialOffset);
 
 					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 					cloudBuffer.bind();
@@ -222,10 +228,11 @@ public class Renderer {
 
 					//Restore render system
 					RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-					RenderSystem.enableCull();
-					RenderSystem.disableBlend();
 				}
 			}
+			RenderSystem.enableCull();
+			RenderSystem.disableBlend();
+			RenderSystem.defaultBlendFunc();
 		}
 	}
 
@@ -237,8 +244,6 @@ public class Renderer {
 			//Ignore...
 		}
 	}
-
-	public BufferBuilder builder = Tessellator.getInstance().getBuffer();
 
 	private final float[][] normals = {
 			{1, 0, 0},		//r
@@ -259,18 +264,21 @@ public class Renderer {
 	};
 
 	// Building mesh
-	private BufferBuilder.BuiltBuffer rebuildCloudMesh() {
+	@Nullable
+	private BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder) {
 
 		var client = MinecraftClient.getInstance();
 		Vec3d camVec = new Vec3d(
-				-Math.sin(client.gameRenderer.getCamera().getYaw()   / 180f * Math.PI),
-				-Math.tan(client.gameRenderer.getCamera().getPitch() / 180f * Math.PI),
-				 Math.cos(client.gameRenderer.getCamera().getYaw()   / 180f * Math.PI)
+				-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw()	)),
+				-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch()	)),
+				 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()	))
 		).normalize();
-		double fovCos = Math.cos(client.options.getFov().getValue() * client.player.getFovMultiplier() / 180f * Math.PI * config.getCullRadianMultiplier());
+		double fovCos = Math.cos(client.options.getFov().getValue() * Math.toRadians(client.player.getFovMultiplier()) * CONFIG.getCullRadianMultiplier());
 
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
+		cullStateShown = 0;
+		cullStateSkipped = 0;
 
 		for (CloudData data : cloudDataGroup) {
 			try {
@@ -284,23 +292,23 @@ public class Renderer {
 					var nz = normals[normIndex][2];
 					float[][] verCache = new float[4][3];
 					for (int j = 0; j < 4; j++) {
-						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3) * config.getCloudBlockSize();
-						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1) * config.getCloudBlockSize() / 2;
-						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2) * config.getCloudBlockSize();
+						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3) * CONFIG.getCloudBlockSize();
+						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1) * CONFIG.getCloudBlockSize() / 2;
+						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2) * CONFIG.getCloudBlockSize();
 					}
 
 					// Normal Culling
-					if (!config.isEnableNormalCull() || new Vec3d(nx, ny, nz).dotProduct(new Vec3d(
+					if (!CONFIG.isEnableNormalCull() || new Vec3d(nx, ny, nz).dotProduct(new Vec3d(
 							verCache[0][0] + 0.01f,
-							verCache[0][1] + cloudHeight + 0.01f - config.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
+							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 							verCache[0][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
 									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
 						// Position Culling
 						int j = -1;
 						while (++j < 4) {
-							if (camVec.dotProduct(new Vec3d(
+							if (CONFIG.getCullRadianMultiplier() > 1.5f || camVec.dotProduct(new Vec3d(
 									verCache[j][0] + 0.01f,
-									verCache[j][1] + cloudHeight + 0.01f - config.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
+									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 									verCache[j][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
 											).normalize()) > fovCos) {
 								for (int k = 0; k < 4; k++)
@@ -355,7 +363,7 @@ public class Renderer {
 			RUNTIME.checkFullOffset();
 
 			tmp = new CloudData(scrollX, scrollZ, cloudDensityByWeather, cloudDensityByBiome);
-			if (!cloudDataGroup.isEmpty() && config.isEnableSmoothChange()) {
+			if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
 				fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_IN);
 				fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudDataType.TRANS_OUT);
 				midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_MID_BODY);
@@ -375,6 +383,7 @@ public class Renderer {
 				this.zScroll = scrollZ;
 			}
 			RUNTIME.checkPartialOffset();
+			timeRebuild = CONFIG.getRebuildInterval();		//Instant refresh once to prevent flicker.
 		} catch (Exception e) {		// Debug
 			SFCReMod.exceptionCatcher(e);
 		}
@@ -389,8 +398,8 @@ public class Renderer {
 		// Alpha changed by cloud type and lifetime
 		switch (data.getDataType()) {
 			case NORMAL, TRANS_MID_BODY: break;
-			case TRANS_IN: a = (int) (255 - 255 * data.getLifeTime() / config.getNumFromSpeedEnum(config.getNormalRefreshSpeed()) * 5f); break;
-			case TRANS_OUT: a = (int) (255 * data.getLifeTime() / config.getNumFromSpeedEnum(config.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_IN: a = (int) (255 - 255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_OUT: a = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
 		}
 
 		// Color changed by time...
@@ -415,7 +424,6 @@ public class Renderer {
 
 	//Update Setting.
 	public void updateConfig(CommonConfig config) {
-		this.config = config;
 		normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
 		weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
 		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());

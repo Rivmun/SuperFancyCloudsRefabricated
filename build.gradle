@@ -21,6 +21,7 @@ subprojects {
         // mappings loom.officialMojangMappings()
         // The following line declares the yarn mappings you may select this one as well.
         mappings "net.fabricmc:yarn:1.20.1+build.5:v2"
+        implementation 'com.google.code.gson:gson:2.10.1'
     }
 }
 
@@ -55,11 +56,11 @@ forgix {
     group = rootProject.maven_group
     mergedJarName = rootProject.archives_base_name + "-" + project.mod_version + ".jar"
     outputDir = "build/libs/Merged"
-	
+
     forge {
         jarLocation = "build/libs/" + rootProject.archives_base_name + "-" + project.mod_version + "-forge.jar"
     }
-    
+
     fabric {
         jarLocation = "build/libs/" + rootProject.archives_base_name + "-" + project.mod_version + "-fabric.jar"
     }

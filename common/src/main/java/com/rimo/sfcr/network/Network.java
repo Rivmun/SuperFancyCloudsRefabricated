@@ -2,9 +2,9 @@ package com.rimo.sfcr.network;
 
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.util.WeatherType;
-import io.netty.buffer.Unpooled;
 import dev.architectury.networking.NetworkChannel;
 import dev.architectury.networking.NetworkManager;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.PacketByteBuf;
@@ -22,7 +22,7 @@ public class Network {
 	public static final NetworkChannel RUNTIME_CHANNEL = NetworkChannel.create(CHANNEL_RUNTIME);
 
 	public static void init() {
-		CONFIG_CHANNEL.register(ConfigSyncMessage.class, ConfigSyncMessage::encode, ConfigSyncMessage::decode, ConfigSyncMessage::receive);
+		CONFIG_CHANNEL.register(ConfigSyncMessage.class, ConfigSyncMessage::encode, ConfigSyncMessage::new, ConfigSyncMessage::receive);
 		RUNTIME_CHANNEL.register(RuntimeSyncMessage.class, RuntimeSyncMessage::encode, RuntimeSyncMessage::new, RuntimeSyncMessage::receive);
 		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_SYNC_REQUEST, Network::receiveSyncRequest);
 	}
@@ -41,11 +41,23 @@ public class Network {
 	}
 
 	public static void receiveSyncRequest(PacketByteBuf packet, NetworkManager.PacketContext content) {
+		if (!SFCReMod.COMMON_CONFIG.isEnableMod())
+			return;
+
+		var player = SFCReMod.RUNTIME.getPlayerList().stream()
+				.filter(manager -> manager.getPlayer() == content.getPlayer())
+				.toList().get(0);
+		if (player.getLastSyncTime() >= SFCReMod.RUNTIME.time - SFCReMod.COMMON_CONFIG.getSecPerSync()) {
+			return;
+		} else {
+			player.setLastSyncTime(SFCReMod.RUNTIME.time);
+		}
+
 		boolean isFull = packet.readBoolean();
 		if (isFull)
 			Network.CONFIG_CHANNEL.sendToPlayer(
 					(ServerPlayerEntity) content.getPlayer(),
-					new ConfigSyncMessage(SFCReMod.COMMON_CONFIG)
+					new ConfigSyncMessage(SFCReMod.RUNTIME.seed, SFCReMod.COMMON_CONFIG)
 			);
 		Network.RUNTIME_CHANNEL.sendToPlayer(
 				(ServerPlayerEntity) content.getPlayer(),
@@ -64,6 +76,7 @@ public class Network {
 					new PacketByteBuf(Unpooled.buffer()).writeEnumConstant(SFCReMod.RUNTIME.nextWeather)
 			);
 		});
+
 		if (SFCReMod.COMMON_CONFIG.isEnableDebug())
 			SFCReMod.LOGGER.info("Sent weather forecast '" + SFCReMod.RUNTIME.nextWeather.toString() + "' to allPlayers.");
 	}

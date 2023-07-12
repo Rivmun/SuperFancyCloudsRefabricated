@@ -9,8 +9,8 @@ import com.rimo.sfcr.network.ConfigSyncMessage;
 import com.rimo.sfcr.network.RuntimeSyncMessage;
 import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import java.util.List;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
+import me.shedaniel.math.Color;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -26,29 +26,37 @@ public class Command {
 					.executes(content -> {
 						content.getSource().sendMessage(Text.of("- - - - - SFCR Help Page - - - - -"));
 						content.getSource().sendMessage(Text.of("/sfcr - Show this page"));
-						content.getSource().sendMessage(Text.of("/sfcr sync - Sync with server instantly"));
+						content.getSource().sendMessage(Text.of("/sfcr sync [full] - Sync with server instantly"));
 						if (!content.getSource().hasPermissionLevel(2))
 							return 1;
 						content.getSource().sendMessage(Text.of("/sfcr statu - Show runtime config"));
 						content.getSource().sendMessage(Text.of("/sfcr [enable|disable] - Toggle SFCR server activity"));
 						content.getSource().sendMessage(Text.of("/sfcr [cloud|density|biome] - Edit config"));
 						content.getSource().sendMessage(Text.of("/sfcr biome [list|add|remove] - Manage ignored biome"));
-						content.getSource().sendMessage(Text.of("/sfcr reload - Reload config, then force sync to every client"));
+						content.getSource().sendMessage(Text.of("/sfcr reload - Reload config (You needs sync it toAllPlayers manually)"));
 						content.getSource().sendMessage(Text.of("/sfcr save - Save runtime config to file"));
 						return 1;
 					})
 					.then(literal("sync")
 							.executes(content -> {
-								Network.RUNTIME_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new RuntimeSyncMessage(SFCReMod.RUNTIME));
-								SFCReMod.LOGGER.info("[SFCRe] cb: Send sync data to " + content.getSource().getDisplayName().getString());
-								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								if (content.getSource().isExecutedByPlayer()) {
+									Network.RUNTIME_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new RuntimeSyncMessage(SFCReMod.RUNTIME));
+									SFCReMod.LOGGER.info("[SFCRe] cb: Send sync data to " + content.getSource().getDisplayName().getString());
+									content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								} else {
+									content.getSource().sendError(Text.of("This command must run by Player!"));
+								}
 								return 1;
 							})
 							.then(literal("full").executes(content -> {
-								Network.CONFIG_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new ConfigSyncMessage(SFCReMod.COMMON_CONFIG));
-								Network.RUNTIME_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new RuntimeSyncMessage(SFCReMod.RUNTIME));
-								SFCReMod.LOGGER.info("[SFCRe] cb: Send full sync data to " + content.getSource().getDisplayName().getString());
-								content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								if (content.getSource().isExecutedByPlayer()) {
+									Network.CONFIG_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new ConfigSyncMessage(SFCReMod.RUNTIME.seed, SFCReMod.COMMON_CONFIG));
+									Network.RUNTIME_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new RuntimeSyncMessage(SFCReMod.RUNTIME));
+									SFCReMod.LOGGER.info("[SFCRe] cb: Send full sync data to " + content.getSource().getDisplayName().getString());
+									content.getSource().sendMessage(Text.of("Manual requesting sync..."));
+								} else {
+									content.getSource().sendError(Text.of("This command must run by Player!"));
+								}
 								return 1;
 							}))
 							.then(literal("time").requires(source -> source.hasPermissionLevel(2))
@@ -64,8 +72,8 @@ public class Command {
 							)
 							.then(literal("toAllPlayers").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 								for (ServerPlayerEntity player : content.getSource().getServer().getPlayerManager().getPlayerList()) {
-									Network.CONFIG_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new ConfigSyncMessage(SFCReMod.COMMON_CONFIG));
-									Network.RUNTIME_CHANNEL.sendToPlayer(content.getSource().getPlayer(), new RuntimeSyncMessage(SFCReMod.RUNTIME));
+									Network.CONFIG_CHANNEL.sendToPlayer(player, new ConfigSyncMessage(SFCReMod.RUNTIME.seed, SFCReMod.COMMON_CONFIG));
+									Network.RUNTIME_CHANNEL.sendToPlayer(player, new RuntimeSyncMessage(SFCReMod.RUNTIME));
 									player.sendMessage(Text.of("[SFCRe] Force sync request came from server..."));
 								}
 								content.getSource().sendMessage(Text.of("Force sync complete!"));
@@ -75,24 +83,30 @@ public class Command {
 					)
 					.then(literal("statu").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
 						content.getSource().sendMessage(Text.of("- - - - - SFCR Mod Statu - - - - -"));
-                        content.getSource().sendMessage(Text.of("§eStatu:           §r" + SFCReMod.COMMON_CONFIG.isEnableMod()));
-                        content.getSource().sendMessage(Text.of("§eCloud height:    §r" + SFCReMod.COMMON_CONFIG.getCloudHeight()));
-						content.getSource().sendMessage(Text.of("§eCloud Block Size:§r" + SFCReMod.COMMON_CONFIG.getCloudBlockSize()));
-						content.getSource().sendMessage(Text.of("§eCloud Thickness: §r" + SFCReMod.COMMON_CONFIG.getCloudLayerThickness()));
-                        content.getSource().sendMessage(Text.of("§eSample Step:     §r" + SFCReMod.COMMON_CONFIG.getSampleSteps()));
-						content.getSource().sendMessage(Text.of("§eDynamic Density: §r" + SFCReMod.COMMON_CONFIG.isEnableWeatherDensity()));
-						content.getSource().sendMessage(Text.of("§eDensity Threshld:§r" + SFCReMod.COMMON_CONFIG.getDensityThreshold()));
-						content.getSource().sendMessage(Text.of("§eThrshld Multiplr:§r" + SFCReMod.COMMON_CONFIG.getThresholdMultiplier()));
-                        content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r" + SFCReMod.COMMON_CONFIG.getWeatherPreDetectTime() / 20));
-                        content.getSource().sendMessage(Text.of("§eChanging Speed:  §r" + SFCReMod.COMMON_CONFIG.getNumFromSpeedEnum(SFCReMod.COMMON_CONFIG.getDensityChangingSpeed())));
-                        content.getSource().sendMessage(Text.of("§eCommon Density:  §r" + SFCReMod.COMMON_CONFIG.getCloudDensityPercent()));
-                        content.getSource().sendMessage(Text.of("§eRain Density:    §r" + SFCReMod.COMMON_CONFIG.getRainDensityPercent()));
-                        content.getSource().sendMessage(Text.of("§eThunder Density: §r" + SFCReMod.COMMON_CONFIG.getThunderDensityPercent()));
-						content.getSource().sendMessage(Text.of("§eSnow Area Dens.: §r" + SFCReMod.COMMON_CONFIG.getSnowDensity()));
-						content.getSource().sendMessage(Text.of("§eRain Area Dens.: §r" + SFCReMod.COMMON_CONFIG.getRainDensity()));
-						content.getSource().sendMessage(Text.of("§eOther Area Dens.:§r" + SFCReMod.COMMON_CONFIG.getNoneDensity()));
-                        content.getSource().sendMessage(Text.of("§eUsing Chunk:     §r" + SFCReMod.COMMON_CONFIG.isBiomeDensityByChunk()));
-                        content.getSource().sendMessage(Text.of("§eUsing Loaded Chk:§r" + SFCReMod.COMMON_CONFIG.isBiomeDensityUseLoadedChunk()));
+                        content.getSource().sendMessage(Text.of("§eStatu: §r"				+ SFCReMod.COMMON_CONFIG.isEnableMod()));
+                        content.getSource().sendMessage(Text.of("§eCloud height: §r"		+ SFCReMod.COMMON_CONFIG.getCloudHeight()));
+						content.getSource().sendMessage(Text.of("§eCloud Block Size: §r"	+ SFCReMod.COMMON_CONFIG.getCloudBlockSize()));
+						content.getSource().sendMessage(Text.of("§eCloud Thickness: §r"	+ SFCReMod.COMMON_CONFIG.getCloudLayerThickness()));
+                        content.getSource().sendMessage(Text.of("§eSample Step: §r"		+ SFCReMod.COMMON_CONFIG.getSampleSteps()));
+						content.getSource().sendMessage(Text.of("§eCloud color: §r"		+
+								Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getRed()		+ ", " +
+								Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getGreen()	+ ", " +
+								Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getBlue()
+						));
+						content.getSource().sendMessage(Text.of("§eCloud Brht Multi: §r"	+ SFCReMod.COMMON_CONFIG.getCloudBrightMultiplier()));
+						content.getSource().sendMessage(Text.of("§eDynamic Density: §r"	+ SFCReMod.COMMON_CONFIG.isEnableWeatherDensity()));
+						content.getSource().sendMessage(Text.of("§eDensity Threshld: §r"	+ SFCReMod.COMMON_CONFIG.getDensityThreshold()));
+						content.getSource().sendMessage(Text.of("§eThrshld Multiplr: §r"	+ SFCReMod.COMMON_CONFIG.getThresholdMultiplier()));
+                        content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r"	+ SFCReMod.COMMON_CONFIG.getWeatherPreDetectTime() / 20));
+                        content.getSource().sendMessage(Text.of("§eChanging Speed: §r"	+ SFCReMod.COMMON_CONFIG.getNumFromSpeedEnum(SFCReMod.COMMON_CONFIG.getDensityChangingSpeed())));
+                        content.getSource().sendMessage(Text.of("§eCommon Density: §r"	+ SFCReMod.COMMON_CONFIG.getCloudDensityPercent()));
+                        content.getSource().sendMessage(Text.of("§eRain Density: §r"		+ SFCReMod.COMMON_CONFIG.getRainDensityPercent()));
+                        content.getSource().sendMessage(Text.of("§eThunder Density: §r"	+ SFCReMod.COMMON_CONFIG.getThunderDensityPercent()));
+						content.getSource().sendMessage(Text.of("§eSnow Area Dens.: §r"	+ SFCReMod.COMMON_CONFIG.getSnowDensity()));
+						content.getSource().sendMessage(Text.of("§eRain Area Dens.: §r"	+ SFCReMod.COMMON_CONFIG.getRainDensity()));
+						content.getSource().sendMessage(Text.of("§eOther Area Dens.: §r"	+ SFCReMod.COMMON_CONFIG.getNoneDensity()));
+                        content.getSource().sendMessage(Text.of("§eUsing Chunk: §r"		+ SFCReMod.COMMON_CONFIG.isBiomeDensityByChunk()));
+                        content.getSource().sendMessage(Text.of("§eUsing Loaded Chk: §r"	+ SFCReMod.COMMON_CONFIG.isBiomeDensityUseLoadedChunk()));
                         content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
 						return 1;
 					}))
@@ -157,6 +171,40 @@ public class Command {
 									}))
 									.executes(content -> {
 										content.getSource().sendMessage(Text.of("Sample steps is " + SFCReMod.COMMON_CONFIG.getSampleSteps()));
+										return 1;
+									})
+							)
+							.then(literal("color")
+									.then(argument("r", IntegerArgumentType.integer(0, 255))
+											.then(argument("g", IntegerArgumentType.integer(0, 255))
+													.then(argument("b", IntegerArgumentType.integer(0, 255)).executes(content -> {
+														SFCReMod.COMMON_CONFIG.setCloudColor(Color.ofRGB(
+																content.getArgument("r", Integer.class),
+																content.getArgument("g", Integer.class),
+																content.getArgument("b", Integer.class)
+														).getColor());
+														content.getSource().sendMessage(Text.of("Cloud color changed!"));
+														return 1;
+													}))
+											)
+									)
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud color is " +
+												Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getRed()		+ ", " +
+												Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getGreen()	+ ", " +
+												Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getBlue()	+ ". "
+										));
+										return 1;
+									})
+							)
+							.then(literal("bright")
+									.then(argument("bright", FloatArgumentType.floatArg(0, 1)).executes(content -> {
+										SFCReMod.COMMON_CONFIG.setCloudBrightMultiplier(content.getArgument("bright", Float.class));
+										content.getSource().sendMessage(Text.of("Cloud bright changed!"));
+										return 1;
+									}))
+									.executes(content -> {
+										content.getSource().sendMessage(Text.of("Cloud bright is " + SFCReMod.COMMON_CONFIG.getCloudBrightMultiplier()));
 										return 1;
 									})
 							)

@@ -57,11 +57,13 @@ public class Network {
 	}
 
 	public static void sendWeather(MinecraftServer server) {
-		PacketByteBuf packet = new PacketByteBuf(Unpooled.buffer());
-		packet.writeEnumConstant(SFCReMod.RUNTIME.nextWeather);
-		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-			NetworkManager.sendToPlayer(player, PACKET_WEATHER, packet);
-		}
+		server.getPlayerManager().getPlayerList().forEach(player -> {
+			NetworkManager.sendToPlayer(
+					player,
+					PACKET_WEATHER,
+					new PacketByteBuf(Unpooled.buffer()).writeEnumConstant(SFCReMod.RUNTIME.nextWeather)
+			);
+		});
 		if (SFCReMod.COMMON_CONFIG.isEnableDebug())
 			SFCReMod.LOGGER.info("Sent weather forecast '" + SFCReMod.RUNTIME.nextWeather.toString() + "' to allPlayers.");
 	}

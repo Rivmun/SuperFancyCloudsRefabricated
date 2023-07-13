@@ -39,12 +39,6 @@ public class SFCReMod {
 		Command.register();
 	}
 
-	public static void setCommonConfig(CoreConfig commonConfig) {
-		COMMON_CONFIG.setCoreConfig(commonConfig);
-		if (RENDERER != null)
-			RENDERER.updateConfig(COMMON_CONFIG);
-	}
-
 	//Debug
 	public static void exceptionCatcher(Exception e) {
 		SFCReMod.LOGGER.error(e.toString());

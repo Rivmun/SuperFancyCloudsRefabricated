@@ -21,7 +21,7 @@ import static net.minecraft.server.command.CommandManager.*;
 public class Command {
 	@Environment(EnvType.SERVER)
 	public static void register() {
-		CommandRegistrationEvent.EVENT.register((dispatcher, access) -> {
+		CommandRegistrationEvent.EVENT.register((dispatcher, selection) -> {
 			dispatcher.register(literal("sfcr")
 					.executes(content -> {
 						content.getSource().sendFeedback(Text.of("- - - - - SFCR Help Page - - - - -"), false);

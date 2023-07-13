@@ -108,7 +108,7 @@ public class Runtime {
 	}
 
 	public void addPlayer(ServerPlayerEntity player) {
-		if (!playerList.stream().filter(manager -> manager.getPlayer() == player).toList().isEmpty())
+		if (playerList.stream().noneMatch(manager -> manager.getPlayer() == player))
 			return;
 		playerList.add(new ServerPlayerManager(player));
 	}

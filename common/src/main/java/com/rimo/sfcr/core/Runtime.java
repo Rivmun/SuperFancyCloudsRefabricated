@@ -42,8 +42,11 @@ public class Runtime {
 		if (!CONFIG.isEnableMod())
 			return;
 
-		if (server.isDedicated())
-			partialOffset += 1 / 20f * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;
+		if (server.isDedicated()) {		// These data is updated by RENDERER, but dedicated server is not have, so we update here.
+			partialOffset += 1 / 20f * CONFIG.getCloudBlockSize() / 16f;
+			checkFullOffset();
+			checkPartialOffset();
+		}
 		time += 1 / 20f;		// 20 tick per second.
 
 		// Weather Pre-detect
@@ -70,7 +73,7 @@ public class Runtime {
 			Network.sendWeather(server);
 
 		// Data Sync
-		if (server.getTicks() % 20 == 0) {
+		if (server.getTicks() % 20 == 0 && (server.isDedicated() || CONFIG.isEnableServerConfig())) {
 			playerList.forEach(manager -> {
 				if (manager.lastSyncTime < time - CONFIG.getSecPerSync()) {
 					Network.RUNTIME_CHANNEL.sendToPlayer(manager.player, new RuntimeSyncMessage(SFCReMod.RUNTIME));
@@ -79,11 +82,11 @@ public class Runtime {
 			});
 		}
 
-//		if (CONFIG.isEnableDebug() && server.getTicks() % (CONFIG.getWeatherPreDetectTime() * 20) == 0) {
-//			SFCReMod.LOGGER.info("isThnd: " + worldProperties.isThundering() + ", isRain: " + worldProperties.isRaining());
-//			SFCReMod.LOGGER.info("thndTime: " + worldProperties.getThunderTime() + ", rainTime: " + worldProperties.getRainTime() + ", clearTime: " + worldProperties.getClearWeatherTime());
-//			SFCReMod.LOGGER.info("nextWeather: " + nextWeather.toString());
-//		}
+		if (CONFIG.isEnableDebug() && !server.isDedicated() && server.getTicks() % (CONFIG.getWeatherPreDetectTime() * 20) == 0) {
+			SFCReMod.LOGGER.info("isThnd: " + worldProperties.isThundering() + ", isRain: " + worldProperties.isRaining());
+			SFCReMod.LOGGER.info("thndTime: " + worldProperties.getThunderTime() + ", rainTime: " + worldProperties.getRainTime() + ", clearTime: " + worldProperties.getClearWeatherTime());
+			SFCReMod.LOGGER.info("nextWeather: " + nextWeather.toString());
+		}
 	}
 
 	public void clientTick(World world) {
@@ -105,7 +108,7 @@ public class Runtime {
 	}
 
 	public void addPlayer(ServerPlayerEntity player) {
-		if (playerList.stream().filter(manager -> manager.getPlayer() == player).toList().isEmpty())
+		if (!playerList.stream().filter(manager -> manager.getPlayer() == player).toList().isEmpty())
 			return;
 		playerList.add(new ServerPlayerManager(player));
 	}
@@ -129,8 +132,10 @@ public class Runtime {
 		ServerPlayerManager(ServerPlayerEntity player) {
 			this.player = player;
 			this.lastSyncTime = time;
-			Network.CONFIG_CHANNEL.sendToPlayer(player, new ConfigSyncMessage(seed, SFCReMod.COMMON_CONFIG));
-			Network.RUNTIME_CHANNEL.sendToPlayer(player, new RuntimeSyncMessage(SFCReMod.RUNTIME));
+			if (player.getServer().isDedicated() || CONFIG.isEnableServerConfig()) {
+				Network.CONFIG_CHANNEL.sendToPlayer(player, new ConfigSyncMessage(seed, SFCReMod.COMMON_CONFIG));
+				Network.RUNTIME_CHANNEL.sendToPlayer(player, new RuntimeSyncMessage(SFCReMod.RUNTIME));
+			}
 		}
 
 		public ServerPlayerEntity getPlayer() {

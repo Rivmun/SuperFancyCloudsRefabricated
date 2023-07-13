@@ -10,7 +10,7 @@ public class CommonConfig extends CoreConfig implements ConfigData {
 	private boolean enableMod = true;
 	private boolean enableDebug = false;
 	private boolean enableServerConfig = false;
-	private int secPerSync = 30;
+	private int secPerSync = 60;
 	private boolean enableFog = true;
 	private boolean enableNormalCull = true;
 	private float cullRadianMultiplier = 1.0f;

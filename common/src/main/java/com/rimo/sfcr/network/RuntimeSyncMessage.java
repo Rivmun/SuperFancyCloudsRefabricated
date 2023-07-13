@@ -15,9 +15,11 @@ public class RuntimeSyncMessage {
 	private final double partialOffset;
 
 	public RuntimeSyncMessage(Runtime data) {
-		this.time = data.time;
-		this.fullOffset = data.fullOffset;
-		this.partialOffset = data.partialOffset;
+		synchronized (SFCReMod.RUNTIME) {
+			this.time = data.time;
+			this.fullOffset = data.fullOffset;
+			this.partialOffset = data.partialOffset;
+		}
 	}
 
 	public RuntimeSyncMessage(PacketByteBuf packet) {
@@ -44,14 +46,15 @@ public class RuntimeSyncMessage {
 					SFCReMod.RUNTIME.time = message.time;
 					SFCReMod.RUNTIME.fullOffset = message.fullOffset;
 					SFCReMod.RUNTIME.partialOffset = message.partialOffset;
-					if (SFCReMod.COMMON_CONFIG.isEnableDebug())
-						contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
 				} catch (Exception e) {
 					SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
 					SFCReMod.COMMON_CONFIG_HOLDER.save();
 					contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
+					return;
 				}
 			}
+			if (SFCReMod.COMMON_CONFIG.isEnableDebug())
+				contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
 		});
 	}
 }

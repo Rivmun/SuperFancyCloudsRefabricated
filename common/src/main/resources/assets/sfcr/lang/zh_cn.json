@@ -6,7 +6,7 @@
 	"text.sfcr.option.enableMod": "启用模组",
 	"text.sfcr.option.enableMod.@Tooltip": "启用以代替原版云。",
 	"text.sfcr.option.enableServer": "服务器同步",
-	"text.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。",
+	"text.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。\n该选项在局域网游戏中同时也控制你\n是否向其他玩家共享云层数据。",
 	"text.sfcr.option.enableFog": "启用迷雾",
 	"text.sfcr.option.enableFog.@Tooltip": "用迷雾使云向视野边缘过渡。",
 	"text.sfcr.option.enableWeatherDensity": "动态云层密度",
@@ -19,6 +19,8 @@
 	"text.sfcr.option.rebuildInterval.@Tooltip": "控制云层模型重建（刷新颜色和形状）的间隔时间。\n间隔越大，模组对游戏性能的影响就越小。\n但较大的值可能会引起渲染延迟。",
 	"text.sfcr.option.debug": "输出调试信息",
 	"text.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",
+	"text.sfcr.option.syncTime": "主机数据发送间隔",
+	"text.sfcr.option.syncTime.@Tooltip": "当你是是多人游戏的主机时，\n多久会向其他客户端同步一次云层位置数据。",
 
 	"text.sfcr.category.clouds": "云层",
 	"text.sfcr.option.cloudHeight": "云高度",

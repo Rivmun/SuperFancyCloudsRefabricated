@@ -63,15 +63,6 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableMod)
 				.build()
 		);
-		//server control
-		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
-						, CONFIG.isEnableServerConfig())
-				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableServerConfig)
-				.build()
-		);
 		//fog enable
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableFog")
@@ -129,6 +120,27 @@ public class ConfigScreen {
 				})
 				.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
+				.build()
+		);
+		//server control
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
+						, CONFIG.isEnableServerConfig())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableServerConfig)
+				.build()
+		);
+		//server sync time
+		general.addEntry(entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.syncTime")
+						, CONFIG.getSecPerSync() / 15
+						, 1
+						, 20)
+				.setDefaultValue(4)
+				.setTextGetter(value -> Text.translatable("text.sfcr.second", value * 15))
+				.setTooltip(Text.translatable("text.sfcr.option.syncTime.@Tooltip"))
+				.setSaveConsumer(value -> CONFIG.setSecPerSync(value * 15))
 				.build()
 		);
 		//DEBUG

@@ -21,6 +21,7 @@ subprojects {
         // mappings loom.officialMojangMappings()
         // The following line declares the yarn mappings you may select this one as well.
         mappings "net.fabricmc:yarn:1.19.2+build.28:v2"
+        implementation 'com.google.code.gson:gson:2.10.1'
     }
 }
 

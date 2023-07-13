@@ -62,15 +62,6 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableMod)
 				.build()
 		);
-		//server control
-		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
-						, CONFIG.isEnableServerConfig())
-				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableServerConfig)
-				.build()
-		);
 		//fog enable
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableFog")

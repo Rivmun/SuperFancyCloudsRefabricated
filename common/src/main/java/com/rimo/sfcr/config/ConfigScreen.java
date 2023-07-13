@@ -65,15 +65,6 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableMod)
 				.build()
 		);
-		//server control
-		general.addEntry(entryBuilder
-				.startBooleanToggle(new TranslatableText("text.sfcr.option.enableServer")
-						, CONFIG.isEnableServerConfig())
-				.setDefaultValue(false)
-				.setTooltip(new TranslatableText("text.sfcr.option.enableServer.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableServerConfig)
-				.build()
-		);
 		//fog enable
 		general.addEntry(entryBuilder
 				.startBooleanToggle(new TranslatableText("text.sfcr.option.enableFog")
@@ -131,6 +122,27 @@ public class ConfigScreen {
 				})
 				.setTooltip(new TranslatableText("text.sfcr.option.rebuildInterval.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
+				.build()
+		);
+		//server control
+		general.addEntry(entryBuilder
+				.startBooleanToggle(new TranslatableText("text.sfcr.option.enableServer")
+						, CONFIG.isEnableServerConfig())
+				.setDefaultValue(false)
+				.setTooltip(new TranslatableText("text.sfcr.option.enableServer.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableServerConfig)
+				.build()
+		);
+		//server sync time
+		general.addEntry(entryBuilder
+				.startIntSlider(new TranslatableText("text.sfcr.option.syncTime")
+						, CONFIG.getSecPerSync() / 15
+						, 1
+						, 20)
+				.setDefaultValue(4)
+				.setTextGetter(value -> new TranslatableText("text.sfcr.second", value * 15))
+				.setTooltip(new TranslatableText("text.sfcr.option.syncTime.@Tooltip"))
+				.setSaveConsumer(value -> CONFIG.setSecPerSync(value * 15))
 				.build()
 		);
 		//DEBUG
@@ -231,6 +243,25 @@ public class ConfigScreen {
 				.setDefaultValue(true)
 				.setTooltip(new TranslatableText("text.sfcr.option.enableTerrainDodge.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
+				.build()
+		);
+		//cloud color
+		clouds.addEntry(entryBuilder
+				.startColorField(new TranslatableText("text.sfcr.option.cloudColor")
+						, CONFIG.getCloudColor())
+				.setDefaultValue(0xFFFFFF)
+				.setSaveConsumer(CONFIG::setCloudColor)
+				.build()
+		);
+		//cloud bright multiplier
+		clouds.addEntry(entryBuilder
+				.startIntSlider(new TranslatableText("text.sfcr.option.cloudBright")
+						, (int) (CONFIG.getCloudBrightMultiplier() * 10)
+						, 0
+						, 10)
+				.setDefaultValue(1)
+				.setTextGetter(value -> {return Text.of(value * 10 + "%");})
+				.setSaveConsumer(value -> CONFIG.setCloudBrightMultiplier(value / 10f))
 				.build()
 		);
 	}

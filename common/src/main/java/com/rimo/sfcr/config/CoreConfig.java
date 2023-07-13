@@ -16,6 +16,8 @@ public class CoreConfig {
 	protected int cloudBlockSize = 8;
 	protected int cloudLayerThickness = 32;
 	protected int sampleSteps = 2;
+	protected int cloudColor = 0xFFFFFF;
+	protected float cloudBrightMultiplier = 0.1f;
 	protected float densityThreshold = 1.3f;
 	protected float thresholdMultiplier = 1.5f;
 	protected boolean enableWeatherDensity = true;
@@ -33,6 +35,8 @@ public class CoreConfig {
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	public int getSampleSteps() {return sampleSteps;}
+	public int getCloudColor() {return cloudColor;}
+	public float getCloudBrightMultiplier() {return cloudBrightMultiplier;}
 	public float getDensityThreshold() {return densityThreshold;}
 	public float getThresholdMultiplier() {return thresholdMultiplier;}
 	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
@@ -50,6 +54,8 @@ public class CoreConfig {
 	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
+	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
+	public void setCloudBrightMultiplier(float cloudBrightMultiplier) {this.cloudBrightMultiplier = cloudBrightMultiplier;}
 	public void setDensityThreshold(float density) {densityThreshold = density;}
 	public void setThresholdMultiplier(float multipler) {thresholdMultiplier = multipler;}
 	public void setEnableWeatherDensity(boolean isEnable) {enableWeatherDensity = isEnable;}
@@ -58,16 +64,18 @@ public class CoreConfig {
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
-	public void setBiomeDensityMultiplier(int multipler) {biomeDensityMultiplier = multipler;}
+	public void setBiomeDensityMultiplier(int multiplier) {biomeDensityMultiplier = multiplier;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 
-	public void setCoreConfig(CoreConfig config) {
+	public void setCoreConfig(CoreConfig config) {		//TODO: why I need to write this sht...
 		this.cloudHeight					= config.cloudHeight;
 		this.cloudBlockSize					= config.cloudBlockSize;
 		this.cloudLayerThickness			= config.cloudLayerThickness;
 		this.sampleSteps					= config.sampleSteps;
+		this.cloudColor						= config.cloudColor;
+		this.cloudBrightMultiplier			= config.cloudBrightMultiplier;
 		this.densityThreshold				= config.densityThreshold;
 		this.thresholdMultiplier			= config.thresholdMultiplier;
 		this.enableWeatherDensity			= config.enableWeatherDensity;

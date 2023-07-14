@@ -22,7 +22,6 @@ public class Network {
 	public static void init() {
 		CONFIG_CHANNEL.register(ConfigSyncMessage.class, ConfigSyncMessage::encode, ConfigSyncMessage::new, ConfigSyncMessage::receive);
 		RUNTIME_CHANNEL.register(RuntimeSyncMessage.class, RuntimeSyncMessage::encode, RuntimeSyncMessage::new, RuntimeSyncMessage::receive);
-		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_SYNC_REQUEST, Network::receiveSyncRequest);
 	}
 
 	public static void initClient() {

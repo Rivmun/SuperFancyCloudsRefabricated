@@ -29,7 +29,7 @@
       "com.rimo.sfcr.SFCReFabric"
     ],
     "modmenu": [
-      "com.rimo.sfcr.SFCReModMenuIntegration"
+      "com.rimo.sfcr.config.SFCReModMenuIntegration"
     ]
   },
   "mixins": [
@@ -38,10 +38,10 @@
   "depends": {
     "fabric": "*",
     "minecraft": "~1.19.2",
-    "architectury": ">=6.5.77",
-    "cloth-config2":"*"
+    "architectury": ">=6.5.77"
   },
   "suggests": {
+    "cloth-config2":"*",
     "modmenu": "*"
   },
   "custom": {

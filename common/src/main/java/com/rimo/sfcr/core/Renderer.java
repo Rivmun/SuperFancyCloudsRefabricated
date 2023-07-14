@@ -8,8 +8,8 @@ import com.rimo.sfcr.util.CloudDataType;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
 import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
@@ -20,7 +20,7 @@ import net.minecraft.util.math.Vec3d;
 public class Renderer {
 
 	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
@@ -161,6 +161,11 @@ public class Renderer {
 			RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = world.getCloudsColor(tickDelta);
+			Vec3d cloudColor2 = new Vec3d(
+					cloudColor.x + (1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
+					cloudColor.y + (1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
+					cloudColor.z + (1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
+			);
 
 			synchronized (this) {
 
@@ -209,7 +214,7 @@ public class Renderer {
 					matrices.translate(-cameraX, -cameraY, -cameraZ);
 					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMod.RUNTIME.partialOffset);
 
-					RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
+					RenderSystem.setShaderColor((float) cloudColor2.x, (float) cloudColor2.y, (float) cloudColor2.z, 1);
 					cloudBuffer.bind();
 
 					for (int s = 0; s < 2; ++s) {
@@ -300,7 +305,7 @@ public class Renderer {
 							verCache[0][0] + 0.01f,
 							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 							verCache[0][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
-									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
+									).normalize()) < 0.003805f) {		// clouds is moving, z-pos isn't precise, so leave some margin
 						// Position Culling
 						int j = -1;
 						while (++j < 4) {
@@ -390,27 +395,30 @@ public class Renderer {
 	}
 
 	private int getCloudColor(long worldTime, CloudData data) {
-		int a = 255, r = 255, g = 255, b = 255;
+		var a = 255;
+		var r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
+		var g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
+		var b = (CONFIG.getCloudColor() & 0x0000FF);
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
 		switch (data.getDataType()) {
 			case NORMAL, TRANS_MID_BODY: break;
-			case TRANS_IN: a = (int) (255 - 255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
-			case TRANS_OUT: a = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_IN: a = (int) (a - a * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_OUT: a = (int) (a * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
 		}
 
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
 			t = t > 22500 ? t - 22000 : t + 1500;
-			r = (int) (255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			r = (int) (r * (1 - Math.sin(t / 2000d * Math.PI) / 8));
+			g = (int) (g * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
+			b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
 		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
 			t -= 11500;
-			r = (int)(255 * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
-			b = (int) (255 * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			r = (int) (r * (1 - Math.sin(t / 2000d * Math.PI) / 8));
+			g = (int) (g * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
+			b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
 		}
 
 		return ColorHelper.Argb.getArgb(a, r, g, b);

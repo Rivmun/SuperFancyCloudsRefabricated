@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class SFCReMod {
 
 	public static final String MOD_ID = "sfcr";
-	public static final Logger LOGGER = LoggerFactory.getLogger("sfcr");
+	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static final CommonConfig COMMON_CONFIG = new CommonConfig();
 

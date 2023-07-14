@@ -1,39 +1,60 @@
 package com.rimo.sfcr.network;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.config.CoreConfig;
 import dev.architectury.networking.NetworkManager;
 import net.fabricmc.api.EnvType;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.text.TranslatableText;
 
 import java.util.function.Supplier;
 
 public class ConfigSyncMessage {
-	private final byte[] data;
-	private static final DataSerializer<CoreConfig> serializer = new DataSerializer<>();
+	private final long seed;
+	private final String data;
+	private static final Gson gson = new Gson();
 
-	public ConfigSyncMessage(byte[] data) {
-		this.data = data;
+	public ConfigSyncMessage(long seed, CoreConfig config) {
+		this.seed = seed;
+		this.data = gson.toJson(config);
 	}
 
-	public ConfigSyncMessage(CoreConfig config) {
-		this(serializer.serialize(config));
+	public ConfigSyncMessage(PacketByteBuf packet) {
+		this.seed = packet.readLong();
+		this.data = packet.readString();
 	}
 
 	public static void encode(ConfigSyncMessage message, PacketByteBuf packet) {
-		packet.writeByteArray(message.data);
-	}
-
-	public static ConfigSyncMessage decode(PacketByteBuf packet) {
-		return new ConfigSyncMessage(packet.readByteArray());
+		packet.writeLong(message.seed);
+		packet.writeString(message.data);
 	}
 
 	public static void receive(ConfigSyncMessage message, Supplier<NetworkManager.PacketContext> contextSupplier) {
-		NetworkManager.PacketContext context = contextSupplier.get();
-		context.queue(() -> {
-			if (context.getEnv() == EnvType.CLIENT) {
-				serializer.deserialize(message.data).ifPresent(SFCReMod::setCommonConfig);
+		if (!SFCReMod.COMMON_CONFIG.isEnableServerConfig())
+			return;
+		if (contextSupplier.get().getEnv() != EnvType.CLIENT)
+			return;
+
+		contextSupplier.get().queue(() -> {
+			try {
+				synchronized (SFCReMod.COMMON_CONFIG) {
+					SFCReMod.RUNTIME.seed = message.seed;
+					SFCReMod.COMMON_CONFIG.setCoreConfig(gson.fromJson(message.data, CoreConfig.class));
+				}
+			} catch (JsonSyntaxException e) {
+				SFCReMod.COMMON_CONFIG.load();
+				SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
+				SFCReMod.COMMON_CONFIG.save();
+				contextSupplier.get().getPlayer().sendMessage(new TranslatableText("text.sfcr.command.sync_fail"), false);
+				return;
 			}
+
+			SFCReMod.RENDERER.init();		// Reset renderer.
+			SFCReMod.RENDERER.updateConfig(SFCReMod.COMMON_CONFIG);
+			if (SFCReMod.COMMON_CONFIG.isEnableDebug())
+				contextSupplier.get().getPlayer().sendMessage(new TranslatableText("text.sfcr.command.sync_full_succ"), false);
 		});
 	}
 }

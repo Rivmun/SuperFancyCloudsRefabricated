@@ -1,17 +1,17 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.SFCReMod;
-import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import java.util.List;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.client.MinecraftClient;
+
+import java.util.List;
 
 public class ConfigScreen {
 
@@ -25,7 +25,7 @@ public class ConfigScreen {
 	ConfigCategory fog = builder.getOrCreateCategory(new TranslatableText("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(new TranslatableText("text.sfcr.category.density"));
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private int fogMin, fogMax;
 
@@ -43,11 +43,8 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG.save();
 			SFCReMod.RENDERER.updateConfig(CONFIG);
-
-			if (CONFIG.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
-				Network.sendSyncRequest(true);
 		});
 
 		return builder.build();
@@ -61,15 +58,6 @@ public class ConfigScreen {
 				.setDefaultValue(true)
 				.setTooltip(new TranslatableText("text.sfcr.option.enableMod.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableMod)
-				.build()
-		);
-		//server control
-		general.addEntry(entryBuilder
-				.startBooleanToggle(new TranslatableText("text.sfcr.option.enableServer")
-						, CONFIG.isEnableServerConfig())
-				.setDefaultValue(false)
-				.setTooltip(new TranslatableText("text.sfcr.option.enableServer.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableServerConfig)
 				.build()
 		);
 		//fog enable
@@ -129,6 +117,27 @@ public class ConfigScreen {
 				})
 				.setTooltip(new TranslatableText("text.sfcr.option.rebuildInterval.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
+				.build()
+		);
+		//server control
+		general.addEntry(entryBuilder
+				.startBooleanToggle(new TranslatableText("text.sfcr.option.enableServer")
+						, CONFIG.isEnableServerConfig())
+				.setDefaultValue(false)
+				.setTooltip(new TranslatableText("text.sfcr.option.enableServer.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableServerConfig)
+				.build()
+		);
+		//server sync time
+		general.addEntry(entryBuilder
+				.startIntSlider(new TranslatableText("text.sfcr.option.syncTime")
+						, CONFIG.getSecPerSync() / 15
+						, 1
+						, 20)
+				.setDefaultValue(4)
+				.setTextGetter(value -> new TranslatableText("text.sfcr.second", value * 15))
+				.setTooltip(new TranslatableText("text.sfcr.option.syncTime.@Tooltip"))
+				.setSaveConsumer(value -> CONFIG.setSecPerSync(value * 15))
 				.build()
 		);
 		//DEBUG
@@ -222,6 +231,25 @@ public class ConfigScreen {
 				.setDefaultValue(true)
 				.setTooltip(new TranslatableText("text.sfcr.option.enableTerrainDodge.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
+				.build()
+		);
+		//cloud color
+		clouds.addEntry(entryBuilder
+				.startColorField(new TranslatableText("text.sfcr.option.cloudColor")
+						, CONFIG.getCloudColor())
+				.setDefaultValue(0xFFFFFF)
+				.setSaveConsumer(CONFIG::setCloudColor)
+				.build()
+		);
+		//cloud bright multiplier
+		clouds.addEntry(entryBuilder
+				.startIntSlider(new TranslatableText("text.sfcr.option.cloudBright")
+						, (int) (CONFIG.getCloudBrightMultiplier() * 10)
+						, 0
+						, 10)
+				.setDefaultValue(1)
+				.setTextGetter(value -> {return Text.of(value * 10 + "%");})
+				.setSaveConsumer(value -> CONFIG.setCloudBrightMultiplier(value / 10f))
 				.build()
 		);
 	}

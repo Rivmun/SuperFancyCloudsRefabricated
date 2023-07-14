@@ -1,7 +1,6 @@
 package com.rimo.sfcr.mixin;
 
 import com.rimo.sfcr.SFCReMod;
-
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;

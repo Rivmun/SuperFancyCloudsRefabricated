@@ -1,7 +1,6 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.SFCReMod;
-import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -45,9 +44,6 @@ public class ConfigScreen {
 			//Update config
 			SFCReMod.COMMON_CONFIG.save();
 			SFCReMod.RENDERER.updateConfig(CONFIG);
-
-			if (CONFIG.isEnableServerConfig() && MinecraftClient.getInstance().player != null)
-				Network.sendSyncRequest(true);
 		});
 
 		return builder.build();

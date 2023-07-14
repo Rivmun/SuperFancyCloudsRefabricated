@@ -1,8 +1,8 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import net.minecraft.registry.tag.TagKey;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
 
 import java.util.ArrayList;

@@ -1,26 +1,19 @@
 package com.rimo.sfcr.register;
 
 import com.rimo.sfcr.SFCReMod;
-//import com.rimo.sfcr.network.ConfigSyncMessage;
-//import com.rimo.sfcr.network.RuntimeSyncMessage;
-//import com.rimo.sfcr.network.Network;
-import dev.architectury.event.events.common.LifecycleEvent;
-//import dev.architectury.event.events.common.PlayerEvent;
-import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
+import dev.architectury.event.events.common.LifecycleEvent;
+import dev.architectury.event.events.common.PlayerEvent;
+import dev.architectury.event.events.common.TickEvent;
 
 public class Event {
 	public static void register() {
 		LifecycleEvent.SERVER_LEVEL_LOAD.register(SFCReMod.RUNTIME::init);
 		TickEvent.SERVER_PRE.register(SFCReMod.RUNTIME::tick);
-		/* @TODO: we're listening request from client now, so this have no sense..
-		PlayerEvent.PLAYER_JOIN.register(player -> {
-			Network.CONFIGCHANNEL.sendToPlayer(player, new ConfigSyncMessage(SFCReMod.COMMON_CONFIG));
-			Network.RUNTIMECHANNEL.sendToPlayer(player, new RuntimeSyncMessage(SFCReMod.RUNTIME));
-		});
-		LifecycleEvent.SERVER_STOPPING.register(server -> RUNTIME.end());
-		 */
+		PlayerEvent.PLAYER_JOIN.register(SFCReMod.RUNTIME::addPlayer);
+		PlayerEvent.PLAYER_QUIT.register(SFCReMod.RUNTIME::removePlayer);
+		LifecycleEvent.SERVER_STOPPING.register(SFCReMod.RUNTIME::end);
 	}
 
 	public static void registerClient() {
@@ -29,10 +22,8 @@ public class Event {
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
 			SFCReMod.RENDERER.clean();
 			SFCReMod.RUNTIME.clientEnd();
-			if (SFCReMod.COMMON_CONFIG.isEnableServerConfig()) {
-				SFCReMod.COMMON_CONFIG_HOLDER.load();
-				SFCReMod.RENDERER.updateConfig(SFCReMod.COMMON_CONFIG);
-			}
+			SFCReMod.COMMON_CONFIG.load();
+			SFCReMod.RENDERER.updateConfig(SFCReMod.COMMON_CONFIG);
 		});
 	}
 }

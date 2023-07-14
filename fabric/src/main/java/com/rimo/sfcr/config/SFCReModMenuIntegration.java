@@ -1,12 +1,16 @@
-package com.rimo.sfcr;
+package com.rimo.sfcr.config;
 
-import com.rimo.sfcr.config.ConfigScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
+import net.fabricmc.loader.api.FabricLoader;
 
 public class SFCReModMenuIntegration implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
-		return parent -> new ConfigScreen().buildScreen();
+		if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
+			return parent -> new ConfigScreen().buildScreen();
+		} else {
+			return parent -> null;
+		}
 	}
 }

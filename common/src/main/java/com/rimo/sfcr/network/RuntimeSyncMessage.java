@@ -3,7 +3,7 @@ package com.rimo.sfcr.network;
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.core.Runtime;
 import dev.architectury.networking.NetworkManager;
-import net.minecraft.client.MinecraftClient;
+import net.fabricmc.api.EnvType;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 
@@ -15,9 +15,11 @@ public class RuntimeSyncMessage {
 	private final double partialOffset;
 
 	public RuntimeSyncMessage(Runtime data) {
-		this.time = data.time;
-		this.fullOffset = data.fullOffset;
-		this.partialOffset = data.partialOffset;
+		synchronized (SFCReMod.RUNTIME) {
+			this.time = data.time;
+			this.fullOffset = data.fullOffset;
+			this.partialOffset = data.partialOffset;
+		}
 	}
 
 	public RuntimeSyncMessage(PacketByteBuf packet) {
@@ -26,29 +28,33 @@ public class RuntimeSyncMessage {
 		this.partialOffset = packet.readDouble();
 	}
 
-	public void encode(PacketByteBuf packet) {
-		packet.writeDouble(this.time);
-		packet.writeInt(this.fullOffset);
-		packet.writeDouble(this.partialOffset);
+	public static void encode(RuntimeSyncMessage message, PacketByteBuf packet) {
+		packet.writeDouble(message.time);
+		packet.writeInt(message.fullOffset);
+		packet.writeDouble(message.partialOffset);
 	}
 
-	public void receive(Supplier<NetworkManager.PacketContext> contextSupplier) {
+	public static void receive(RuntimeSyncMessage message, Supplier<NetworkManager.PacketContext> contextSupplier) {
 		if (!SFCReMod.COMMON_CONFIG.isEnableServerConfig())
 			return;
+		if (contextSupplier.get().getEnv() != EnvType.CLIENT)
+			return;
 
-		synchronized (SFCReMod.RUNTIME) {
-			try {
-				SFCReMod.RUNTIME.time = this.time;
-				SFCReMod.RUNTIME.fullOffset = this.fullOffset;
-				SFCReMod.RUNTIME.partialOffset = this.partialOffset;
-			} catch (Exception e) {
-				MinecraftClient.getInstance().player.sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
-				SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
-				SFCReMod.COMMON_CONFIG_HOLDER.save();
+		contextSupplier.get().queue(() -> {
+			synchronized (SFCReMod.RUNTIME) {
+				try {
+					SFCReMod.RUNTIME.time = message.time;
+					SFCReMod.RUNTIME.fullOffset = message.fullOffset;
+					SFCReMod.RUNTIME.partialOffset = message.partialOffset;
+				} catch (Exception e) {
+					SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
+					SFCReMod.COMMON_CONFIG.save();
+					contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
+					return;
+				}
 			}
-		}
-
-		if (SFCReMod.COMMON_CONFIG.isEnableDebug())
-			MinecraftClient.getInstance().player.sendMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
+			if (SFCReMod.COMMON_CONFIG.isEnableDebug())
+				contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_succ"), false);
+		});
 	}
 }

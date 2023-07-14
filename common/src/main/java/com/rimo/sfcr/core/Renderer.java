@@ -7,10 +7,9 @@ import com.rimo.sfcr.config.CommonConfig;
 import com.rimo.sfcr.util.CloudDataType;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.shedaniel.math.Color;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
 import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
@@ -22,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 public class Renderer {
 
 	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
@@ -400,9 +399,9 @@ public class Renderer {
 
 	private int getCloudColor(long worldTime, CloudData data) {
 		var a = 255;
-		var r = Color.ofOpaque(CONFIG.getCloudColor()).getRed();
-		var g = Color.ofOpaque(CONFIG.getCloudColor()).getGreen();
-		var b = Color.ofOpaque(CONFIG.getCloudColor()).getBlue();
+		var r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
+		var g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
+		var b = (CONFIG.getCloudColor() & 0x0000FF);
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime

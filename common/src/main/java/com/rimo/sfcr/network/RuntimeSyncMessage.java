@@ -48,7 +48,7 @@ public class RuntimeSyncMessage {
 					SFCReMod.RUNTIME.partialOffset = message.partialOffset;
 				} catch (Exception e) {
 					SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
-					SFCReMod.COMMON_CONFIG_HOLDER.save();
+					SFCReMod.COMMON_CONFIG.save();
 					contextSupplier.get().getPlayer().sendMessage(new TranslatableText("text.sfcr.command.sync_fail"), false);
 					return;
 				}

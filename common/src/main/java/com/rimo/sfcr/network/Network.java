@@ -2,9 +2,9 @@ package com.rimo.sfcr.network;
 
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.util.WeatherType;
-import io.netty.buffer.Unpooled;
 import dev.architectury.networking.NetworkChannel;
 import dev.architectury.networking.NetworkManager;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.PacketByteBuf;

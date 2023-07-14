@@ -1,9 +1,5 @@
 package com.rimo.sfcr.core;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.config.CommonConfig;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
@@ -11,7 +7,6 @@ import com.rimo.sfcr.network.ConfigSyncMessage;
 import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.network.RuntimeSyncMessage;
 import com.rimo.sfcr.util.WeatherType;
-
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -19,9 +14,13 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class Runtime {
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	public long seed = new Random().nextLong();
 	public double time = 0;

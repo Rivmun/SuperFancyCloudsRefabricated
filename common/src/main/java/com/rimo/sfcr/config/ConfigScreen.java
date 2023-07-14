@@ -3,15 +3,16 @@ package com.rimo.sfcr.config;
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import java.util.List;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.client.MinecraftClient;
+
+import java.util.List;
 
 public class ConfigScreen {
 
@@ -25,7 +26,7 @@ public class ConfigScreen {
 	ConfigCategory fog = builder.getOrCreateCategory(new TranslatableText("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(new TranslatableText("text.sfcr.category.density"));
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private int fogMin, fogMax;
 
@@ -43,7 +44,7 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG.save();
 			SFCReMod.RENDERER.updateConfig(CONFIG);
 
 			if (CONFIG.isEnableServerConfig() && MinecraftClient.getInstance().player != null)

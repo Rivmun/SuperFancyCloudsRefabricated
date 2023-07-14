@@ -1,13 +1,19 @@
 package com.rimo.sfcr.config;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
+import me.shedaniel.architectury.platform.Platform;
 
-import me.shedaniel.autoconfig.ConfigData;
-import me.shedaniel.autoconfig.annotation.Config;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-@Config(name = "sfcr")
-public class CommonConfig extends CoreConfig implements ConfigData {
-	CommonConfig() {super();}
+public class CommonConfig extends CoreConfig {
+	public CommonConfig() {super();}
 	//----GENERAL----
 	protected boolean enableMod = true;
 	protected boolean enableDebug = false;
@@ -75,8 +81,61 @@ public class CommonConfig extends CoreConfig implements ConfigData {
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 
+	public void setCommonConfig(CommonConfig config) {		//TODO: Why do I need to write this sht...
+		this.enableMod						= config.enableMod;
+		this.enableDebug					= config.enableDebug;
+		this.enableServerConfig				= config.enableServerConfig;
+		this.secPerSync						= config.secPerSync;
+		this.cloudRenderDistance			= config.cloudRenderDistance;
+		this.cloudRenderDistanceFitToView	= config.cloudRenderDistanceFitToView;
+		this.normalRefreshSpeed				= config.normalRefreshSpeed;
+		this.enableTerrainDodge				= config.enableTerrainDodge;
+		this.enableNormalCull				= config.enableNormalCull;
+		this.cullRadianMultiplier			= config.cullRadianMultiplier;
+		this.rebuildInterval				= config.rebuildInterval;
+		this.enableFog						= config.enableFog;
+		this.fogAutoDistance				= config.fogAutoDistance;
+		this.fogMinDistance					= config.fogMinDistance;
+		this.fogMaxDistance					= config.fogMaxDistance;
+		this.enableSmoothChange				= config.enableSmoothChange;
+		this.weatherRefreshSpeed			= config.weatherRefreshSpeed;
+		this.setCoreConfig(config);
+	}
+
 	//conversion
 	public int getAutoFogMaxDistance() {
 		return (int) (cloudRenderDistance / 48f * cloudRenderDistance / 48f * cloudBlockSize / 16f);
+	}
+
+	//load
+	public void load() {
+		Gson gson = new Gson();
+		Path path = Platform.getConfigFolder().resolve(SFCReMod.MOD_ID + ".json");
+		if (Files.exists(path)) {
+			try {
+				BufferedReader reader = Files.newBufferedReader(path);
+				CommonConfig config = gson.fromJson(reader, CommonConfig.class);
+				reader.close();
+				this.setCommonConfig(config);
+			} catch (IOException | JsonParseException e) {
+				SFCReMod.exceptionCatcher(e);
+			}
+		} else {
+			this.save();
+		}
+	}
+
+	//save
+	public void save() {
+		Gson gson = new Gson();
+		Path path = Platform.getConfigFolder().resolve(SFCReMod.MOD_ID + ".json");
+		try {
+			Files.createDirectories(path.getParent());
+			BufferedWriter writer = Files.newBufferedWriter(path);
+			gson.toJson(this, writer);
+			writer.close();
+		} catch (IOException e) {
+			SFCReMod.exceptionCatcher(e);
+		}
 	}
 }

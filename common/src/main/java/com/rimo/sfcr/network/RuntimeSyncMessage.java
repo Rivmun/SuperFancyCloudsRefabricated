@@ -4,7 +4,6 @@ import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.core.Runtime;
 import dev.architectury.networking.NetworkManager;
 import net.fabricmc.api.EnvType;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 
@@ -49,7 +48,7 @@ public class RuntimeSyncMessage {
 					SFCReMod.RUNTIME.partialOffset = message.partialOffset;
 				} catch (Exception e) {
 					SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
-					SFCReMod.COMMON_CONFIG_HOLDER.save();
+					SFCReMod.COMMON_CONFIG.save();
 					contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);
 					return;
 				}

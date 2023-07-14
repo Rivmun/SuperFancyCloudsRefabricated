@@ -44,6 +44,7 @@ public class ConfigSyncMessage {
 					SFCReMod.COMMON_CONFIG.setCoreConfig(gson.fromJson(message.data, CoreConfig.class));
 				}
 			} catch (JsonSyntaxException e) {
+				SFCReMod.COMMON_CONFIG.load();
 				SFCReMod.COMMON_CONFIG.setEnableServerConfig(false);
 				SFCReMod.COMMON_CONFIG.save();
 				contextSupplier.get().getPlayer().sendMessage(Text.translatable("text.sfcr.command.sync_fail"), false);

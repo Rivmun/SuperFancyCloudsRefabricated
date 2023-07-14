@@ -20,7 +20,7 @@ import java.util.Random;
 
 public class Runtime {
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	public long seed = new Random().nextLong();
 	public double time = 0;

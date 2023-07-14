@@ -1,8 +1,8 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.util.CloudRefreshSpeed;
-import net.minecraft.registry.tag.TagKey;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
 
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class CoreConfig {
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 
-	public void setCoreConfig(CoreConfig config) {		//TODO: why I need to write this sht...
+	public void setCoreConfig(CoreConfig config) {		//TODO: why do I need to write this sht...
 		this.cloudHeight					= config.cloudHeight;
 		this.cloudBlockSize					= config.cloudBlockSize;
 		this.cloudLayerThickness			= config.cloudLayerThickness;

@@ -10,7 +10,6 @@ import com.rimo.sfcr.network.Network;
 import com.rimo.sfcr.network.RuntimeSyncMessage;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
-import me.shedaniel.math.Color;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -90,9 +89,9 @@ public class Command {
 						content.getSource().sendMessage(Text.of("§eCloud Thickness: §r"	+ SFCReMod.COMMON_CONFIG.getCloudLayerThickness()));
 						content.getSource().sendMessage(Text.of("§eSample Step: §r"		+ SFCReMod.COMMON_CONFIG.getSampleSteps()));
 						content.getSource().sendMessage(Text.of("§eCloud color: §r"		+
-								Integer.toHexString(Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getRed()) +
-								Integer.toHexString(Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getGreen()) +
-								Integer.toHexString(Color.ofOpaque(SFCReMod.COMMON_CONFIG.getCloudColor()).getBlue())
+								Integer.toHexString((SFCReMod.COMMON_CONFIG.getCloudColor() & 0xFF0000) >> 16) +
+								Integer.toHexString((SFCReMod.COMMON_CONFIG.getCloudColor() & 0x00FF00) >> 8) +
+								Integer.toHexString(SFCReMod.COMMON_CONFIG.getCloudColor() & 0x0000FF)
 						));
 						content.getSource().sendMessage(Text.of("§eCloud Brht Multi: §r"	+ SFCReMod.COMMON_CONFIG.getCloudBrightMultiplier()));
 						content.getSource().sendMessage(Text.of("§eDynamic Density: §r"	+ SFCReMod.COMMON_CONFIG.isEnableWeatherDensity()));
@@ -362,13 +361,13 @@ public class Command {
 							)
 					)
 					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
-						SFCReMod.COMMON_CONFIG_HOLDER.load();
+						SFCReMod.COMMON_CONFIG.load();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendMessage(Text.of("Reloading complete!"));
 						return 1;
 					}))
 					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
-						SFCReMod.COMMON_CONFIG_HOLDER.save();
+						SFCReMod.COMMON_CONFIG.save();
 						SFCReMod.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
 						content.getSource().sendMessage(Text.of("Config saving complete!"));
 						return 1;

@@ -9,7 +9,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 public class Network {
@@ -24,48 +23,10 @@ public class Network {
 	public static void init() {
 		CONFIG_CHANNEL.register(ConfigSyncMessage.class, ConfigSyncMessage::encode, ConfigSyncMessage::new, ConfigSyncMessage::receive);
 		RUNTIME_CHANNEL.register(RuntimeSyncMessage.class, RuntimeSyncMessage::encode, RuntimeSyncMessage::new, RuntimeSyncMessage::receive);
-		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_SYNC_REQUEST, Network::receiveSyncRequest);
 	}
 
 	public static void initClient() {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_WEATHER, Network::receiveWeather);
-	}
-
-	@Environment(EnvType.CLIENT)
-	public static void sendSyncRequest(boolean isFull) {
-		if (!SFCReMod.COMMON_CONFIG.isEnableServerConfig())
-			return;
-		PacketByteBuf packet = new PacketByteBuf(Unpooled.buffer());
-		packet.writeBoolean(isFull);
-		NetworkManager.sendToServer(PACKET_SYNC_REQUEST, packet);
-	}
-
-	public static void receiveSyncRequest(PacketByteBuf packet, NetworkManager.PacketContext content) {
-		if (!SFCReMod.COMMON_CONFIG.isEnableMod())
-			return;
-
-		var player = SFCReMod.RUNTIME.getPlayerList().stream()
-				.filter(manager -> manager.getPlayer() == content.getPlayer())
-				.toList().get(0);
-		if (player.getLastSyncTime() >= SFCReMod.RUNTIME.time - SFCReMod.COMMON_CONFIG.getSecPerSync()) {
-			return;
-		} else {
-			player.setLastSyncTime(SFCReMod.RUNTIME.time);
-		}
-
-		boolean isFull = packet.readBoolean();
-		if (isFull)
-			Network.CONFIG_CHANNEL.sendToPlayer(
-					(ServerPlayerEntity) content.getPlayer(),
-					new ConfigSyncMessage(SFCReMod.RUNTIME.seed, SFCReMod.COMMON_CONFIG)
-			);
-		Network.RUNTIME_CHANNEL.sendToPlayer(
-				(ServerPlayerEntity) content.getPlayer(),
-				new RuntimeSyncMessage(SFCReMod.RUNTIME)
-		);
-
-		if (SFCReMod.COMMON_CONFIG.isEnableDebug())
-			SFCReMod.LOGGER.info("[SFCRe] Auto send " + (isFull ? "full" : "") + "sync data to " + content.getPlayer().getDisplayName().getString());
 	}
 
 	public static void sendWeather(MinecraftServer server) {

@@ -1,11 +1,11 @@
 package com.rimo.sfcr.register;
 
 import com.rimo.sfcr.SFCReMod;
+import dev.architectury.event.events.client.ClientPlayerEvent;
+import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
-import dev.architectury.event.events.client.ClientPlayerEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
 
 public class Event {
 	public static void register() {
@@ -22,7 +22,7 @@ public class Event {
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
 			SFCReMod.RENDERER.clean();
 			SFCReMod.RUNTIME.clientEnd();
-			SFCReMod.COMMON_CONFIG_HOLDER.load();
+			SFCReMod.COMMON_CONFIG.load();
 			SFCReMod.RENDERER.updateConfig(SFCReMod.COMMON_CONFIG);
 		});
 	}

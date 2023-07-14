@@ -16,13 +16,13 @@ public abstract class GameOptionsMixin {
 
 	@Shadow
 	private SimpleOption<Integer> viewDistance;
-	
+
 	//Update cloudRenderDistance when view distance is changed.
 	@Inject(method = "write", at = @At("RETURN"), cancellable = true)
 	private void updateCloudRenderDistance(CallbackInfo ci) {
 		if (SFCReMod.COMMON_CONFIG.isCloudRenderDistanceFitToView()) {
 			SFCReMod.COMMON_CONFIG.setCloudRenderDistance(viewDistance.getValue() * 12);
-			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG.save();
 		}
 		ci.cancel();
 	}

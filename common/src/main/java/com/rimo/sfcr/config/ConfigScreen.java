@@ -25,7 +25,7 @@ public class ConfigScreen {
 	ConfigCategory fog = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private int fogMin, fogMax;
 
@@ -43,7 +43,7 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			SFCReMod.COMMON_CONFIG_HOLDER.save();
+			SFCReMod.COMMON_CONFIG.save();
 			SFCReMod.RENDERER.updateConfig(CONFIG);
 
 			if (CONFIG.isEnableServerConfig() && MinecraftClient.getInstance().player != null)

@@ -22,7 +22,7 @@ import net.minecraft.util.math.Vec3d;
 public class Renderer {
 
 	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;

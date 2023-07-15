@@ -159,7 +159,7 @@ public class ConfigScreen {
 						, CONFIG.getCloudHeight()
 						,-1
 						,384)
-				.setDefaultValue(192)
+				.setDefaultValue(-1)
 				.setTextGetter(value -> {
 					if (value < 0)
 						return new TranslatableText("text.sfcr.option.cloudHeight.followVanilla");
@@ -173,7 +173,7 @@ public class ConfigScreen {
 		clouds.addEntry(entryBuilder
 				.startDropdownMenu(new TranslatableText("text.sfcr.option.cloudBlockSize")
 						,TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
-				.setDefaultValue(16)
+				.setDefaultValue(8)
 				.setSuggestionMode(false)
 				.setSelections(() -> {
 					List<Integer> list = new ArrayList<Integer>();

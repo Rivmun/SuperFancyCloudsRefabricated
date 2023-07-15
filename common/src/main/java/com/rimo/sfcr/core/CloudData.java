@@ -67,10 +67,10 @@ public class CloudData implements CloudDataImplement {
 
 	/* - - - - - Sampler Core - - - - - */
 
-	private static final float baseFreq = 0.05f;
+	private static final float baseFreq = 0.08f;
 	private static final float baseTimeFactor = 0.01f;
 
-	private static final float l1Freq = 0.09f;
+	private static final float l1Freq = 0.12f;
 	private static final float l1TimeFactor = 0.02f;
 
 	private static final float l2Freq = 0.001f;

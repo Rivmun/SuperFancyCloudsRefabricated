@@ -407,9 +407,9 @@ public class Renderer {
 
 	private float[] getCloudColor(long worldTime, CloudData data) {
 		float a = 1f;
-		float r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
-		float g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
-		float b = (CONFIG.getCloudColor() & 0x0000FF);
+		float r = ((CONFIG.getCloudColor() & 0xFF0000) >> 16	) / 255f;
+		float g = ((CONFIG.getCloudColor() & 0x00FF00) >> 8		) / 255f;
+		float b = ((CONFIG.getCloudColor() & 0x0000FF)			) / 255f;
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
@@ -422,14 +422,14 @@ public class Renderer {
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
 			t = t > 22500 ? t - 22000 : t + 1500;
-			r = (float) (r - Math.sin(t / 2000d * Math.PI) / 8);
-			g = (float) (g - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
-			b = (float) (b - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
+			r = r * (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			g = g * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
+			b = b * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
 			t -= 11500;
-			r = (float) (r - Math.sin(t / 2000d * Math.PI) / 8);
-			g = (float) (g - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
-			b = (float) (b - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
+			r = r * (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			g = g * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
+			b = b * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		}
 
 		return new float[]{a, r, g, b};

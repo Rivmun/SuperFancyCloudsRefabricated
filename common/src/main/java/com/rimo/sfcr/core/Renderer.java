@@ -8,11 +8,11 @@ import com.rimo.sfcr.util.CloudDataType;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 public class Renderer {
 
 	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG_HOLDER.getConfig();
+	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
 
 	private float cloudDensityByWeather = 0f;
 	private float cloudDensityByBiome = 0f;
@@ -166,6 +166,11 @@ public class Renderer {
 			RenderSystem.depthMask(true);
 
 			Vec3d cloudColor = MinecraftClient.getInstance().world.getCloudsColor(tickDelta);
+			Vec3d cloudColor2 = new Vec3d(
+					cloudColor.x + (1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
+					cloudColor.y + (1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
+					cloudColor.z + (1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
+			);
 
 			synchronized (this) {
 
@@ -180,7 +185,7 @@ public class Renderer {
 
 				if (++timeRebuild > CONFIG.getRebuildInterval()) {
 					timeRebuild = 0;
-					BufferBuilder cb = rebuildCloudMesh(cloudColor, Tessellator.getInstance().getBuffer());
+					BufferBuilder cb = rebuildCloudMesh(cloudColor2, Tessellator.getInstance().getBuffer());
 
 					if (cb != null) {
 						if (cloudBuffer != null)
@@ -305,7 +310,7 @@ public class Renderer {
 							verCache[0][0] + 0.01f,
 							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 							verCache[0][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
-									).normalize()) < 0.034074f) {		// clouds is moving, z-pos isn't precise, so leave some margin
+									).normalize()) < 0.003805f) {		// clouds is moving, z-pos isn't precise, so leave some margin
 						// Position Culling
 						int j = -1;
 						while (++j < 4) {
@@ -401,30 +406,33 @@ public class Renderer {
 	}
 
 	private float[] getCloudColor(long worldTime, CloudData data) {
-		float[] m = {1, 1, 1, 1};
+		float a = 1f;
+		float r = ((CONFIG.getCloudColor() & 0xFF0000) >> 16	) / 255f;
+		float g = ((CONFIG.getCloudColor() & 0x00FF00) >> 8		) / 255f;
+		float b = ((CONFIG.getCloudColor() & 0x0000FF)			) / 255f;
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
 		switch (data.getDataType()) {
-			case TRANS_IN: m[0] = 1 - data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f; break;
-			case TRANS_OUT: m[0] = (int) (255 * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_IN: a = a - data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f; break;
+			case TRANS_OUT: a = (int) (a * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
 			default: break;
 		}
 
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
 			t = t > 22500 ? t - 22000 : t + 1500;
-			m[1] = (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
-			m[2] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
-			m[3] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
+			r = r * (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			g = g * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
+			b = b * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
 			t -= 11500;
-			m[1] = (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
-			m[2] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
-			m[3] = (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
+			r = r * (float) (1 - Math.sin(t / 2000d * Math.PI) / 8);
+			g = g * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1);
+			b = b * (float) (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6);
 		}
 
-		return m;
+		return new float[]{a, r, g, b};
 	}
 
 	private float nextDensityStep(float target, float current, float speed) {

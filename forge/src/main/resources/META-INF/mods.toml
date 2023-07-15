@@ -34,10 +34,3 @@ mandatory = true
 versionRange = "[1.32.67,)"
 ordering = "AFTER"
 side = "BOTH"
-
-[[dependencies.sfcr]]
-modId = "cloth-config"
-mandatory = true
-versionRange = "[4.16.91,)"
-ordering = "AFTER"
-side = "BOTH"

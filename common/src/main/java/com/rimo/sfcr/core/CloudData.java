@@ -46,7 +46,7 @@ public class CloudData implements CloudDataImplement {
 	// Overload
 	public CloudData(CloudData prevData, CloudData nextData, CloudDataType type) {
 		dataType = type;
-		lifeTime = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) / 5f;
+		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
 	}
 
 	public static void initSampler(long seed) {

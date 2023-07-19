@@ -98,7 +98,7 @@ public class Command {
 						content.getSource().sendMessage(Text.of("§eDensity Threshld: §r"	+ SFCReMod.COMMON_CONFIG.getDensityThreshold()));
 						content.getSource().sendMessage(Text.of("§eThrshld Multiplr: §r"	+ SFCReMod.COMMON_CONFIG.getThresholdMultiplier()));
 						content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r"	+ SFCReMod.COMMON_CONFIG.getWeatherPreDetectTime() / 20));
-						content.getSource().sendMessage(Text.of("§eChanging Speed: §r"	+ SFCReMod.COMMON_CONFIG.getNumFromSpeedEnum(SFCReMod.COMMON_CONFIG.getDensityChangingSpeed())));
+						content.getSource().sendMessage(Text.of("§eChanging Speed: §r"	+ SFCReMod.COMMON_CONFIG.getDensityChangingSpeed().getName()));
 						content.getSource().sendMessage(Text.of("§eCommon Density: §r"	+ SFCReMod.COMMON_CONFIG.getCloudDensityPercent()));
 						content.getSource().sendMessage(Text.of("§eRain Density: §r"		+ SFCReMod.COMMON_CONFIG.getRainDensityPercent()));
 						content.getSource().sendMessage(Text.of("§eThunder Density: §r"	+ SFCReMod.COMMON_CONFIG.getThunderDensityPercent()));

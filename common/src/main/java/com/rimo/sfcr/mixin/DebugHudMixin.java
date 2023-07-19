@@ -11,8 +11,8 @@ import java.util.List;
 
 @Mixin(DebugHud.class)
 public abstract class DebugHudMixin {
-	@Inject(method = "getLeftText", at = @At("RETURN"))
-	public List<String> getLeftText(CallbackInfoReturnable<List<String>> callback) {
+	@Inject(method = "getLeftText", at = @At("RETURN"), cancellable = true)
+	public void getLeftText(CallbackInfoReturnable<List<String>> callback) {
 		List<String> list = callback.getReturnValue();
 
 		// Add Debug Strings
@@ -22,6 +22,6 @@ public abstract class DebugHudMixin {
 					(SFCReMod.RENDERER.cullStateSkipped + SFCReMod.RENDERER.cullStateShown) + " faces, " +
 					 SFCReMod.RENDERER.cullStateSkipped + " Skipped.");
 
-		return list;
+		callback.setReturnValue(list);
 	}
 }

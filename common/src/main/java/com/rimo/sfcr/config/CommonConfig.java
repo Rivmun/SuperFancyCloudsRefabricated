@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
+import com.rimo.sfcr.util.CullMode;
 import dev.architectury.platform.Platform;
 
 import java.io.BufferedReader;
@@ -20,6 +21,7 @@ public class CommonConfig extends CoreConfig {
 	private int secPerSync = 60;
 	private boolean enableFog = true;
 	private boolean enableNormalCull = true;
+	private CullMode cullMode = CullMode.RECTANGULAR;
 	private float cullRadianMultiplier = 1.0f;
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
@@ -45,6 +47,7 @@ public class CommonConfig extends CoreConfig {
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public boolean isEnableNormalCull() {return enableNormalCull;}
+	public CullMode getCullMode() {return cullMode;}
 	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
 	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableFog() {return enableFog;}
@@ -64,6 +67,7 @@ public class CommonConfig extends CoreConfig {
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableNormalCull(boolean isEnable) {enableNormalCull = isEnable;}
+	public void setCullMode(CullMode cullMode) {this.cullMode = cullMode;}
 	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
@@ -90,6 +94,7 @@ public class CommonConfig extends CoreConfig {
 		this.normalRefreshSpeed				= config.normalRefreshSpeed;
 		this.enableTerrainDodge				= config.enableTerrainDodge;
 		this.enableNormalCull				= config.enableNormalCull;
+		this.cullMode = config.cullMode;
 		this.cullRadianMultiplier			= config.cullRadianMultiplier;
 		this.rebuildInterval				= config.rebuildInterval;
 		this.enableFog						= config.enableFog;

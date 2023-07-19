@@ -2,9 +2,12 @@ package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.util.CloudRefreshSpeed;
+import com.rimo.sfcr.util.CullMode;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.api.Requirement;
+import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -86,19 +89,27 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableNormalCull)
 				.build()
 		);
+		//cull mode
+		EnumListEntry<CullMode> cullMode = entryBuilder
+				.startEnumSelector(Text.translatable("text.sfcr.option.cullMode")
+						, CullMode.class
+						, CONFIG.getCullMode())
+				.setDefaultValue(CullMode.RECTANGULAR)
+				.setEnumNameProvider(value -> ((CullMode) value).getName())
+				.setTooltip(Text.translatable("text.sfcr.option.cullMode.@Tooltip"))
+				.setSaveConsumer(CONFIG::setCullMode)
+				.build();
+		general.addEntry(cullMode);
 		//cull radian multiplier
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cullRadianMultiplier")
 						,(int) (CONFIG.getCullRadianMultiplier() * 10)
 						,5
-						,16)
+						,15)
 				.setDefaultValue(10)
-				.setTextGetter(value -> {
-					if (value == 16)
-						return Text.translatable("text.sfcr.disabled");
-					return Text.of(value / 10f + "x");
-				})
+				.setTextGetter(value -> Text.of(value / 10f + "x"))
 				.setTooltip(Text.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
+				.setRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
 				.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 				.build()
 		);
@@ -109,11 +120,10 @@ public class ConfigScreen {
 						,0
 						,30)
 				.setDefaultValue(10)
-				.setTextGetter(value -> {
-					if (value == 0)
-						return Text.translatable("text.sfcr.disabled");
-					return Text.translatable("text.sfcr.frame", value);
-				})
+				.setTextGetter(value -> value == 0 ?
+						Text.translatable("text.sfcr.disabled") :
+						Text.translatable("text.sfcr.frame", value)
+				)
 				.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
 				.build()
@@ -158,11 +168,10 @@ public class ConfigScreen {
 						,-1
 						,384)
 				.setDefaultValue(192)
-				.setTextGetter(value -> {
-					if (value < 0)
-						return Text.translatable("text.sfcr.option.cloudHeight.followVanilla");
-					return Text.of(value.toString());
-				})
+				.setTextGetter(value -> value < 0 ?
+						Text.translatable("text.sfcr.option.cloudHeight.followVanilla") :
+						Text.of(value.toString())
+				)
 				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudHeight)
 				.build()
@@ -185,7 +194,7 @@ public class ConfigScreen {
 						,3
 						,66)
 				.setDefaultValue(32)
-				.setTextGetter(value -> {return Text.of(String.valueOf(value - 2));})
+				.setTextGetter(value -> Text.of(String.valueOf(value - 2)))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudLayerThickness)
 				.build()
@@ -197,7 +206,7 @@ public class ConfigScreen {
 						,32
 						,192)
 				.setDefaultValue(48)
-				.setTextGetter(value -> {return Text.of(value.toString());})
+				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
 				.setSaveConsumer(value -> CONFIG.setCloudRenderDistance(value * 2))
 				.build()
@@ -218,7 +227,7 @@ public class ConfigScreen {
 						,1
 						,3)
 				.setDefaultValue(2)
-				.setTextGetter(value -> {return Text.of(value.toString());})
+				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.sampleSteps.@Tooltip"))
 				.setSaveConsumer(CONFIG::setSampleSteps)
 				.build()
@@ -247,7 +256,7 @@ public class ConfigScreen {
 						, 0
 						, 10)
 				.setDefaultValue(1)
-				.setTextGetter(value -> {return Text.of(value * 10 + "%");})
+				.setTextGetter(value -> Text.of(value * 10 + "%"))
 				.setSaveConsumer(value -> CONFIG.setCloudBrightMultiplier(value / 10f))
 				.build()
 		);
@@ -270,7 +279,7 @@ public class ConfigScreen {
 						,1
 						,32)
 				.setDefaultValue(2)
-				.setTextGetter(value -> {return Text.of(value.toString());})
+				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.fogMinDistance.@Tooltip"))
 				.setSaveConsumer(newValue -> fogMin = newValue)
 				.build()
@@ -282,7 +291,7 @@ public class ConfigScreen {
 						,1
 						,32)
 				.setDefaultValue(4)
-				.setTextGetter(value -> {return Text.of(value.toString());})
+				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.fogMaxDistance.@Tooltip"))
 				.setSaveConsumer(newValue -> fogMax = newValue)
 				.build()
@@ -324,7 +333,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(25)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setCloudDensityPercent)
 				.build()
 		);
@@ -335,7 +344,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(60)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setRainDensityPercent)
 				.build()
 		);
@@ -346,7 +355,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(90)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setThunderDensityPercent)
 				.build()
 		);
@@ -357,11 +366,10 @@ public class ConfigScreen {
 						,0
 						,30)
 				.setDefaultValue(10)
-				.setTextGetter(value -> {
-					if (value == 0)
-						return Text.translatable("text.sfcr.disabled");
-					return Text.translatable("text.sfcr.second", value);
-				})
+				.setTextGetter(value -> value == 0 ?
+						Text.translatable("text.sfcr.disabled") :
+						Text.translatable("text.sfcr.second", value)
+				)
 				.setTooltip(Text.translatable("text.sfcr.option.weatherPreDetectTime.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherPreDetectTime)
 				.build()
@@ -372,7 +380,7 @@ public class ConfigScreen {
 						,CloudRefreshSpeed.class
 						, CONFIG.getNormalRefreshSpeed())
 				.setDefaultValue(CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setNormalRefreshSpeed)
 				.build()
@@ -383,7 +391,7 @@ public class ConfigScreen {
 						,CloudRefreshSpeed.class
 						, CONFIG.getWeatherRefreshSpeed())
 				.setDefaultValue(CloudRefreshSpeed.FAST)
-				.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.weatherRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherRefreshSpeed)
 				.build()
@@ -394,7 +402,7 @@ public class ConfigScreen {
 						,CloudRefreshSpeed.class
 						, CONFIG.getDensityChangingSpeed())
 				.setDefaultValue(CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider((value) -> getNameFromSpeedEnum((CloudRefreshSpeed) value))
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.densityChangingSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setDensityChangingSpeed)
 				.build()
@@ -420,7 +428,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(60)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setSnowDensity)
 				.build()
 		);
@@ -431,7 +439,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(90)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setRainDensity)
 				.build()
 		);
@@ -442,7 +450,7 @@ public class ConfigScreen {
 						,0
 						,100)
 				.setDefaultValue(0)
-				.setTextGetter(value -> {return Text.of(value + "%");})
+				.setTextGetter(value -> Text.of(value + "%"))
 				.setSaveConsumer(CONFIG::setNoneDensity)
 				.build()
 		);
@@ -475,19 +483,4 @@ public class ConfigScreen {
 		);
 	}
 
-	private Text getNameFromSpeedEnum(CloudRefreshSpeed value) {
-		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
-			return Text.translatable("text.sfcr.option.cloudRefreshSpeed.VERY_FAST");
-		} else if (value.equals(CloudRefreshSpeed.FAST)){
-			return Text.translatable("text.sfcr.option.cloudRefreshSpeed.FAST");
-		} else if (value.equals(CloudRefreshSpeed.NORMAL)) {
-			return Text.translatable("text.sfcr.option.cloudRefreshSpeed.NORMAL");
-		} else if (value.equals(CloudRefreshSpeed.SLOW)) {
-			return Text.translatable("text.sfcr.option.cloudRefreshSpeed.SLOW");
-		} else if (value.equals(CloudRefreshSpeed.VERY_SLOW)) {
-			return Text.translatable("text.sfcr.option.cloudRefreshSpeed.VERY_SLOW");
-		} else {
-			return Text.of("");
-		}
-	}
 }

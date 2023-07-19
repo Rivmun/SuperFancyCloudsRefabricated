@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.rimo.sfcr.SFCReMod;
 import com.rimo.sfcr.config.CommonConfig;
 import com.rimo.sfcr.util.CloudDataType;
+import com.rimo.sfcr.util.CullMode;
 import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
@@ -30,9 +31,9 @@ public class Renderer {
 	private boolean isBiomeChange = false;
 	public float cloudHeight;
 
-	private int normalRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed());
-	private int weatheringRefreshSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getWeatherRefreshSpeed()) / 2;
-	private int densityChangingSpeed = CONFIG.getNumFromSpeedEnum(CONFIG.getDensityChangingSpeed());
+	private int normalRefreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
+	private int weatheringRefreshSpeed = CONFIG.getWeatherRefreshSpeed().getValue() / 2;
+	private int densityChangingSpeed = CONFIG.getDensityChangingSpeed().getValue();
 
 	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
 
@@ -273,12 +274,27 @@ public class Renderer {
 	private BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder) {
 
 		var client = MinecraftClient.getInstance();
-		Vec3d camVec = new Vec3d(
-				-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw()	)),
-				-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch()	)),
-				 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()	))
-		).normalize();
-		double fovCos = Math.cos(client.options.getFov().getValue() * Math.toRadians(client.player.getFovMultiplier()) * CONFIG.getCullRadianMultiplier());
+		Vec3d camVec = null;
+		Vec3d[] camProjBorder = null;
+		double fovCos = 0, extraAngleSin = 0;
+
+		if (CONFIG.getCullMode().equals(CullMode.CIRCULAR)) {
+			camVec = new Vec3d(
+					-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw())),
+					-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch())),
+					 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()))
+			).normalize();
+			fovCos = Math.cos(Math.toRadians(client.options.getFov().getValue() * client.player.getFovMultiplier() * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
+		} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
+			var camProj = client.gameRenderer.getCamera().getProjection();
+			camProjBorder = new Vec3d[]{
+					camProj.getTopRight().crossProduct(camProj.getTopLeft()).normalize(),			//up
+					camProj.getBottomLeft().crossProduct(camProj.getBottomRight()).normalize(),		//down
+					camProj.getTopLeft().crossProduct(camProj.getBottomLeft()).normalize(),			//left
+					camProj.getBottomRight().crossProduct(camProj.getTopRight()).normalize()		//right
+			};
+			extraAngleSin = Math.sin(Math.toRadians(client.options.getFov().getValue() * (1.9f - client.player.getFovMultiplier() - CONFIG.getCullRadianMultiplier())));		//increase 0.1 for better visual.
+		}
 
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
@@ -308,14 +324,28 @@ public class Renderer {
 							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 							verCache[0][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
 									).normalize()) < 0.003805f) {		// clouds is moving, z-pos isn't precise, so leave some margin
+
 						// Position Culling
 						int j = -1;
 						while (++j < 4) {
-							if (CONFIG.getCullRadianMultiplier() > 1.5f || camVec.dotProduct(new Vec3d(
+							Vec3d cloudVec = new Vec3d(
 									verCache[j][0] + 0.01f,
 									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
 									verCache[j][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
-											).normalize()) > fovCos) {
+							).normalize();
+							boolean isInRange = true;
+
+							if (CONFIG.getCullMode().equals(CullMode.CIRCULAR) && camVec.dotProduct(cloudVec) < fovCos) {
+								continue;
+							} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
+								for (Vec3d plane : camProjBorder)
+									if (plane.dotProduct(cloudVec) < extraAngleSin) {
+										isInRange = false;
+										break;
+									}
+							}
+
+							if (isInRange) {
 								for (int k = 0; k < 4; k++)
 									builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
 								break;
@@ -406,8 +436,8 @@ public class Renderer {
 		// Alpha changed by cloud type and lifetime
 		switch (data.getDataType()) {
 			case NORMAL, TRANS_MID_BODY: break;
-			case TRANS_IN: a = (int) (a - a * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
-			case TRANS_OUT: a = (int) (a * data.getLifeTime() / CONFIG.getNumFromSpeedEnum(CONFIG.getNormalRefreshSpeed()) * 5f); break;
+			case TRANS_IN: a = (int) (a - a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f); break;
+			case TRANS_OUT: a = (int) (a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f); break;
 		}
 
 		// Color changed by time...
@@ -432,8 +462,8 @@ public class Renderer {
 
 	//Update Setting.
 	public void updateConfig(CommonConfig config) {
-		normalRefreshSpeed = config.getNumFromSpeedEnum(config.getNormalRefreshSpeed());
-		weatheringRefreshSpeed = config.getNumFromSpeedEnum(config.getWeatherRefreshSpeed()) / 2;
-		densityChangingSpeed = config.getNumFromSpeedEnum(config.getDensityChangingSpeed());
+		normalRefreshSpeed = config.getNormalRefreshSpeed().getValue();
+		weatheringRefreshSpeed = config.getWeatherRefreshSpeed().getValue() / 2;
+		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
 	}
 }

@@ -100,22 +100,6 @@ public class CoreConfig {
 		this.biomeFilterList				= config.biomeFilterList;
 	}
 
-	public int getNumFromSpeedEnum(CloudRefreshSpeed value) {
-		if (value.equals(CloudRefreshSpeed.VERY_FAST)) {
-			return 5;
-		} else if (value.equals(CloudRefreshSpeed.FAST)){
-			return 10;
-		} else if (value.equals(CloudRefreshSpeed.NORMAL)) {
-			return 20;
-		} else if (value.equals(CloudRefreshSpeed.SLOW)) {
-			return 30;
-		} else if (value.equals(CloudRefreshSpeed.VERY_SLOW)) {
-			return 40;
-		} else {
-			return 20;
-		}
-	}
-
 	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
 		var isHas = false;
 		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {

@@ -1,10 +1,12 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
+import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -18,7 +20,9 @@ public class ConfigScreen {
 	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
 
-	private final Config CONFIG = Client.CONFIG;
+	private final Config CONFIG = Common.CONFIG;
+	private final boolean oldEnableMod = CONFIG.isEnableMod();
+	private BooleanListEntry enableModToggle;
 
 	public Screen buildScreen() {
 		buildCategory();
@@ -29,26 +33,43 @@ public class ConfigScreen {
 			Config.save(CONFIG);
 			Client.DATA.setConfig(CONFIG);
 			Client.RENDERER.setRenderer(CONFIG);
+			if (oldEnableMod != enableModToggle.getValue()) {
+				var manager = MinecraftClient.getInstance().getResourcePackManager();
+				if (CONFIG.isEnableMod()) {
+					manager.enable(Client.buildInPackId.toString());
+				} else {
+					manager.disable(Client.buildInPackId.toString());
+				}
+				MinecraftClient.getInstance().reloadResources();
+			}
 		});
 
 		return builder.build();
 	}
 
 	private void buildCategory() {
-		//cloud height
+		//enable
+		enableModToggle = entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
+						CONFIG.isEnableMod())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableMod.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableMod)
+				.build();
+		general.addEntry(enableModToggle);
+		//cloud height offset
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
-						, CONFIG.getCloudHeight()
-						,-1
-						,384)
-				.setDefaultValue(-1)
+						, CONFIG.getCloudHeightOffset()
+						,-128
+						,128)
+				.setDefaultValue(0)
 				.setTextGetter(value -> {
-					if (value < 0)
+					if (value == 0)
 						return Text.translatable("text.sfcr.option.followVanilla");
 					return Text.of(value.toString());
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudHeight)
+				.setSaveConsumer(CONFIG::setCloudHeightOffset)
 				.build()
 		);
 		//cloud layer height
@@ -63,7 +84,7 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setCloudLayerHeight)
 				.build()
 		);
-		var isFitToView = entryBuilder
+		BooleanListEntry isFitToView = entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
 						, CONFIG.isEnableRenderDistanceFitToView())
 				.setDefaultValue(false)
@@ -79,7 +100,7 @@ public class ConfigScreen {
 				.setDefaultValue(48)
 				.setTextGetter(value -> {
 					if (value == 31)
-						return Text.translatable("text.sfcr.option.followVanilla").append(":" + MinecraftClient.getInstance().options.getCloudRenderDistance());
+						return Text.translatable("text.sfcr.option.followVanilla").append(": " + MinecraftClient.getInstance().options.getCloudRenderDistance().getValue());
 					return Text.of(value.toString());
 				})
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
@@ -108,6 +129,14 @@ public class ConfigScreen {
 				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.enableTerrainDodge.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
+				.build()
+		);
+		//debug
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDebug")
+						, CONFIG.isEnableDebug())
+				.setDefaultValue(false)
+				.setSaveConsumer(CONFIG::setEnableDebug)
 				.build()
 		);
 	}

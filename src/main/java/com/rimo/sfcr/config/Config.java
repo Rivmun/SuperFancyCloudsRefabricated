@@ -2,8 +2,7 @@ package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.rimo.sfcr.Client;
-import me.shedaniel.autoconfig.ConfigData;
+import com.rimo.sfcr.Common;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -17,17 +16,25 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Config implements ConfigData {
+public class Config {
 	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of(
 			"#minecraft:is_river"
 	));
 
-	public int getCloudHeight() {
-		return cloudHeight;
+	public boolean isEnableMod() {
+		return enableMod;
 	}
 
-	public void setCloudHeight(int cloudHeight) {
-		this.cloudHeight = cloudHeight;
+	public void setEnableMod(boolean enableMod) {
+		this.enableMod = enableMod;
+	}
+
+	public int getCloudHeightOffset() {
+		return cloudHeightOffset;
+	}
+
+	public void setCloudHeightOffset(int cloudHeightOffset) {
+		this.cloudHeightOffset = cloudHeightOffset;
 	}
 
 	public int getCloudLayerHeight() {
@@ -183,7 +190,16 @@ public class Config implements ConfigData {
 		this.biomeBlackList = biomeBlackList;
 	}
 
-	private int cloudHeight = -1;
+	public boolean isEnableDebug() {
+		return enableDebug;
+	}
+
+	public void setEnableDebug(boolean enableDebug) {
+		this.enableDebug = enableDebug;
+	}
+
+	private boolean enableMod = true;
+	private int cloudHeightOffset = 0;
 	private int cloudLayerHeight = 8;
 	private int renderDistance = 48;
 	private boolean enableRenderDistanceFitToView = false;
@@ -204,9 +220,11 @@ public class Config implements ConfigData {
 	private boolean enableBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeBlackList = DEF_BIOME_BLACKLIST;
 
+	private boolean enableDebug = false;
+
 	public static Config load() {
 		Gson gson = new Gson();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Client.MOD_ID + ".json");
+		Path path = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
 		Config config = new Config();
 		if (Files.exists(path)) {
 			try {
@@ -214,7 +232,7 @@ public class Config implements ConfigData {
 				config = gson.fromJson(reader, Config.class);
 				reader.close();
 			} catch (IOException | JsonParseException e) {
-				Client.LOGGER.error("config file read failure!");
+				Common.LOGGER.error("config file read failure!");
 			}
 		} else {
 			save(config);
@@ -224,14 +242,14 @@ public class Config implements ConfigData {
 
 	public static void save(Config config) {
 		Gson gson = new Gson();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Client.MOD_ID + ".json");
+		Path path = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
 		try {
 			Files.createDirectories(path.getParent());
 			BufferedWriter writer = Files.newBufferedWriter(path);
 			gson.toJson(config, writer);
 			writer.close();
 		} catch (IOException e) {
-			Client.LOGGER.error("config file write failure!");
+			Common.LOGGER.error("config file write failure!");
 		}
 	}
 

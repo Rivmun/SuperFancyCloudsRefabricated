@@ -1,7 +1,7 @@
 package com.rimo.sfcr.mixin;
 
 import com.rimo.sfcr.Client;
-import com.rimo.sfcr.Renderer;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.CloudRenderer;
 import net.minecraft.client.render.CloudRenderer.ViewMode;
@@ -30,6 +30,8 @@ public abstract class CloudRendererMixin {
 	 */
 	@Inject(method = "renderClouds", at = @At("INVOKE"))
 	private void renderClouds(int color, CloudRenderMode mode, float cloudHeight, Vec3d cameraPos, float cloudPhase, CallbackInfo ci) {
+		if (! Common.CONFIG.isEnableMod())
+			return;
 		double d = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double e = cameraPos.z + 3.9600000381469727;
 		float f = (float)(cameraPos.y - (double)cloudHeight);
@@ -52,11 +54,13 @@ public abstract class CloudRendererMixin {
 
 	/*
 		Modifying instanceCount
-		cuz we put 4 bits to CloudFaces buffer instead of 3.
+		cuz we put more than 3 bits to cloudFaces buffer.
 	 */
 	@Redirect(method = "renderClouds", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/CloudRenderer;instanceCount:I", opcode = Opcodes.GETFIELD))
 	private int getInstanceCount(CloudRenderer renderer) {
-		return renderer.instanceCount * 3 / 4;
+		if (! Common.CONFIG.isEnableMod())
+			return renderer.instanceCount;
+		return renderer.instanceCount * 3 / 5;
 	}
 
 	/*
@@ -66,6 +70,8 @@ public abstract class CloudRendererMixin {
 	 */
 	@Inject(method = "buildCloudCells", at = @At("HEAD"), cancellable = true)
 	private void buildCloudCells(ViewMode viewMode, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int renderDistance, CallbackInfo ci) {
+		if (! Common.CONFIG.isEnableMod())
+			return;
 		Client.RENDERER.buildCloudCells(byteBuffer, isFancy, renderDistance);
 		ci.cancel();
 	}

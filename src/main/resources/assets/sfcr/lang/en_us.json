@@ -1,10 +1,12 @@
 {
-	"text.sfcr.buildInResourcePack": "Cloud Shader Cover",
 	"text.sfcr.option.title": "SuperFancyClouds:Refabricated",
+	"text.sfcr.buildInResourcePack": "SuperFancyClouds Shader\nDo §cNOT§r manually enable/disable",
 
 	"text.sfcr.category.general": "General",
-	"text.sfcr.option.cloudHeight": "Cloud Height",
-	"text.sfcr.option.cloudHeight.@Tooltip": "Height of the cloud on the Y-axis. May NOT accurate.\nSet leftmost to use vanilla height.",
+	"text.sfcr.option.enableMod": "Enable?",
+	"text.sfcr.option.enableMod.@Tooltip": "§cWill reload resource to\nenable/disable custom cloud shader",
+	"text.sfcr.option.enableDebug": "Debug Output",
+	"text.sfcr.option.cloudHeight": "Cloud Height Offset",
 	"text.sfcr.option.cloudLayerThickness": "Cloud Thickness",
 	"text.sfcr.option.cloudLayerThickness.@Tooltip": "Measure in cloud block.\n§4May impact performance if set too high§r",
 	"text.sfcr.option.cloudRenderDistance": "Cloud Render Distance",

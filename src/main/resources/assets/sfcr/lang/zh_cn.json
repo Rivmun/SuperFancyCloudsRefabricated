@@ -1,10 +1,12 @@
 {
-	"text.sfcr.buildInResourcePack": "云层着色器覆盖",
 	"text.sfcr.option.title": "超级华丽云：重织",
+	"text.sfcr.buildInResourcePack": "超级华丽云着色器\n§c请勿手动启用/禁用§r",
 
 	"text.sfcr.category.general": "常规",
-	"text.sfcr.option.cloudHeight": "云高度",
-	"text.sfcr.option.cloudHeight.@Tooltip": "云层所在 Y 轴高度，可能不准。\n拉到最左端以使用原版高度。",
+	"text.sfcr.option.enableMod": "启用模组？",
+	"text.sfcr.option.enableMod.@Tooltip": "§c更改后会自动重载资源包\n以启用/禁用自定义云层着色器",
+	"text.sfcr.option.enableDebug": "调试输出",
+	"text.sfcr.option.cloudHeight": "云高度偏移",
 	"text.sfcr.option.cloudLayerThickness": "云层厚度",
 	"text.sfcr.option.cloudLayerThickness.@Tooltip": "单位为云块。\n§4取值过高可能引起性能问题§r",
 	"text.sfcr.option.cloudRenderDistance": "云层显示距离",

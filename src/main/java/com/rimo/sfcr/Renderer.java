@@ -40,9 +40,7 @@ public class Renderer {
 	}
 
 	public synchronized void setRenderer(Config config) {
-		cloudHeight = CONFIG.getCloudHeight() == -1 ? vanillaCloudHeight : (CONFIG.getCloudHeight()
-				+ 0.33f  //see at net.minecraft.client.render.WorldRenderer:466
-		);
+		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
 		cloudLayerHeight = config.getCloudLayerHeight();
 		renderDistance = CONFIG.isEnableRenderDistanceFitToView() ?
 				vanillaViewDistance * 6 :
@@ -65,8 +63,9 @@ public class Renderer {
 		setRenderer(CONFIG);
 	}
 
-	public void setCloudHeight(float height) {
+	public synchronized void setCloudHeight(float height) {
 		vanillaCloudHeight = height;
+		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
 	}
 
 	protected void setSampler(long seed) {
@@ -79,7 +78,6 @@ public class Renderer {
 
 	private void updateCloudGrid(int sx, int sz) {
 		World world = MinecraftClient.getInstance().player.getWorld();
-		long time = world instanceof ServerWorld ? world.getTime() : 0L;
 		float threshold = 0.5f;
 
 		for(int cx = 0; cx < cloudGridWidth; cx++) {
@@ -120,11 +118,11 @@ public class Renderer {
 								(int) bx,
 								(int) (cloudHeight + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
 								(int) bz  // cloud is moving, fix Z pos
-						)) == 15 && getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
+						)) == 15 && getCloudSample(sampler, sx, sz, 0, DATA.time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 					}
 				} else {
 					for(int cy = 0; cy < cloudLayerHeight; cy++) {
-						cloudGrid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
+						cloudGrid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, DATA.time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 					}
 				}
 			}
@@ -150,17 +148,23 @@ public class Renderer {
 			for(int xOffset = -l; xOffset <= l; ++xOffset) {
 				int zOffset = l - Math.abs(xOffset);
 				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
-					//insert height traverse
-					for(int h = cloudLayerHeight; h == 1; --h) {
+					if (zOffset != 0) {
+						int thickness = 0;  //sum thickness to change cloud brightness
+						for (int h = cloudLayerHeight - 1; h >= 0; h--) {  //insert height traverse
+							if (byteBuffer.remaining() < 24)
+								return;  //java.nio.BufferOverflow Check, 24 is max put amount in single cell.
+							thickness += this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness);
+							if (!isFancy)
+								break;  //FAST_CLOUD only draw single layer.
+						}
+					}
+					int thickness = 0;
+					for (int h = cloudLayerHeight - 1; h >= 0; h--) {
 						if (byteBuffer.remaining() < 24)
-							return;  //java.nio.BufferOverflow Check, 24 is max put amount in single cell.
-
-						if (zOffset != 0)
-							this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance);
-						this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance);
-
+							return;
+						thickness += this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness);
 						if (!isFancy)
-							break;  //FAST_CLOUD only draw single layer.
+							break;
 					}
 				}
 			}
@@ -168,15 +172,16 @@ public class Renderer {
 
 	}
 
-	private void method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance) {
+	//return 1 if this grid has cells, to sum cloud thickness
+	private int method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
 		int x = xOffset + renderDistance;  //transform to grid pos
 		int z = zOffset + renderDistance;
 		if (x < 0 || x >= cloudGridWidth || z < 0 || z >= cloudGridWidth)  //check bound
-			return;
+			return 0;
 
 		boolean state = this.cloudGrid[x][z][h];
 		if (!state)
-			return;  //jumping empty cell
+			return 0;  //jumping empty cell
 
 		//check neighbor and push it to next
 		boolean borderTop    = !(h + 1 <  cloudLayerHeight && cloudGrid[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
@@ -187,18 +192,20 @@ public class Renderer {
 		boolean borderNorth  = !(z - 1 >= 0                && cloudGrid[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
 		if (cellState == 0)
-			return;  //jumping cell which fully around by neighbor cells
+			return 1;  //jumping cell which fully around by neighbor cells
 
+		cellState |= (thickness << 6);
 		h += (cloudHeight - vanillaCloudHeight) / CLOUD_BLOCK_HEIGHT;  //trans to offset
 		if (isFancy) {
 			this.buildCloudCellFancy(byteBuffer, xOffset, h, zOffset, cellState);
 		} else {
 			this.buildCloudCellFast(byteBuffer, xOffset, h, zOffset);
 		}
+		return 1;
 	}
 
 	private void buildCloudCellFast(ByteBuffer byteBuffer, int x, int h, int z) {
-		this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 32);
+		this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 32, 0);
 	}
 
 	/*
@@ -212,32 +219,37 @@ public class Renderer {
 		└───────── odevity of x
 		we try save h's odevity to 4th bit
 	 */
-	private void method_71098(ByteBuffer byteBuffer, int x, int h, int z, Direction direction, int i) {
+	private void method_71098(ByteBuffer byteBuffer, int x, int h, int z, Direction direction, int i, int thickness) {
 		int l = direction.getIndex() | i;
 		l |= (x & 1) << 7;
 		l |= (z & 1) << 6;
-		l |= (h & 1) << 3;  //add height
-		byteBuffer.put((byte)(x >> 1)).put((byte)(z >> 1)).put((byte)(h >> 1)).put((byte)l);
+		l |= (h & 1) << 3;  //add height odevity to l
+		byteBuffer.put((byte)(x >> 1))
+				.put((byte)(z >> 1))
+				.put((byte)(h >> 1))
+				.put((byte)l)
+				.put((byte)thickness);
 	}
 
 	private void buildCloudCellFancy(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {
+		int thickness = cellState >> 6;
 		if (hasBorderTop(cellState) && h <= this.gridY) {  //TODO: why needs "="?
-			this.method_71098(byteBuffer, x, h, z, Direction.UP, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.UP, 0, thickness);
 		}
 		if (hasBorderBottom(cellState) && h > this.gridY) {
-			this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 0, thickness);
 		}
 		if (hasBorderNorth(cellState) && z > 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.NORTH, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.NORTH, 0, thickness);
 		}
 		if (hasBorderSouth(cellState) && z < 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.SOUTH, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.SOUTH, 0, thickness);
 		}
 		if (hasBorderWest(cellState) && x > 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.WEST, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
 		}
 		if (hasBorderEast(cellState) && x < 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.EAST, 0);
+			this.method_71098(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
 		}
 //		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && Math.abs(h) <= this.gridY) {  //inner faces
 //			Direction[] directions = Direction.values();

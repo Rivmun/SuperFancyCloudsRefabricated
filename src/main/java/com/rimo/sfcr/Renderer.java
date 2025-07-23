@@ -2,7 +2,6 @@ package com.rimo.sfcr;
 
 import com.rimo.sfcr.config.Config;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
@@ -12,16 +11,16 @@ import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 import java.nio.ByteBuffer;
+import static com.rimo.sfcr.Common.CONFIG;
+import static com.rimo.sfcr.Common.DATA;
 
 public class Renderer {
-
-	private final Config CONFIG;
-	private final Data DATA;
-
 	private SimplexNoiseSampler sampler;
 	private int gridX, gridY, gridZ;  //camera position in cloudGrid
 	private float cloudHeight;
-	private boolean[][][] cloudGrid;  //replace this.cells
+	private CloudGrid cloudGrid;  //replace this.cells
+	private Thread resamplingThread;
+	private boolean isResampling = false;
 	private int renderDistance;
 	private int cloudGridWidth;
 	private int cloudLayerHeight;
@@ -34,21 +33,19 @@ public class Renderer {
 	private int vanillaCloudRenderDistance;
 	private int vanillaViewDistance;
 
-	Renderer(Config config, Data data) {
-		this.CONFIG = config;
-		this.DATA = data;
-	}
+	private record CloudGrid(boolean[][][] grid, int centerX, int centerZ) {}
 
 	public synchronized void setRenderer(Config config) {
-		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
+		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
 		cloudLayerHeight = config.getCloudLayerHeight();
-		renderDistance = CONFIG.isEnableRenderDistanceFitToView() ?
+		renderDistance = config.isEnableRenderDistanceFitToView() ?
 				vanillaViewDistance * 6 :
-				CONFIG.getRenderDistance() >= 32 ?
-						CONFIG.getRenderDistance() :
+				config.getRenderDistance() >= 32 ?
+						config.getRenderDistance() :
 						vanillaCloudRenderDistance;
 		cloudGridWidth = renderDistance * 2 + 1;
-		cloudGrid = initCloudGrid(cloudLayerHeight, cloudGridWidth);
+		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grid with null x/z is useless
+			cloudGrid = getCloudGrid(gridX, gridZ);
 	}
 
 	public void setGridPos(int x, int y, int z) {
@@ -63,7 +60,7 @@ public class Renderer {
 		setRenderer(CONFIG);
 	}
 
-	public synchronized void setCloudHeight(float height) {
+	public void setCloudHeight(float height) {
 		vanillaCloudHeight = height;
 		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
 	}
@@ -72,66 +69,98 @@ public class Renderer {
 		this.sampler = new SimplexNoiseSampler(Random.create(seed));
 	}
 
-	private boolean[][][] initCloudGrid(int h, int w) {
-		return new boolean[w][w][h];
-	}
-
-	private void updateCloudGrid(int sx, int sz) {
+	private CloudGrid getCloudGrid(int x, int z) {
+		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudLayerHeight];
+		int sx = x - renderDistance;
+		int sz = z - renderDistance;
 		World world = MinecraftClient.getInstance().player.getWorld();
-		float threshold = 0.5f;
+		double time = world.getTime() / 20.0;
+		//float threshold = 0.5f;  //original
+		float threshold = CONFIG.getDensityThreshold();
 
 		for(int cx = 0; cx < cloudGridWidth; cx++) {
 			for(int cz = 0; cz < cloudGridWidth; cz++) {
 
-				float bx = (sx + cx + 0.5f) * CLOUD_BLOCK_WIDTH;  //transform gridPos to blockPos
-				float bz = (sz + cz + 0.5f) * CLOUD_BLOCK_WIDTH;
+				if (CONFIG.isEnableDynamic()) {
+					float bx = (sx + cx + 0.5f) * CLOUD_BLOCK_WIDTH;  //transform gridPos to blockPos
+					float bz = (sz + cz + 0.5f) * CLOUD_BLOCK_WIDTH;
 
-				// calculating density...
-				if (CONFIG.isEnableWeatherDensity() && CONFIG.isEnableBiomeDensityByChunk()) {
-					if (CONFIG.isEnableBiomeDensityUseLoadedChunk()) {
-						Vec2f vec = new Vec2f(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).normalize();  // stepping pos near towards to player
-						float bx2 = bx;
-						float bz2 = bz;
-						while (!world.getChunkManager().isChunkLoaded((int) bx2 / 16, (int) bz2 / 16)
-								&& Math.abs(sx * cloudGridWidth - bx) + Math.abs(sz * cloudGridWidth - bz) > CLOUD_BLOCK_WIDTH * 4) {  //jump if too close
-							bx2 -= vec.x * CLOUD_BLOCK_WIDTH;
-							bz2 -= vec.y * CLOUD_BLOCK_WIDTH;
+					// calculating density...
+					if (CONFIG.isEnableWeatherDensity()) {
+						if (CONFIG.isEnableBiomeDensityByChunk()) {
+							if (CONFIG.isEnableBiomeDensityUseLoadedChunk()) {
+								Vec2f vec = new Vec2f(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).normalize();  // stepping pos near towards to player
+								float bx2 = bx;
+								float bz2 = bz;
+								while (! world.getChunkManager().isChunkLoaded((int) bx2 / 16, (int) bz2 / 16)
+										&& Math.abs(sx * cloudGridWidth - bx) + Math.abs(sz * cloudGridWidth - bz) > CLOUD_BLOCK_WIDTH * 4) {  //jump if too close
+									bx2 -= vec.x * CLOUD_BLOCK_WIDTH;
+									bz2 -= vec.y * CLOUD_BLOCK_WIDTH;
+								}
+								threshold = CONFIG.isFilterListHasNoBiome(world.getBiome(new BlockPos((int) bx2, 80, (int) bz2)))
+										? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int) bx2, 80, (int) bz2)).value().weather.downfall())
+										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
+							} else {
+								threshold = CONFIG.isFilterListHasNoBiome(world.getBiome(new BlockPos((int) bx, 80, (int) bz)))
+										? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int) bx, 80, (int) bz)).value().weather.downfall())
+										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
+							}
+						} else {
+							threshold = getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
 						}
-						threshold = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) bx2, 80, (int) bz2)))
-								? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int)bx2, 80, (int)bz2)).value().weather.downfall())
-								: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
+					}
+
+					// sampling...
+					if (CONFIG.isEnableTerrainDodge()) {
+						for (int cy = 0; cy < cloudLayerHeight; cy++) {
+
+							// terrain dodge (detect light level)
+							grid[cx][cz][cy] = world.getLightLevel(LightType.SKY, new BlockPos(
+									(int) bx,
+									(int) (cloudHeight + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
+									(int) bz  // cloud is moving, fix Z pos
+							)) == 15 && getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
+						}
 					} else {
-						threshold = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) bx, 80, (int) bz)))
-								? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int)bx, 80, (int)bz)).value().weather.downfall())
-								: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
+						for (int cy = 0; cy < cloudLayerHeight; cy++) {
+							grid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
+						}
 					}
 				} else {
-					threshold = getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
-				}
-
-				// sampling...
-				if (CONFIG.isEnableTerrainDodge()) {
 					for (int cy = 0; cy < cloudLayerHeight; cy++) {
-
-						// terrain dodge (detect light level)
-						cloudGrid[cx][cz][cy] = world.getLightLevel(LightType.SKY, new BlockPos(
-								(int) bx,
-								(int) (cloudHeight + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
-								(int) bz  // cloud is moving, fix Z pos
-						)) == 15 && getCloudSample(sampler, sx, sz, 0, DATA.time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
-					}
-				} else {
-					for(int cy = 0; cy < cloudLayerHeight; cy++) {
-						cloudGrid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, DATA.time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
+						grid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, 0, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 					}
 				}
 			}
 		}
-
+		return new CloudGrid(grid, x, z);
 	}
 
 	private float getDensityThreshold(float densityByWeather, float densityByBiome) {
 		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
+	}
+
+	private void updateCloudGrid() {
+		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
+		synchronized (this) {
+			if (cloudGrid != null) {
+				int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
+				int newOffset = Math.abs(gridX - newGrid.centerX) + Math.abs(gridZ - newGrid.centerZ);
+				if (newOffset > oldOffset)
+					return;  //pick grid closer to player
+			}
+			cloudGrid = newGrid;
+			isResampling = false;
+		}
+	}
+
+	public void stop() {
+		try {
+			if (resamplingThread != null)
+				resamplingThread.join();
+		} catch (Exception e) {
+			//Ignore...
+		}
 	}
 
 	/*
@@ -141,8 +170,14 @@ public class Renderer {
 		- - - - - - - - - - - -
 	 */
 
-	public void buildCloudCells(ByteBuffer byteBuffer, boolean isFancy, int oldDistance) {
-		updateCloudGrid(this.gridX - renderDistance, this.gridZ - renderDistance);  //update "cells"
+	public void buildCloudCells(ByteBuffer byteBuffer, boolean isFancy) {
+		if (cloudGrid == null)
+			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
+		if (gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ && !isResampling) {
+			resamplingThread = new Thread(this::updateCloudGrid);
+			resamplingThread.start();
+			isResampling = true;
+		}
 
 		for(int l = 0; l <= 2 * renderDistance; ++l) {
 			for(int xOffset = -l; xOffset <= l; ++xOffset) {
@@ -153,7 +188,12 @@ public class Renderer {
 						for (int h = cloudLayerHeight - 1; h >= 0; h--) {  //insert height traverse
 							if (byteBuffer.remaining() < 24)
 								return;  //java.nio.BufferOverflow Check, 24 is max put amount in single cell.
-							thickness += this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness);
+							if (this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness) && CONFIG.isEnableBottomDim()) {
+								thickness++;
+							} else {
+								if (thickness > 0)
+									thickness--;
+							}
 							if (!isFancy)
 								break;  //FAST_CLOUD only draw single layer.
 						}
@@ -162,7 +202,12 @@ public class Renderer {
 					for (int h = cloudLayerHeight - 1; h >= 0; h--) {
 						if (byteBuffer.remaining() < 24)
 							return;
-						thickness += this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness);
+						if (this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness) && CONFIG.isEnableBottomDim()) {
+							thickness++;
+						} else {
+							if (thickness > 0)
+								thickness--;
+						}
 						if (!isFancy)
 							break;
 					}
@@ -172,27 +217,27 @@ public class Renderer {
 
 	}
 
-	//return 1 if this grid has cells, to sum cloud thickness
-	private int method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
-		int x = xOffset + renderDistance;  //transform to grid pos
-		int z = zOffset + renderDistance;
-		if (x < 0 || x >= cloudGridWidth || z < 0 || z >= cloudGridWidth)  //check bound
-			return 0;
+	//return true if this grid has cells, to sum cloud thickness
+	private boolean method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
+		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grid pos
+		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
+		if (x < 0 || x >= cloudGrid.grid.length || z < 0 || z >= cloudGrid.grid.length)  //check bound
+			return false;
 
-		boolean state = this.cloudGrid[x][z][h];
+		boolean state = cloudGrid.grid[x][z][h];
 		if (!state)
-			return 0;  //jumping empty cell
+			return false;  //jumping empty cell
 
 		//check neighbor and push it to next
-		boolean borderTop    = !(h + 1 <  cloudLayerHeight && cloudGrid[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
-		boolean borderBottom = !(h - 1 >= 0                && cloudGrid[x][z][h - 1]);
-		boolean borderEast   = !(x + 1 <  cloudGridWidth   && cloudGrid[x + 1][z][h]);
-		boolean borderWest   = !(x - 1 >= 0                && cloudGrid[x - 1][z][h]);
-		boolean borderSouth  = !(z + 1 <  cloudGridWidth   && cloudGrid[x][z + 1][h]);
-		boolean borderNorth  = !(z - 1 >= 0                && cloudGrid[x][z - 1][h]);
+		boolean borderTop    = !(h + 1 <  cloudLayerHeight      && cloudGrid.grid[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
+		boolean borderBottom = !(h - 1 >= 0                     && cloudGrid.grid[x][z][h - 1]);
+		boolean borderEast   = !(x + 1 <  cloudGrid.grid.length && cloudGrid.grid[x + 1][z][h]);
+		boolean borderWest   = !(x - 1 >= 0                     && cloudGrid.grid[x - 1][z][h]);
+		boolean borderSouth  = !(z + 1 <  cloudGrid.grid.length && cloudGrid.grid[x][z + 1][h]);
+		boolean borderNorth  = !(z - 1 >= 0                     && cloudGrid.grid[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
 		if (cellState == 0)
-			return 1;  //jumping cell which fully around by neighbor cells
+			return true;  //jumping cell which fully around by neighbor cells
 
 		cellState |= (thickness << 6);
 		h += (cloudHeight - vanillaCloudHeight) / CLOUD_BLOCK_HEIGHT;  //trans to offset
@@ -201,7 +246,7 @@ public class Renderer {
 		} else {
 			this.buildCloudCellFast(byteBuffer, xOffset, h, zOffset);
 		}
-		return 1;
+		return true;
 	}
 
 	private void buildCloudCellFast(ByteBuffer byteBuffer, int x, int h, int z) {
@@ -251,12 +296,12 @@ public class Renderer {
 		if (hasBorderEast(cellState) && x < 0) {
 			this.method_71098(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
 		}
-//		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && Math.abs(h) <= this.gridY) {  //inner faces
-//			Direction[] directions = Direction.values();
-//			for (Direction direction : directions) {
-//				this.method_71098(byteBuffer, x, h, z, direction, 16);
-//			}
-//		}
+		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && Math.abs(h) <= this.gridY) {  //inner faces
+			Direction[] directions = Direction.values();
+			for (Direction direction : directions) {
+				this.method_71098(byteBuffer, x, h, z, direction, 16, thickness);
+			}
+		}
 	}
 
 	private static boolean hasBorderTop(int packed) {

@@ -7,6 +7,7 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.text.Text;
 
+import static com.rimo.sfcr.Common.CONFIG;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
@@ -17,36 +18,36 @@ public class Server implements DedicatedServerModInitializer {
 				.register(literal("sfcr").requires(source -> source.hasPermissionLevel(2))
 					.then(literal("enable")
 							.executes(context -> {
-								context.getSource().sendMessage(Text.of("SFCR enable: " + Common.CONFIG.isEnableMod()));
+								context.getSource().sendMessage(Text.of("SFCR enable: " + CONFIG.isEnableMod()));
 								return 1;
 							})
 							.then(argument("e", BoolArgumentType.bool()).executes(context -> {
-								Common.CONFIG.setEnableMod(context.getArgument("e", Boolean.class));
-								Config.save(Common.CONFIG);
+								CONFIG.setEnableMod(context.getArgument("e", Boolean.class));
+								Config.save(CONFIG);
 								context.getSource().sendMessage(Text.of("Done!"));
 								return 1;
 							}))
 					)
 					.then(literal("debug")
 							.executes(context -> {
-								context.getSource().sendMessage(Text.of("SFCR debug: " + Common.CONFIG.isEnableDebug()));
+								context.getSource().sendMessage(Text.of("SFCR debug: " + CONFIG.isEnableDebug()));
 								return 1;
 							})
 							.then(argument("e", BoolArgumentType.bool()).executes(context -> {
-								Common.CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
-								Config.save(Common.CONFIG);
+								CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
+								Config.save(CONFIG);
 								context.getSource().sendMessage(Text.of("Done!"));
 								return 1;
 							}))
 					)
 					.then(literal("predetect")
 							.executes(context -> {
-								context.getSource().sendMessage(Text.of("Pre-detect time: " + Common.CONFIG.getWeatherPreDetectTime() + "s"));
+								context.getSource().sendMessage(Text.of("Pre-detect time: " + CONFIG.getWeatherPreDetectTime() + "s"));
 								return 1;
 							})
 							.then(argument("i", IntegerArgumentType.integer()).executes(context -> {
-								Common.CONFIG.setWeatherPreDetectTime(context.getArgument("i", Integer.class));
-								Config.save(Common.CONFIG);
+								CONFIG.setWeatherPreDetectTime(context.getArgument("i", Integer.class));
+								Config.save(CONFIG);
 								context.getSource().sendMessage(Text.of("Done!"));
 								return 1;
 							}))

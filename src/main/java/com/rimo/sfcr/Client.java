@@ -14,9 +14,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.Random;
+import static com.rimo.sfcr.Common.CONFIG;
+import static com.rimo.sfcr.Common.DATA;
 
 public class Client implements ClientModInitializer {
-	public static Data DATA;
 	public static Renderer RENDERER;
 	public static final Identifier buildInPackId = Identifier.of(Common.MOD_ID, "cloud_shader");
 
@@ -28,16 +29,15 @@ public class Client implements ClientModInitializer {
 				buildInPackId,
 				FabricLoader.getInstance().getModContainer(Common.MOD_ID).get(),
 				Text.translatable("text.sfcr.buildInResourcePack"),
-				Common.CONFIG.isEnableMod() ?
+				CONFIG.isEnableMod() ?
 						ResourcePackActivationType.DEFAULT_ENABLED :
 						ResourcePackActivationType.NORMAL
 		);
 
 		//init mod
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			DATA = new Data(Common.CONFIG);
-			RENDERER = new Renderer(Common.CONFIG, DATA);
-			if (! Common.CONFIG.isEnableMod())
+			RENDERER = new Renderer();
+			if (! CONFIG.isEnableMod())
 				/*
 					we already set activationType to 'normal' when mod is disabled, to disable build-in resource pack when client start up, it does.
 					but this pack still on right in resource manager screen, so here we disable it again to put it to left.
@@ -49,37 +49,36 @@ public class Client implements ClientModInitializer {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			if (!hasServer)
 				RENDERER.setSampler(new Random().nextLong());
-			RENDERER.setRenderer(Common.CONFIG);
+			RENDERER.setRenderer(CONFIG);
 		});
 
 		//update
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (! Common.CONFIG.isEnableMod())
+			if (! CONFIG.isEnableMod())
 				return;
 			if (!hasServer && client.player != null)
-				DATA.updateWeather(client.player.getWorld());
+				DATA.updateWeatherClient(client.player.getWorld());
 			DATA.updateDensity(client.player);
-			DATA.updateTime();
 		});
 
 		//reset
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			hasServer = false;
+			RENDERER.stop();
 		});
 
 		//world info receiver
 		ClientPlayNetworking.registerGlobalReceiver(WorldInfoPayload.ID, (payload, context) -> {
 			hasServer = true;
 			RENDERER.setSampler(payload.seed());
-			DATA.time = payload.time();
-			if (Common.CONFIG.isEnableDebug())
-				Common.LOGGER.info("Receiver world info: " + payload.seed() + ", " + payload.time());
+			if (CONFIG.isEnableDebug())
+				Common.LOGGER.info("Receiver world info: " + payload.seed());
 		});
 
 		//weather receiver
 		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.ID, (payload, context) -> {
 			DATA.nextWeather = payload.weather();
-			if (Common.CONFIG.isEnableDebug())
+			if (CONFIG.isEnableDebug())
 				Common.LOGGER.info("Receiver weather: " + payload.weather().name());
 		});
 	}

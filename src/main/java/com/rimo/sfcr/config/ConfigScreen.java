@@ -31,7 +31,7 @@ public class ConfigScreen {
 		// Saving...
 		builder.setSavingRunnable(() -> {
 			Config.save(CONFIG);
-			Client.DATA.setConfig(CONFIG);
+			Common.DATA.setConfig(CONFIG);
 			Client.RENDERER.setRenderer(CONFIG);
 			if (oldEnableMod != enableModToggle.getValue()) {
 				var manager = MinecraftClient.getInstance().getResourcePackManager();
@@ -131,6 +131,23 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
 				.build()
 		);
+		//cloud color
+		general.addEntry(entryBuilder
+				.startColorField(Text.translatable("text.sfcr.option.cloudColor")
+						, CONFIG.getCloudColor())
+				.setDefaultValue(0xFFFFFF)
+				.setSaveConsumer(CONFIG::setCloudColor)
+				.build()
+		);
+		//bottomDim
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableBottomDim")
+						, CONFIG.isEnableBottomDim())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableBottomDim.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableBottomDim)
+				.build()
+		);
 		//debug
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDebug")
@@ -164,22 +181,31 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setThresholdMultiplier)
 				.build()
 		);
+		//dynamic
+		density.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDynamic")
+						, CONFIG.isEnableDynamic())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableDynamic.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDynamic)
+				.build()
+		);
 		//density
 		density.addEntry(entryBuilder
 				.startTextDescription(Text.translatable("text.sfcr.option.cloudDensity.@PrefixText"))
 				.build()
 		);
 		//cloud common density
-		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudDensity")
-						, CONFIG.getDensityPercent()
-						,0
-						,100)
-				.setDefaultValue(25)
-				.setTextGetter(value -> Text.of(value + "%"))
-				.setSaveConsumer(CONFIG::setDensityPercent)
-				.build()
-		);
+//		density.addEntry(entryBuilder
+//				.startIntSlider(Text.translatable("text.sfcr.option.cloudDensity")
+//						, CONFIG.getDensityPercent()
+//						,0
+//						,100)
+//				.setDefaultValue(25)
+//				.setTextGetter(value -> Text.of(value + "%"))
+//				.setSaveConsumer(CONFIG::setDensityPercent)
+//				.build()
+//		);
 		//weather
 		density.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")

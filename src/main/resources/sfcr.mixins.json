@@ -9,7 +9,8 @@
   "client": [
     "ClientWorldMixin",
     "CloudRendererMixin",
-    "GameOptionsMixin"
+    "GameOptionsMixin",
+    "WorldRendererAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

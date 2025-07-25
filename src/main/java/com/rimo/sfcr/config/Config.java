@@ -2,6 +2,7 @@ package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -41,7 +42,8 @@ public class Config {
 	private boolean enableBottomDim = true;
 	private boolean enableDynamic = true;
 	private boolean enableDebug = false;
-	protected int cloudColor = 0xFFFFFF;
+	private int cloudColor = 0xFFFFFF;
+	private boolean enableDHCompat = false;
 
 	public boolean isEnableMod() {return enableMod;}
 	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod;}
@@ -93,6 +95,8 @@ public class Config {
 	public void setEnableDynamic(boolean enableDynamic) {this.enableDynamic = enableDynamic;}
 	public int getCloudColor() {return cloudColor;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
+	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDHLoaded;}
+	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDHLoaded;}
 
 	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of(
 			"#minecraft:is_river"

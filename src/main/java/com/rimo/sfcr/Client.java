@@ -22,6 +22,7 @@ public class Client implements ClientModInitializer {
 	public static final Identifier buildInPackId = Identifier.of(Common.MOD_ID, "cloud_shader");
 
 	private static boolean hasServer = false;
+	public static final boolean isDHLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
 
 	@Override
 	public void onInitializeClient() {
@@ -36,11 +37,12 @@ public class Client implements ClientModInitializer {
 
 		//init mod
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			RENDERER = new Renderer();
-			if (! CONFIG.isEnableMod())
+			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
+			if (!CONFIG.isEnableMod())
 				/*
 					we already set activationType to 'normal' when mod is disabled, to disable build-in resource pack when client start up, it does.
 					but this pack still on right in resource manager screen, so here we disable it again to put it to left.
+					TODO: sometimes its no functioned when client startup
 				 */
 				client.getResourcePackManager().disable(buildInPackId.toString());
 		});
@@ -48,7 +50,7 @@ public class Client implements ClientModInitializer {
 		//init renderer
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			if (!hasServer)
-				RENDERER.setSampler(new Random().nextLong());
+				RENDERER.initSampler(new Random().nextLong());
 			RENDERER.setRenderer(CONFIG);
 		});
 
@@ -59,6 +61,8 @@ public class Client implements ClientModInitializer {
 			if (!hasServer && client.player != null)
 				DATA.updateWeatherClient(client.player.getWorld());
 			DATA.updateDensity(client.player);
+			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
+				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
 		});
 
 		//reset
@@ -70,7 +74,7 @@ public class Client implements ClientModInitializer {
 		//world info receiver
 		ClientPlayNetworking.registerGlobalReceiver(WorldInfoPayload.ID, (payload, context) -> {
 			hasServer = true;
-			RENDERER.setSampler(payload.seed());
+			RENDERER.initSampler(payload.seed());
 			if (CONFIG.isEnableDebug())
 				Common.LOGGER.info("Receiver world info: " + payload.seed());
 		});

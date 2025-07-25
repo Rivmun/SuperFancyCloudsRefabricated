@@ -2,6 +2,9 @@ package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
+import com.rimo.sfcr.RendererDHCompat;
+import com.rimo.sfcr.Renderer;
+import com.seibel.distanthorizons.api.DhApi;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -19,26 +22,45 @@ public class ConfigScreen {
 
 	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
+	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
 
 	private final Config CONFIG = Common.CONFIG;
 	private final boolean oldEnableMod = CONFIG.isEnableMod();
-	private BooleanListEntry enableModToggle;
+	private final boolean oldDHCompat = CONFIG.isEnableDHCompat();
 
 	public Screen buildScreen() {
 		buildCategory();
 		buildDensityCategory();
+		buildCompatCategory();
 
 		// Saving...
 		builder.setSavingRunnable(() -> {
 			Config.save(CONFIG);
 			Common.DATA.setConfig(CONFIG);
+
+			if (oldDHCompat != CONFIG.isEnableDHCompat()) {  //reload renderer if switch compat
+				Client.RENDERER.stop();
+				long seed = Client.RENDERER.getSeed();
+				Renderer renderer;
+				if (CONFIG.isEnableDHCompat()) {
+					renderer = new RendererDHCompat();
+					DhApi.Delayed.configs.graphics().genericRendering().cloudRenderingEnabled().setValue(false);
+				} else {
+					renderer = new Renderer();
+				}
+				if (Client.RENDERER.getSampler() != null)
+					renderer.initSampler(seed);
+				Client.RENDERER = renderer;
+			}
 			Client.RENDERER.setRenderer(CONFIG);
-			if (oldEnableMod != enableModToggle.getValue()) {
+
+			if (oldEnableMod != CONFIG.isEnableMod()) {  // load/unload custom shader pack
 				var manager = MinecraftClient.getInstance().getResourcePackManager();
 				if (CONFIG.isEnableMod()) {
 					manager.enable(Client.buildInPackId.toString());
 				} else {
 					manager.disable(Client.buildInPackId.toString());
+					Client.RENDERER.stop();
 				}
 				MinecraftClient.getInstance().reloadResources();
 			}
@@ -49,14 +71,14 @@ public class ConfigScreen {
 
 	private void buildCategory() {
 		//enable
-		enableModToggle = entryBuilder
+		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
 						CONFIG.isEnableMod())
 				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.enableMod.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableMod)
-				.build();
-		general.addEntry(enableModToggle);
+				.build()
+		);
 		//cloud height offset
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
@@ -327,6 +349,17 @@ public class ConfigScreen {
 				.setDefaultValue(Config.DEF_BIOME_BLACKLIST)
 				.setTooltip(Text.translatable("text.sfcr.option.biomeFilter.@Tooltip"))
 				.setSaveConsumer(CONFIG::setBiomeBlackList)
+				.build()
+		);
+	}
+
+	private void buildCompatCategory() {
+		compat.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
+						CONFIG.isEnableDHCompat())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDHCompat)
 				.build()
 		);
 	}

@@ -14,6 +14,7 @@ import static net.minecraft.server.command.CommandManager.literal;
 public class Server implements DedicatedServerModInitializer {
 	@Override
 	public void onInitializeServer() {
+		//register a few command to get control remotely
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher
 				.register(literal("sfcr").requires(source -> source.hasPermissionLevel(2))
 					.then(literal("enable")

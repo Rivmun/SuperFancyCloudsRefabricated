@@ -32,9 +32,9 @@ public abstract class CloudRendererMixin {
 	/*
 		grabbing camera pos of grid
 	 */
-	@Inject(method = "renderClouds", at = @At("INVOKE"))
+	@Inject(method = "renderClouds", at = @At("INVOKE"), cancellable = true)
 	private void renderClouds(int color, CloudRenderMode mode, float cloudHeight, Vec3d cameraPos, float cloudPhase, CallbackInfo ci) {
-		if (! CONFIG.isEnableMod())
+		if (!CONFIG.isEnableMod())
 			return;
 		double d = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double e = cameraPos.z + 3.9600000381469727;
@@ -54,6 +54,9 @@ public abstract class CloudRendererMixin {
 			oldCloudHeight = cloudHeight;
 			Client.RENDERER.setCloudHeight(cloudHeight);
 		}
+
+		if (CONFIG.isEnableDHCompat())
+			ci.cancel();  //cancel cell building and vanilla cloud render, only get pos for DHCompat.
 	}
 
 	/*
@@ -62,7 +65,7 @@ public abstract class CloudRendererMixin {
 	 */
 	@Redirect(method = "renderClouds", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/CloudRenderer;instanceCount:I", opcode = Opcodes.GETFIELD))
 	private int getInstanceCount(CloudRenderer renderer) {
-		if (! CONFIG.isEnableMod())
+		if (!CONFIG.isEnableMod())
 			return instanceCount;
 		return instanceCount * 3 / 5;
 	}
@@ -74,7 +77,7 @@ public abstract class CloudRendererMixin {
 	 */
 	@Inject(method = "buildCloudCells", at = @At("HEAD"), cancellable = true)
 	private void buildCloudCells(ViewMode viewMode, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int renderDistance, CallbackInfo ci) {
-		if (! CONFIG.isEnableMod())
+		if (!CONFIG.isEnableMod())
 			return;
 		Client.RENDERER.buildCloudCells(byteBuffer, isFancy);
 		ci.cancel();

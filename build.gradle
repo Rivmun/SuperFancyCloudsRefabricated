@@ -18,6 +18,7 @@ repositories {
 	// for more information about repositories.
 	maven { url "https://maven.shedaniel.me/" }
 	maven { url "https://maven.terraformersmc.com/releases/" }
+	maven { url "https://api.modrinth.com/maven"}
 }
 
 dependencies {
@@ -41,6 +42,10 @@ dependencies {
 
 	//Mod Menu
 	modImplementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
+	//Distant Horizon Api
+	modCompileOnly "maven.modrinth:DistantHorizonsApi:4.0.1"
+	//Distant Horizon
+	modRuntimeOnly "maven.modrinth:DistantHorizons:2.3.4-b-1.21.6"
 }
 
 processResources {

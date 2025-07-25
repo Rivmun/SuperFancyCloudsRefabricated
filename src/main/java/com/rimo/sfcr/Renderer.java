@@ -15,25 +15,26 @@ import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class Renderer {
+	private long seed;
 	private SimplexNoiseSampler sampler;
-	private int gridX, gridY, gridZ;  //camera position in cloudGrid
-	private float cloudHeight;
-	private CloudGrid cloudGrid;  //replace this.cells
+	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
+	protected float cloudHeight;
+	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
-	private boolean isResampling = false;
+	protected boolean isResampling = false;
 	private int renderDistance;
 	private int cloudGridWidth;
 	private int cloudLayerHeight;
 
 	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
-	private static final float CLOUD_BLOCK_WIDTH = 12.0f;
-	private static final float CLOUD_BLOCK_HEIGHT = 4.0f;
+	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
+	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
 
 	private float vanillaCloudHeight;
 	private int vanillaCloudRenderDistance;
 	private int vanillaViewDistance;
 
-	private record CloudGrid(boolean[][][] grid, int centerX, int centerZ) {}
+	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
 
 	public synchronized void setRenderer(Config config) {
 		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
@@ -44,7 +45,7 @@ public class Renderer {
 						config.getRenderDistance() :
 						vanillaCloudRenderDistance;
 		cloudGridWidth = renderDistance * 2 + 1;
-		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grid with null x/z is useless
+		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grids with null x/z is useless
 			cloudGrid = getCloudGrid(gridX, gridZ);
 	}
 
@@ -65,11 +66,18 @@ public class Renderer {
 		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
 	}
 
-	protected void setSampler(long seed) {
+	public long getSeed() {
+		return this.seed;
+	}
+	public void initSampler(long seed) {
+		this.seed = seed;
 		this.sampler = new SimplexNoiseSampler(Random.create(seed));
 	}
+	public SimplexNoiseSampler getSampler() {
+		return sampler;
+	}
 
-	private CloudGrid getCloudGrid(int x, int z) {
+	protected CloudGrid getCloudGrid(int x, int z) {
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudLayerHeight];
 		int sx = x - renderDistance;
 		int sz = z - renderDistance;
@@ -140,18 +148,29 @@ public class Renderer {
 		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
 	}
 
-	private void updateCloudGrid() {
+	//thread-ify invoke is a better way to reduce lag.
+	protected void updateCloudGrid() {
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
 		synchronized (this) {
 			if (cloudGrid != null) {
 				int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
 				int newOffset = Math.abs(gridX - newGrid.centerX) + Math.abs(gridZ - newGrid.centerZ);
 				if (newOffset > oldOffset)
-					return;  //pick grid closer to player
+					return;  //pick grids closer to player
 			}
 			cloudGrid = newGrid;
 			isResampling = false;
 		}
+	}
+
+	protected void startGridUpdateThread() {
+		resamplingThread = new Thread(this::updateCloudGrid);
+		resamplingThread.start();
+		isResampling = true;
+	}
+
+	protected boolean isGridNeedToUpdate() {
+		return gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ && !isResampling;
 	}
 
 	public void stop() {
@@ -161,22 +180,22 @@ public class Renderer {
 		} catch (Exception e) {
 			//Ignore...
 		}
+		cloudGrid = null;
 	}
 
 	/*
 		- - - - - - - - - - - -
 		Overwritten vanilla method
 		to add height axis for render multi layer clouds.
+		these method only use by vanilla renderClouds.
 		- - - - - - - - - - - -
 	 */
 
 	public void buildCloudCells(ByteBuffer byteBuffer, boolean isFancy) {
 		if (cloudGrid == null)
 			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
-		if (gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ && !isResampling) {
-			resamplingThread = new Thread(this::updateCloudGrid);
-			resamplingThread.start();
-			isResampling = true;
+		if (isGridNeedToUpdate()) {
+			startGridUpdateThread();
 		}
 
 		for(int l = 0; l <= 2 * renderDistance; ++l) {
@@ -217,24 +236,24 @@ public class Renderer {
 
 	}
 
-	//return true if this grid has cells, to sum cloud thickness
+	//return true if this grids has cells, to sum cloud thickness
 	private boolean method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
-		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grid pos
+		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grids pos
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
-		if (x < 0 || x >= cloudGrid.grid.length || z < 0 || z >= cloudGrid.grid.length)  //check bound
+		if (x < 0 || x >= cloudGrid.grids.length || z < 0 || z >= cloudGrid.grids.length)  //check bound
 			return false;
 
-		boolean state = cloudGrid.grid[x][z][h];
+		boolean state = cloudGrid.grids[x][z][h];
 		if (!state)
 			return false;  //jumping empty cell
 
 		//check neighbor and push it to next
-		boolean borderTop    = !(h + 1 <  cloudLayerHeight      && cloudGrid.grid[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
-		boolean borderBottom = !(h - 1 >= 0                     && cloudGrid.grid[x][z][h - 1]);
-		boolean borderEast   = !(x + 1 <  cloudGrid.grid.length && cloudGrid.grid[x + 1][z][h]);
-		boolean borderWest   = !(x - 1 >= 0                     && cloudGrid.grid[x - 1][z][h]);
-		boolean borderSouth  = !(z + 1 <  cloudGrid.grid.length && cloudGrid.grid[x][z + 1][h]);
-		boolean borderNorth  = !(z - 1 >= 0                     && cloudGrid.grid[x][z - 1][h]);
+		boolean borderTop    = !(h + 1 <  cloudLayerHeight       && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
+		boolean borderBottom = !(h - 1 >= 0                      && cloudGrid.grids[x][z][h - 1]);
+		boolean borderEast   = !(x + 1 <  cloudGrid.grids.length && cloudGrid.grids[x + 1][z][h]);
+		boolean borderWest   = !(x - 1 >= 0                      && cloudGrid.grids[x - 1][z][h]);
+		boolean borderSouth  = !(z + 1 <  cloudGrid.grids.length && cloudGrid.grids[x][z + 1][h]);
+		boolean borderNorth  = !(z - 1 >= 0                      && cloudGrid.grids[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
 		if (cellState == 0)
 			return true;  //jumping cell which fully around by neighbor cells

@@ -58,7 +58,7 @@
 
 	"text.sfcr.category.compat": "Compat",
 	"text.sfcr.option.DHCompat": "Distant Horizons Compat",
-	"text.sfcr.option.DHCompat.@Tooltip": "Enable this if you want render SFCR cloud above\nDH LOD chunk without incorrect covered.\n§4NOTE:\n- DH cloud render will auto disable after this config save.\n- \"BottomDim\" has no functioned in DH renderer for technical reason.",
+	"text.sfcr.option.DHCompat.@Tooltip": "Enable this if you want render SFCR cloud above\nDH LOD chunk without incorrect covered.\n§4NOTE:\n- Cloud no longer transparent due to DH render system.\n- \"BottomDim\" option has no working in this compat.",
 
 	"text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW": "Very Slow",
 	"text.sfcr.enum.cloudRefreshSpeed.SLOW": "Slow",

@@ -28,6 +28,15 @@ public class RendererDHCompat extends Renderer{
 	private IDhApiRenderableBoxGroup group;
 
 	public RendererDHCompat() {
+		this.setCloudShading();
+	}
+
+	public RendererDHCompat(Renderer renderer) {
+		super(renderer);
+		this.setCloudShading();
+	}
+
+	private void setCloudShading() {
 		cloudShading.north = cloudShading.south = 0.9F;
 		cloudShading.east = cloudShading.west = 0.8F;
 		cloudShading.top = 1.0F;

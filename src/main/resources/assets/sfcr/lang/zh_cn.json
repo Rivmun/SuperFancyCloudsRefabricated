@@ -58,7 +58,7 @@
 
 	"text.sfcr.category.compat": "兼容",
 	"text.sfcr.option.DHCompat": "Distant Horizons 兼容",
-	"text.sfcr.option.DHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 保存设置后DH的云层会被自动禁用。\n- 因技术原因“云底变暗”功能在DH的渲染器中不起作用。",
+	"text.sfcr.option.DHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 因为DH的渲染特性，云层将不再透明。\n- “云底变暗”功能在启用该兼容后将失效。",
 
 	"text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW": "非常慢",
 	"text.sfcr.enum.cloudRefreshSpeed.SLOW": "较慢",

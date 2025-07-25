@@ -38,21 +38,10 @@ public class ConfigScreen {
 			Config.save(CONFIG);
 			Common.DATA.setConfig(CONFIG);
 
-			if (oldDHCompat != CONFIG.isEnableDHCompat()) {  //reload renderer if switch compat
-				Client.RENDERER.stop();
-				long seed = Client.RENDERER.getSeed();
-				Renderer renderer;
-				if (CONFIG.isEnableDHCompat()) {
-					renderer = new RendererDHCompat();
-					DhApi.Delayed.configs.graphics().genericRendering().cloudRenderingEnabled().setValue(false);
-				} else {
-					renderer = new Renderer();
-				}
-				if (Client.RENDERER.getSampler() != null)
-					renderer.initSampler(seed);
-				Client.RENDERER = renderer;
-			}
-			Client.RENDERER.setRenderer(CONFIG);
+			if (oldDHCompat != CONFIG.isEnableDHCompat())  //convert renderer class
+				Client.RENDERER = CONFIG.isEnableDHCompat() ?
+						new RendererDHCompat(Client.RENDERER) :
+						new Renderer(Client.RENDERER);
 
 			if (oldEnableMod != CONFIG.isEnableMod()) {  // load/unload custom shader pack
 				var manager = MinecraftClient.getInstance().getResourcePackManager();

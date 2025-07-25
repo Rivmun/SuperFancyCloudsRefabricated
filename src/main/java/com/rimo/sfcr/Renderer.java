@@ -15,7 +15,6 @@ import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class Renderer {
-	private long seed;
 	private SimplexNoiseSampler sampler;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
 	protected float cloudHeight;
@@ -30,11 +29,23 @@ public class Renderer {
 	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
 	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
 
-	private float vanillaCloudHeight;
-	private int vanillaCloudRenderDistance;
-	private int vanillaViewDistance;
+	protected float vanillaCloudHeight;
+	protected int vanillaCloudRenderDistance;
+	protected int vanillaViewDistance;
 
 	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
+
+	public Renderer() {}
+
+	//copy constructor: use to convert renderer type
+	public Renderer(Renderer renderer) {
+		renderer.stop();
+		this.setSampler(renderer.getSampler());
+		this.setGridPos(renderer.gridX, renderer.gridY, renderer.gridZ);
+		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset());
+		//this.cloudGrid = renderer.cloudGrid;
+		this.setRenderDistance(renderer.vanillaViewDistance, renderer.vanillaCloudRenderDistance);
+	}
 
 	public synchronized void setRenderer(Config config) {
 		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
@@ -66,12 +77,11 @@ public class Renderer {
 		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
 	}
 
-	public long getSeed() {
-		return this.seed;
-	}
 	public void initSampler(long seed) {
-		this.seed = seed;
 		this.sampler = new SimplexNoiseSampler(Random.create(seed));
+	}
+	public void setSampler(SimplexNoiseSampler sampler) {
+		this.sampler = sampler;
 	}
 	public SimplexNoiseSampler getSampler() {
 		return sampler;
@@ -256,7 +266,8 @@ public class Renderer {
 		boolean borderNorth  = !(z - 1 >= 0                      && cloudGrid.grids[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
 		if (cellState == 0)
-			return true;  //jumping cell which fully around by neighbor cells
+			return true;  //jumping cell which fully surround by neighbor cells
+				//TODO: due to we jumped fully surrounded cells, inner face of this cells are disappear too. it causing some bad visual.
 
 		cellState |= (thickness << 6);
 		h += (cloudHeight - vanillaCloudHeight) / CLOUD_BLOCK_HEIGHT;  //trans to offset

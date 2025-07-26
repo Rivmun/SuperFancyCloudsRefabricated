@@ -2,9 +2,11 @@ package com.rimo.sfcr;
 
 import com.rimo.sfcr.Common.WorldInfoPayload;
 import com.rimo.sfcr.Common.WeatherPayload;
+import com.rimo.sfcr.config.Config;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
@@ -18,33 +20,22 @@ import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class Client implements ClientModInitializer {
+	public static final boolean isDistantHorizonsLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
+	private static boolean hasServer = false;  //if not, calc density and weather on local; if yes, wait message payload from server.
 	public static Renderer RENDERER;
-	public static final Identifier buildInPackId = Identifier.of(Common.MOD_ID, "cloud_shader");
-
-	private static boolean hasServer = false;
-	public static final boolean isDHLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
 
 	@Override
 	public void onInitializeClient() {
 		ResourceManagerHelper.registerBuiltinResourcePack(
-				buildInPackId,
+				Identifier.of(Common.MOD_ID, "cloud_shader"),
 				FabricLoader.getInstance().getModContainer(Common.MOD_ID).get(),
 				Text.translatable("text.sfcr.buildInResourcePack"),
-				CONFIG.isEnableMod() ?
-						ResourcePackActivationType.DEFAULT_ENABLED :
-						ResourcePackActivationType.NORMAL
+				ResourcePackActivationType.ALWAYS_ENABLED
 		);
 
 		//init mod
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
-			if (!CONFIG.isEnableMod())
-				/*
-					we already set activationType to 'normal' when mod is disabled, to disable build-in resource pack when client start up, it does.
-					but this pack still on right in resource manager screen, so here we disable it again to put it to left.
-					TODO: sometimes its no functioned when client startup
-				 */
-				client.getResourcePackManager().disable(buildInPackId.toString());
 		});
 
 		//init renderer
@@ -63,6 +54,14 @@ public class Client implements ClientModInitializer {
 			DATA.updateDensity(client.player);
 			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
 				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
+		});
+
+		//switch config
+		ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register((client, world) -> {
+			boolean oldEnableMod = CONFIG.isEnableMod();
+			boolean oldDHCompat = CONFIG.isEnableDHCompat();
+			CONFIG = Config.load(world.getRegistryKey().getValue().toString());
+			applyConfigChange(oldEnableMod, oldDHCompat);
 		});
 
 		//reset
@@ -86,4 +85,16 @@ public class Client implements ClientModInitializer {
 				Common.LOGGER.info("Receiver weather: " + payload.weather().name());
 		});
 	}
+
+	public static void applyConfigChange(boolean oldEnableMod, boolean oldDHCompat) {
+		DATA.setConfig(CONFIG);
+		if (oldDHCompat != CONFIG.isEnableDHCompat()) {  //convert renderer class
+			RENDERER = CONFIG.isEnableDHCompat() ?
+					new RendererDHCompat(RENDERER) :
+					new Renderer(RENDERER);
+		} else {
+			RENDERER.setRenderer(CONFIG);
+		}
+	}
+
 }

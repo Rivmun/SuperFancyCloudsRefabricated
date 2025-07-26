@@ -19,8 +19,8 @@ public class Common implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	public static final Identifier PACKET_WORLD_SEED = Identifier.of(MOD_ID, "world_seed_packet");
 	public static final Identifier PACKET_WEATHER = Identifier.of(MOD_ID, "weather_packet");
-	public static final Config CONFIG = Config.load();
-	public static final Data DATA = new Data();
+	public static Config CONFIG = Config.load();
+	public static final Data DATA = new Data(CONFIG);
 
 	@Override
 	public void onInitialize() {

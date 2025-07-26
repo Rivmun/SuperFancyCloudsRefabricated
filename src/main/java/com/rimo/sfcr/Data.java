@@ -21,8 +21,8 @@ public class Data {
 	private int weatheringRefreshSpeed;  //(same as above)
 	private int densityChangingSpeed;
 
-	Data() {
-		setConfig(CONFIG);
+	Data(Config config) {
+		setConfig(config);
 	}
 
 	public void setConfig(Config config) {

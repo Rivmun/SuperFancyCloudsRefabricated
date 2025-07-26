@@ -4,7 +4,6 @@
 
 	"text.sfcr.category.general": "常规",
 	"text.sfcr.option.enableMod": "启用模组？",
-	"text.sfcr.option.enableMod.@Tooltip": "§c更改后会自动重载资源包\n以启用/禁用自定义云层着色器",
 	"text.sfcr.option.enableDebug": "调试输出",
 	"text.sfcr.option.cloudHeight": "云高度偏移",
 	"text.sfcr.option.cloudLayerThickness": "云层厚度",
@@ -59,6 +58,8 @@
 	"text.sfcr.category.compat": "兼容",
 	"text.sfcr.option.DHCompat": "Distant Horizons 兼容",
 	"text.sfcr.option.DHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 因为DH的渲染特性，云层将不再透明。\n- “云底变暗”功能在启用该兼容后将失效。",
+	"text.sfcr.option.dimensionCompat.@PrefixText": "自定义维度兼容: %s",
+	"text.sfcr.option.dimensionCompat.@Tooltip": "每当你切换维度时，SFCR会自动从配置文件夹中\n加载§osfcr_modName_dimensionName.json§r作为当前维度的设置。\n你可将原始配置文件\"sfcr.json\"复制并重命名后\n为任意维度配置独立的SFCR行为。\n- 除了\"minecraft:overworld\"，作为主世界，它使用原始配置。\n- 此功能不能被禁用。",
 
 	"text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW": "非常慢",
 	"text.sfcr.enum.cloudRefreshSpeed.SLOW": "较慢",

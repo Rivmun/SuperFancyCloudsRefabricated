@@ -4,7 +4,6 @@
 
 	"text.sfcr.category.general": "General",
 	"text.sfcr.option.enableMod": "Enable?",
-	"text.sfcr.option.enableMod.@Tooltip": "§cWill reload resource to\nenable/disable custom cloud shader",
 	"text.sfcr.option.enableDebug": "Debug Output",
 	"text.sfcr.option.cloudHeight": "Cloud Height Offset",
 	"text.sfcr.option.cloudLayerThickness": "Cloud Thickness",
@@ -59,6 +58,8 @@
 	"text.sfcr.category.compat": "Compat",
 	"text.sfcr.option.DHCompat": "Distant Horizons Compat",
 	"text.sfcr.option.DHCompat.@Tooltip": "Enable this if you want render SFCR cloud above\nDH LOD chunk without incorrect covered.\n§4NOTE:\n- Cloud no longer transparent due to DH render system.\n- \"BottomDim\" option has no working in this compat.",
+	"text.sfcr.option.dimensionCompat.@PrefixText": "Custom Dimension Compat: %s",
+	"text.sfcr.option.dimensionCompat.@Tooltip": "SFCR will auto load §osfcr_modName_dimensionName.json§r\nfrom config folder as new config for that dimension.\nYou can copy default config file \"sfcr.json\" and rename it\nto make a individual SFCR behavior for any dimensions.\n- exclude \"minecraft:overworld\", it will load default.\n- this feature can NOT be disabled.",
 
 	"text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW": "Very Slow",
 	"text.sfcr.enum.cloudRefreshSpeed.SLOW": "Slow",

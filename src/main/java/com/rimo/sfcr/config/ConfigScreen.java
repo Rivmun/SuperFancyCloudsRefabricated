@@ -2,9 +2,6 @@ package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
-import com.rimo.sfcr.RendererDHCompat;
-import com.rimo.sfcr.Renderer;
-import com.seibel.distanthorizons.api.DhApi;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -36,23 +33,9 @@ public class ConfigScreen {
 		// Saving...
 		builder.setSavingRunnable(() -> {
 			Config.save(CONFIG);
-			Common.DATA.setConfig(CONFIG);
-
-			if (oldDHCompat != CONFIG.isEnableDHCompat())  //convert renderer class
-				Client.RENDERER = CONFIG.isEnableDHCompat() ?
-						new RendererDHCompat(Client.RENDERER) :
-						new Renderer(Client.RENDERER);
-
-			if (oldEnableMod != CONFIG.isEnableMod()) {  // load/unload custom shader pack
-				var manager = MinecraftClient.getInstance().getResourcePackManager();
-				if (CONFIG.isEnableMod()) {
-					manager.enable(Client.buildInPackId.toString());
-				} else {
-					manager.disable(Client.buildInPackId.toString());
-					Client.RENDERER.stop();
-				}
-				MinecraftClient.getInstance().reloadResources();
-			}
+			Client.applyConfigChange(oldEnableMod, oldDHCompat);
+			if (oldEnableMod != CONFIG.isEnableMod())  //notice vanilla cloud to update
+				MinecraftClient.getInstance().worldRenderer.getCloudRenderer().scheduleTerrainUpdate();
 		});
 
 		return builder.build();
@@ -64,7 +47,6 @@ public class ConfigScreen {
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
 						CONFIG.isEnableMod())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableMod.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableMod)
 				.build()
 		);
@@ -207,16 +189,16 @@ public class ConfigScreen {
 				.build()
 		);
 		//cloud common density
-//		density.addEntry(entryBuilder
-//				.startIntSlider(Text.translatable("text.sfcr.option.cloudDensity")
-//						, CONFIG.getDensityPercent()
-//						,0
-//						,100)
-//				.setDefaultValue(25)
-//				.setTextGetter(value -> Text.of(value + "%"))
-//				.setSaveConsumer(CONFIG::setDensityPercent)
-//				.build()
-//		);
+		density.addEntry(entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.cloudDensity")
+						, CONFIG.getDensityPercent()
+						,0
+						,100)
+				.setDefaultValue(25)
+				.setTextGetter(value -> Text.of(value + "%"))
+				.setSaveConsumer(CONFIG::setDensityPercent)
+				.build()
+		);
 		//weather
 		density.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
@@ -349,6 +331,15 @@ public class ConfigScreen {
 				.setDefaultValue(false)
 				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.build()
+		);
+		compat.addEntry(entryBuilder
+				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
+						MinecraftClient.getInstance().world != null ?
+								MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
+								"modName:dimensionName"
+				))
+				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 				.build()
 		);
 	}

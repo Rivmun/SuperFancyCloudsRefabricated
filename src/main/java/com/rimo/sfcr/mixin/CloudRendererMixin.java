@@ -1,6 +1,8 @@
 package com.rimo.sfcr.mixin;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Renderer;
 import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.render.CloudRenderer;
 import net.minecraft.client.render.CloudRenderer.ViewMode;
@@ -12,6 +14,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -56,7 +59,17 @@ public abstract class CloudRendererMixin {
 		}
 
 		if (CONFIG.isEnableDHCompat())
-			ci.cancel();  //cancel cell building and vanilla cloud render, only get pos for DHCompat.
+			ci.cancel();  //cancel vanilla build & render, only get pos for DHCompat.
+	}
+
+	/*
+		redirect renderPipeline
+	 */
+	@ModifyVariable(method = "renderClouds", at = @At("STORE"))
+	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
+		if (CONFIG.isEnableMod())
+			return Renderer.SUPER_FANCY_CLOUDS;
+		return pipeline;
 	}
 
 	/*

@@ -1,6 +1,7 @@
 package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
@@ -95,17 +96,28 @@ public class Config {
 	public void setEnableDynamic(boolean enableDynamic) {this.enableDynamic = enableDynamic;}
 	public int getCloudColor() {return cloudColor;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
-	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDHLoaded;}
-	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDHLoaded;}
+	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 
-	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of(
-			"#minecraft:is_river"
-	));
+	private static final String OVERWORLD = "minecraft:overworld";
+	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
+	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of("#minecraft:is_river"));
 
 	public static Config load() {
-		Gson gson = new Gson();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
+		return load(OVERWORLD);  //load default
+	}
+
+	public static Config load(String dimensionNamespace) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();  //gson.setPrettyPrinting() can output highly readable file.
 		Config config = new Config();
+		Path path;
+		if (dimensionNamespace.equals(OVERWORLD)) {
+			path = DEFAULT_PATH;
+		} else {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");  //sfcr_modName_dimensionName.json
+			Path path2 = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + dimensionNamespace + ".json");
+			path = Files.exists(path2) ? path2 : DEFAULT_PATH;
+		}
 		if (Files.exists(path)) {
 			try {
 				BufferedReader reader = Files.newBufferedReader(path);
@@ -121,7 +133,7 @@ public class Config {
 	}
 
 	public static void save(Config config) {
-		Gson gson = new Gson();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		Path path = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
 		try {
 			Files.createDirectories(path.getParent());

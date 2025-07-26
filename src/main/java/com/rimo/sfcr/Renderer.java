@@ -1,7 +1,14 @@
 package com.rimo.sfcr;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.rimo.sfcr.config.Config;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gl.UniformType;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
@@ -15,6 +22,28 @@ import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class Renderer {
+	//Create custom renderPipeline
+	//when renderClouds init cloud pipeline, we redirect it by using Mixin.
+	@SuppressWarnings("RedundantArrayCreation")
+	public static final RenderPipeline SUPER_FANCY_CLOUDS = RenderPipelines.register(RenderPipeline
+			.builder(new RenderPipeline.Snippet[]{RenderPipeline
+					//public static final RenderPipeline.Snippet RENDERTYPE_SUPER_FANCY_CLOUDS_SNIPPET = RenderPipeline
+					.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET})
+					.withVertexShader("core/rendertype_superfancyclouds")  //use our own .vsh in custom build-in resourcepack
+					.withFragmentShader("core/rendertype_clouds")
+					.withBlend(BlendFunction.TRANSLUCENT)
+					.withVertexFormat(VertexFormats.EMPTY, VertexFormat.DrawMode.QUADS)
+					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
+					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
+					.buildSnippet()
+			})
+			.withLocation("pipeline/clouds")
+			.build()
+	);
+	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
+	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
+	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
+
 	private SimplexNoiseSampler sampler;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
 	protected float cloudHeight;
@@ -24,10 +53,6 @@ public class Renderer {
 	private int renderDistance;
 	private int cloudGridWidth;
 	private int cloudLayerHeight;
-
-	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
-	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
-	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
 
 	protected float vanillaCloudHeight;
 	protected int vanillaCloudRenderDistance;
@@ -43,7 +68,6 @@ public class Renderer {
 		this.setSampler(renderer.getSampler());
 		this.setGridPos(renderer.gridX, renderer.gridY, renderer.gridZ);
 		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset());
-		//this.cloudGrid = renderer.cloudGrid;
 		this.setRenderDistance(renderer.vanillaViewDistance, renderer.vanillaCloudRenderDistance);
 	}
 

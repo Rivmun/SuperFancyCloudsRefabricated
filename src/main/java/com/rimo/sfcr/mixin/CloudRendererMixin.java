@@ -1,5 +1,6 @@
 package com.rimo.sfcr.mixin;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Renderer;
 import net.minecraft.client.option.CloudRenderMode;
@@ -9,13 +10,17 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
+
+import static com.rimo.sfcr.Common.CONFIG;
 
 @Mixin(CloudRenderer.class)
 public abstract class CloudRendererMixin {
@@ -24,12 +29,16 @@ public abstract class CloudRendererMixin {
 	int oldX, oldY, oldZ;
 	@Unique
 	float oldCloudHeight;
+	@Shadow
+	public int instanceCount;
 
 	/*
 		grabbing camera pos of grid
 	 */
-	@Inject(method = "renderClouds", at = @At("INVOKE"))
+	@Inject(method = "renderClouds", at = @At("INVOKE"), cancellable = true)
 	private void renderClouds(int color, CloudRenderMode mode, float cloudHeight, Vec3d cameraPos, float cloudPhase, CallbackInfo ci) {
+		if (!CONFIG.isEnableMod())
+			return;
 		double d = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double e = cameraPos.z + 3.9600000381469727;
 		float f = (float)(cameraPos.y - (double)cloudHeight);
@@ -48,15 +57,30 @@ public abstract class CloudRendererMixin {
 			oldCloudHeight = cloudHeight;
 			Client.RENDERER.setCloudHeight(cloudHeight);
 		}
+
+		if (CONFIG.isEnableDHCompat())
+			ci.cancel();  //cancel vanilla build & render, only get pos for DHCompat.
+	}
+
+	/*
+		redirect renderPipeline
+	 */
+	@ModifyVariable(method = "renderClouds", at = @At("STORE"))
+	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
+		if (CONFIG.isEnableMod())
+			return Renderer.SUPER_FANCY_CLOUDS;
+		return pipeline;
 	}
 
 	/*
 		Modifying instanceCount
-		cuz we put 4 bits to CloudFaces buffer instead of 3.
+		cuz we put more than 3 bits of vanilla to cloudFaces buffer.
 	 */
 	@Redirect(method = "renderClouds", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/CloudRenderer;instanceCount:I", opcode = Opcodes.GETFIELD))
 	private int getInstanceCount(CloudRenderer renderer) {
-		return renderer.instanceCount * 3 / 4;
+		if (!CONFIG.isEnableMod())
+			return instanceCount;
+		return instanceCount * 3 / 5;
 	}
 
 	/*
@@ -66,7 +90,9 @@ public abstract class CloudRendererMixin {
 	 */
 	@Inject(method = "buildCloudCells", at = @At("HEAD"), cancellable = true)
 	private void buildCloudCells(ViewMode viewMode, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int renderDistance, CallbackInfo ci) {
-		Client.RENDERER.buildCloudCells(byteBuffer, isFancy, renderDistance);
+		if (!CONFIG.isEnableMod())
+			return;
+		Client.RENDERER.buildCloudCells(byteBuffer, isFancy);
 		ci.cancel();
 	}
 

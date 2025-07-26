@@ -3,10 +3,14 @@
   "minVersion": "0.8",
   "package": "com.rimo.sfcr.mixin",
   "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "ServerWorldAccessor"
+  ],
   "client": [
+    "ClientWorldMixin",
     "CloudRendererMixin",
-    "ServerWorldAccessor",
-    "GameOptionsMixin"
+    "GameOptionsMixin",
+    "WorldRendererAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

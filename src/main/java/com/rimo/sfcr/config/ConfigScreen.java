@@ -1,10 +1,12 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
+import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -17,38 +19,50 @@ public class ConfigScreen {
 
 	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
+	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
 
-	private final Config CONFIG = Client.CONFIG;
+	private final Config CONFIG = Common.CONFIG;
+	private final boolean oldEnableMod = CONFIG.isEnableMod();
+	private final boolean oldDHCompat = CONFIG.isEnableDHCompat();
 
 	public Screen buildScreen() {
 		buildCategory();
 		buildDensityCategory();
+		buildCompatCategory();
 
 		// Saving...
 		builder.setSavingRunnable(() -> {
 			Config.save(CONFIG);
-			Client.DATA.setConfig(CONFIG);
-			Client.RENDERER.setRenderer(CONFIG);
+			Client.applyConfigChange(oldEnableMod, oldDHCompat);
+			if (oldEnableMod != CONFIG.isEnableMod())  //notice vanilla cloud to update
+				MinecraftClient.getInstance().worldRenderer.getCloudRenderer().scheduleTerrainUpdate();
 		});
 
 		return builder.build();
 	}
 
 	private void buildCategory() {
-		//cloud height
+		//enable
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
+						CONFIG.isEnableMod())
+				.setDefaultValue(true)
+				.setSaveConsumer(CONFIG::setEnableMod)
+				.build()
+		);
+		//cloud height offset
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
-						, CONFIG.getCloudHeight()
-						,-1
-						,384)
-				.setDefaultValue(-1)
+						, CONFIG.getCloudHeightOffset()
+						,-128
+						,128)
+				.setDefaultValue(0)
 				.setTextGetter(value -> {
-					if (value < 0)
+					if (value == 0)
 						return Text.translatable("text.sfcr.option.followVanilla");
 					return Text.of(value.toString());
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudHeight)
+				.setSaveConsumer(CONFIG::setCloudHeightOffset)
 				.build()
 		);
 		//cloud layer height
@@ -63,7 +77,7 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setCloudLayerHeight)
 				.build()
 		);
-		var isFitToView = entryBuilder
+		BooleanListEntry isFitToView = entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
 						, CONFIG.isEnableRenderDistanceFitToView())
 				.setDefaultValue(false)
@@ -79,7 +93,7 @@ public class ConfigScreen {
 				.setDefaultValue(48)
 				.setTextGetter(value -> {
 					if (value == 31)
-						return Text.translatable("text.sfcr.option.followVanilla").append(":" + MinecraftClient.getInstance().options.getCloudRenderDistance());
+						return Text.translatable("text.sfcr.option.followVanilla").append(": " + MinecraftClient.getInstance().options.getCloudRenderDistance().getValue());
 					return Text.of(value.toString());
 				})
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
@@ -110,6 +124,31 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
 				.build()
 		);
+		//cloud color
+		general.addEntry(entryBuilder
+				.startColorField(Text.translatable("text.sfcr.option.cloudColor")
+						, CONFIG.getCloudColor())
+				.setDefaultValue(0xFFFFFF)
+				.setSaveConsumer(CONFIG::setCloudColor)
+				.build()
+		);
+		//bottomDim
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableBottomDim")
+						, CONFIG.isEnableBottomDim())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableBottomDim.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableBottomDim)
+				.build()
+		);
+		//debug
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDebug")
+						, CONFIG.isEnableDebug())
+				.setDefaultValue(false)
+				.setSaveConsumer(CONFIG::setEnableDebug)
+				.build()
+		);
 	}
 
 	private void buildDensityCategory() {
@@ -133,6 +172,15 @@ public class ConfigScreen {
 				.setMin(0f)
 				.setTooltip(Text.translatable("text.sfcr.option.thresholdMultiplier.@Tooltip"))
 				.setSaveConsumer(CONFIG::setThresholdMultiplier)
+				.build()
+		);
+		//dynamic
+		density.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDynamic")
+						, CONFIG.isEnableDynamic())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableDynamic.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDynamic)
 				.build()
 		);
 		//density
@@ -272,6 +320,26 @@ public class ConfigScreen {
 				.setDefaultValue(Config.DEF_BIOME_BLACKLIST)
 				.setTooltip(Text.translatable("text.sfcr.option.biomeFilter.@Tooltip"))
 				.setSaveConsumer(CONFIG::setBiomeBlackList)
+				.build()
+		);
+	}
+
+	private void buildCompatCategory() {
+		compat.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
+						CONFIG.isEnableDHCompat())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.build()
+		);
+		compat.addEntry(entryBuilder
+				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
+						MinecraftClient.getInstance().world != null ?
+								MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
+								"modName:dimensionName"
+				))
+				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 				.build()
 		);
 	}

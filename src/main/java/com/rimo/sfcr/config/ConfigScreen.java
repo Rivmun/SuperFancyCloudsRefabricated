@@ -12,9 +12,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 public class ConfigScreen {
-	ConfigBuilder builder = ConfigBuilder.create()
-			.setParentScreen(MinecraftClient.getInstance().currentScreen)
-			.setTitle(Text.translatable("text.sfcr.option.title"));
+	ConfigBuilder builder = ConfigBuilder.create();
 	ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
 	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
@@ -24,17 +22,26 @@ public class ConfigScreen {
 	private final Config CONFIG = Common.CONFIG;
 	private final boolean oldEnableMod = CONFIG.isEnableMod();
 	private final boolean oldDHCompat = CONFIG.isEnableDHCompat();
+	private final boolean oldBottomDim = CONFIG.isEnableBottomDim();
 
 	public Screen buildScreen() {
+		builder.setParentScreen(MinecraftClient.getInstance().currentScreen)
+				.setTitle(Client.isCustomDimensionConfig ?
+						Text.translatable("text.sfcr.option.title.customDimensionMode") :
+						Text.translatable("text.sfcr.option.title")
+				);
 		buildCategory();
 		buildDensityCategory();
 		buildCompatCategory();
 
 		// Saving...
 		builder.setSavingRunnable(() -> {
-			Config.save(CONFIG);
+			if (Client.isCustomDimensionConfig)
+				Config.save(CONFIG, MinecraftClient.getInstance().world.getRegistryKey().getValue().toString());
+			else
+				Config.save(CONFIG);
 			Client.applyConfigChange(oldEnableMod, oldDHCompat);
-			if (oldEnableMod != CONFIG.isEnableMod())  //notice vanilla cloud to update
+			if (MinecraftClient.getInstance().world != null && (oldEnableMod != CONFIG.isEnableMod() || oldBottomDim != CONFIG.isEnableBottomDim()))  //notify vanilla cloudRenderer to update
 				MinecraftClient.getInstance().worldRenderer.getCloudRenderer().scheduleTerrainUpdate();
 		});
 
@@ -42,6 +49,13 @@ public class ConfigScreen {
 	}
 
 	private void buildCategory() {
+		if (Client.isCustomDimensionConfig)
+			general.addEntry(entryBuilder
+					.startTextDescription(Text.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
+							"§b" + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString()
+					))
+					.build()
+			);
 		//enable
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
@@ -62,6 +76,7 @@ public class ConfigScreen {
 						return Text.translatable("text.sfcr.option.followVanilla");
 					return Text.of(value.toString());
 				})
+				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudHeightOffset)
 				.build()
 		);
@@ -89,7 +104,7 @@ public class ConfigScreen {
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudRenderDistance")
 						, CONFIG.getRenderDistance()
 						,31
-						,192)
+						,128)
 				.setDefaultValue(48)
 				.setTextGetter(value -> {
 					if (value == 31)
@@ -130,6 +145,15 @@ public class ConfigScreen {
 						, CONFIG.getCloudColor())
 				.setDefaultValue(0xFFFFFF)
 				.setSaveConsumer(CONFIG::setCloudColor)
+				.build()
+		);
+		//dusk blush
+		general.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDuskBlush")
+						, CONFIG.isEnableDuskBlush())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableDuskBlush.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDuskBlush)
 				.build()
 		);
 		//bottomDim
@@ -325,19 +349,46 @@ public class ConfigScreen {
 	}
 
 	private void buildCompatCategory() {
-		compat.addEntry(entryBuilder
+		//Distant Horizons
+		BooleanListEntry dhCompatEntry = entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
 						CONFIG.isEnableDHCompat())
 				.setDefaultValue(false)
 				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.build();
+		compat.addEntry(dhCompatEntry);
+		//dh render distance
+		compat.addEntry(entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.DHCompat.enhanceDistance"),
+						CONFIG.getDhDistanceMultipler(),
+						1,
+						8)
+				.setDefaultValue(1)
+				.setTextGetter(value -> Text.of(value + "x"))
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.enhanceDistance.@Tooltip"))
+				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
+				.setSaveConsumer(CONFIG::setDhDistanceMultipler)
 				.build()
 		);
+		//dh height enhance
+		compat.addEntry(entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.DHCompat.enhanceHeight"),
+						CONFIG.getDhHeightEnhance() / 16,
+						0,
+						32)
+				.setDefaultValue(0)
+				.setTextGetter(value -> Text.of(String.valueOf(value * 16)))
+				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
+				.setSaveConsumer(value -> CONFIG.setDhHeightEnhance(value * 16))
+				.build()
+		);
+		//Custom Dimension
 		compat.addEntry(entryBuilder
 				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
 						MinecraftClient.getInstance().world != null ?
-								MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
-								"modName:dimensionName"
+								(Client.isCustomDimensionConfig ? "§a" : "§c") + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
+								"§7null"
 				))
 				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 				.build()

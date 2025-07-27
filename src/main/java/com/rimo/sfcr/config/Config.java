@@ -28,7 +28,7 @@ public class Config {
 	private boolean enableTerrainDodge = true;
 	private float densityThreshold = 1.3f;
 	private float thresholdMultiplier = 1.5f;
-	private int densityPercent = 25;    //TODO：this config has not function.
+	private int densityPercent = 25;
 	private boolean enableWeatherDensity = true;
 	private int rainDensityPercent = 60;
 	private int thunderDensityPercent = 90;
@@ -44,7 +44,10 @@ public class Config {
 	private boolean enableDynamic = true;
 	private boolean enableDebug = false;
 	private int cloudColor = 0xFFFFFF;
+	private boolean enableDuskBlush = true;
 	private boolean enableDHCompat = false;
+	private int dhDistanceMultipler = 1;
+	private int dhHeightEnhance = 0;
 
 	public boolean isEnableMod() {return enableMod;}
 	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod;}
@@ -96,8 +99,14 @@ public class Config {
 	public void setEnableDynamic(boolean enableDynamic) {this.enableDynamic = enableDynamic;}
 	public int getCloudColor() {return cloudColor;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
+	public boolean isEnableDuskBlush() {return enableDuskBlush;}
+	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
 	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDistantHorizonsLoaded;}
 	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public int getDhDistanceMultipler() {return dhDistanceMultipler;}
+	public void setDhDistanceMultipler(int dhDistanceMultipler) {this.dhDistanceMultipler = dhDistanceMultipler;}
+	public int getDhHeightEnhance() {return dhHeightEnhance;}
+	public void setDhHeightEnhance(int dhHeightEnhance) {this.dhHeightEnhance = dhHeightEnhance;}
 
 	private static final String OVERWORLD = "minecraft:overworld";
 	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
@@ -110,38 +119,48 @@ public class Config {
 	public static Config load(String dimensionNamespace) {
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();  //gson.setPrettyPrinting() can output highly readable file.
 		Config config = new Config();
-		Path path;
-		if (dimensionNamespace.equals(OVERWORLD)) {
-			path = DEFAULT_PATH;
-		} else {
+		Path path = DEFAULT_PATH;
+		Client.isCustomDimensionConfig = false;
+		if (!Files.exists(path))
+			save(config);  //write default file if not exist.
+		if (! dimensionNamespace.equals(OVERWORLD)) {
 			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");  //sfcr_modName_dimensionName.json
 			Path path2 = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + dimensionNamespace + ".json");
-			path = Files.exists(path2) ? path2 : DEFAULT_PATH;
-		}
-		if (Files.exists(path)) {
-			try {
-				BufferedReader reader = Files.newBufferedReader(path);
-				config = gson.fromJson(reader, Config.class);
-				reader.close();
-			} catch (IOException | JsonParseException e) {
-				Common.LOGGER.error("config file read failure!");
+			if (Files.exists(path2)) {
+				path = path2;  //load dimension config if exist, or load default (path unmodified if not exist)
+				Client.isCustomDimensionConfig = true;
 			}
-		} else {
-			save(config);
 		}
+		try {
+			BufferedReader reader = Files.newBufferedReader(path);
+			config = gson.fromJson(reader, Config.class);
+			reader.close();
+		} catch (IOException | JsonParseException e) {
+			Common.LOGGER.error("Failed to read config file: " + path.getFileName());
+		}
+		Common.LOGGER.info("Load config file: " + path.getFileName());
 		return config;
 	}
 
 	public static void save(Config config) {
+		save(config, OVERWORLD);  //save default
+	}
+
+	public static void save(Config config, String dimensionNamespace) {
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
+		Path path = FabricLoader.getInstance().getConfigDir();
+		if (! dimensionNamespace.equals(OVERWORLD)) {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
+			path = path.resolve(Common.MOD_ID + dimensionNamespace + ".json");
+		} else
+			path = path.resolve(Common.MOD_ID + ".json");
 		try {
 			Files.createDirectories(path.getParent());
 			BufferedWriter writer = Files.newBufferedWriter(path);
 			gson.toJson(config, writer);
 			writer.close();
 		} catch (IOException e) {
-			Common.LOGGER.error("config file write failure!");
+			Common.LOGGER.error("Failed to write config file: " + path.getFileName());
 		}
 	}
 

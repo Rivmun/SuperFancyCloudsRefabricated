@@ -45,7 +45,7 @@ dependencies {
 	//Distant Horizon Api
 	modCompileOnly "maven.modrinth:DistantHorizonsApi:4.0.1"
 	//Distant Horizon
-//	modRuntimeOnly "maven.modrinth:DistantHorizons:2.3.4-b-1.21.6"
+	modRuntimeOnly "maven.modrinth:DistantHorizons:2.3.4-b-1.21.6"
 }
 
 processResources {

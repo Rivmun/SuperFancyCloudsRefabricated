@@ -146,6 +146,11 @@ public class RendererDHCompat extends Renderer{
 		return result;
 	}
 
+	@Override
+	protected int getRenderDistance() {
+		return super.getRenderDistance() * Common.CONFIG.getDhDistanceMultipler();
+	}
+
 	//add RenderableBoxGroup build and replace.
 	@Override
 	protected void updateCloudGrid() {
@@ -212,7 +217,7 @@ public class RendererDHCompat extends Renderer{
 				+ (float)((WorldRendererAccessor)MinecraftClient.getInstance().worldRenderer).getTicks();
 		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double z = cameraPos.z + 3.9600000381469727;
-		double height = cloudHeight;
+		double height = cloudHeight + Common.CONFIG.getDhHeightEnhance();
 		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH;  //trans to offset
 		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH;
 

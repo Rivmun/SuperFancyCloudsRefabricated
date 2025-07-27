@@ -22,6 +22,7 @@ import static com.rimo.sfcr.Common.DATA;
 public class Client implements ClientModInitializer {
 	public static final boolean isDistantHorizonsLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
 	private static boolean hasServer = false;  //if not, calc density and weather on local; if yes, wait message payload from server.
+	public static boolean isCustomDimensionConfig = false;  //indicate current config is default or not.
 	public static Renderer RENDERER;
 
 	@Override
@@ -68,6 +69,8 @@ public class Client implements ClientModInitializer {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			hasServer = false;
 			RENDERER.stop();
+			if (isCustomDimensionConfig)
+				CONFIG = Config.load();
 		});
 
 		//world info receiver

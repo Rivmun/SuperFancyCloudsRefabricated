@@ -16,7 +16,7 @@ public abstract class ClientWorldMixin {
 	 */
 	@Inject(method = "getCloudsColor", at = @At("RETURN"), cancellable = true)
 	public void getCloudsColor(float tickProgress, CallbackInfoReturnable<Integer> cir) {
-		if (! CONFIG.isEnableMod())
+		if (! CONFIG.isEnableMod() || ! CONFIG.isEnableDuskBlush())
 			return;
 
 		int color = cir.getReturnValue();

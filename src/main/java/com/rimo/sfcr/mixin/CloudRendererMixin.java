@@ -67,9 +67,11 @@ public abstract class CloudRendererMixin {
 	 */
 	@ModifyVariable(method = "renderClouds", at = @At("STORE"))
 	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
-		if (CONFIG.isEnableMod())
-			return Renderer.SUPER_FANCY_CLOUDS;
-		return pipeline;
+		if (!CONFIG.isEnableMod())
+			return pipeline;
+		if (!CONFIG.isEnableBottomDim())
+			return Renderer.SUPER_FANCY_CLOUDS_NOTHICKNESS;
+		return Renderer.SUPER_FANCY_CLOUDS;
 	}
 
 	/*

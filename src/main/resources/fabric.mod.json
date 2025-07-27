@@ -30,7 +30,8 @@
 		]
 	},
 	"mixins": [
-		"sfcr.mixins.json"
+		"sfcr.mixins.json",
+		"sfcr.distanthorizons.mixins.json"
 	],
 	"accessWidener": "sfcr.accesswidener",
 	"depends": {

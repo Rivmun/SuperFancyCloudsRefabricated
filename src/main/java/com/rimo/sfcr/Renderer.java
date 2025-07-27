@@ -40,6 +40,21 @@ public class Renderer {
 			.withLocation("pipeline/clouds")
 			.build()
 	);
+	@SuppressWarnings("RedundantArrayCreation")
+	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = RenderPipelines.register(RenderPipeline
+			.builder(new RenderPipeline.Snippet[]{RenderPipeline
+					.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET})
+					.withVertexShader("core/rendertype_superfancyclouds_nth")
+					.withFragmentShader("core/rendertype_clouds")
+					.withBlend(BlendFunction.TRANSLUCENT)
+					.withVertexFormat(VertexFormats.EMPTY, VertexFormat.DrawMode.QUADS)
+					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
+					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
+					.buildSnippet()
+			})
+			.withLocation("pipeline/clouds")
+			.build()
+	);
 	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
 	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
 	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
@@ -79,7 +94,7 @@ public class Renderer {
 				config.getRenderDistance() >= 32 ?
 						config.getRenderDistance() :
 						vanillaCloudRenderDistance;
-		cloudGridWidth = renderDistance * 2 + 1;
+		cloudGridWidth = this.getRenderDistance() * 2 + 1;
 		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grids with null x/z is useless
 			cloudGrid = getCloudGrid(gridX, gridZ);
 	}
@@ -94,6 +109,9 @@ public class Renderer {
 		this.vanillaViewDistance = viewDistance;
 		this.vanillaCloudRenderDistance = cloudRenderDistance;
 		setRenderer(CONFIG);
+	}
+	protected int getRenderDistance() {
+		return this.renderDistance;
 	}
 
 	public void setCloudHeight(float height) {
@@ -113,8 +131,8 @@ public class Renderer {
 
 	protected CloudGrid getCloudGrid(int x, int z) {
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudLayerHeight];
-		int sx = x - renderDistance;
-		int sz = z - renderDistance;
+		int sx = x - this.getRenderDistance();
+		int sz = z - this.getRenderDistance();
 		World world = MinecraftClient.getInstance().player.getWorld();
 		double time = world.getTime() / 20.0;
 		//float threshold = 0.5f;  //original
@@ -241,12 +259,11 @@ public class Renderer {
 						for (int h = cloudLayerHeight - 1; h >= 0; h--) {  //insert height traverse
 							if (byteBuffer.remaining() < 24)
 								return;  //java.nio.BufferOverflow Check, 24 is max put amount in single cell.
-							if (this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness) && CONFIG.isEnableBottomDim()) {
+							if (this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness))
 								thickness++;
-							} else {
+							else
 								if (thickness > 0)
 									thickness--;
-							}
 							if (!isFancy)
 								break;  //FAST_CLOUD only draw single layer.
 						}
@@ -255,12 +272,11 @@ public class Renderer {
 					for (int h = cloudLayerHeight - 1; h >= 0; h--) {
 						if (byteBuffer.remaining() < 24)
 							return;
-						if (this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness) && CONFIG.isEnableBottomDim()) {
+						if (this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness))
 							thickness++;
-						} else {
+						else
 							if (thickness > 0)
 								thickness--;
-						}
 						if (!isFancy)
 							break;
 					}
@@ -289,8 +305,8 @@ public class Renderer {
 		boolean borderSouth  = !(z + 1 <  cloudGrid.grids.length && cloudGrid.grids[x][z + 1][h]);
 		boolean borderNorth  = !(z - 1 >= 0                      && cloudGrid.grids[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
-		if (cellState == 0)
-			return true;  //jumping cell which fully surround by neighbor cells
+//		if (cellState == 0)
+//			return true;  //jumping cell which fully surround by neighbor cells
 				//TODO: due to we jumped fully surrounded cells, inner face of this cells are disappear too. it causing some bad visual.
 
 		cellState |= (thickness << 6);
@@ -326,8 +342,9 @@ public class Renderer {
 		byteBuffer.put((byte)(x >> 1))
 				.put((byte)(z >> 1))
 				.put((byte)(h >> 1))
-				.put((byte)l)
-				.put((byte)thickness);
+				.put((byte)l);
+		if (CONFIG.isEnableBottomDim())
+			byteBuffer.put((byte)thickness);
 	}
 
 	private void buildCloudCellFancy(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {

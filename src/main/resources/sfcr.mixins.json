@@ -7,9 +7,9 @@
     "ServerWorldAccessor"
   ],
   "client": [
-    "ClientWorldMixin",
     "CloudRendererMixin",
-    "GameOptionsMixin"
+    "GameOptionsMixin",
+    "WorldRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

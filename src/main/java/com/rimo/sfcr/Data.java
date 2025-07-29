@@ -17,7 +17,7 @@ public class Data {
 	private float targetDownFall = 1f;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
-	private int normalRefreshSpeed;  //use to control rebuild interval
+	private int normalRefreshSpeed;  //use to control rebuild interval in old code
 	private int weatheringRefreshSpeed;  //(same as above)
 	private int densityChangingSpeed;
 

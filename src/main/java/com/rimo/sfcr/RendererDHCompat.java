@@ -5,13 +5,18 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
+//import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.world.ClientWorld;
+//import net.minecraft.registry.entry.RegistryEntry;
+//import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+//import net.minecraft.world.World;
+//import net.minecraft.world.biome.Biome;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -24,26 +29,25 @@ import java.util.List;
 	Also, thread-ify it.
  */
 public class RendererDHCompat extends Renderer{
-	private final DhApiRenderableBoxGroupShading cloudShading = DhApiRenderableBoxGroupShading.getUnshaded();
+	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
 	private IDhApiRenderableBoxGroup group;
 
-	public RendererDHCompat() {
-		this.setCloudShading();
-	}
+	public RendererDHCompat() {}
 
 	public RendererDHCompat(Renderer renderer) {
 		super(renderer);
-		this.setCloudShading();
 	}
 
-	private void setCloudShading() {
+	private DhApiRenderableBoxGroupShading createCloudShading() {
+		DhApiRenderableBoxGroupShading cloudShading = new DhApiRenderableBoxGroupShading();
 		cloudShading.north = cloudShading.south = 0.9F;
 		cloudShading.east = cloudShading.west = 0.8F;
 		cloudShading.top = 1.0F;
 		cloudShading.bottom = 0.7F;
+		return cloudShading;
 	}
 
-	//convert cloudGrid.boolean to List<DhApiRenderableBox>
+	//convert cloudGrid.boolean[][][] to List<DhApiRenderableBox>
 	//Powered by Deepseek.ai
 	private List<DhApiRenderableBox> convertGridForm(boolean[][][] grid) {
 		int w = grid.length;
@@ -126,15 +130,15 @@ public class RendererDHCompat extends Renderer{
 
 						// Add AABB box
 						result.add(new DhApiRenderableBox(
-								new DhApiVec3d(
-										(xMin - w / 2) * CLOUD_BLOCK_WIDTH,  //trans to offset pos from camera
-										zMin * CLOUD_BLOCK_HEIGHT,
-										(yMin - w / 2) * CLOUD_BLOCK_WIDTH
+								new DhApiVec3d(  //TODO: why size must * 2?
+										(xMin - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //offset to center
+										zMin * CLOUD_BLOCK_HEIGHT * 2,
+										(yMin - w / 2) * CLOUD_BLOCK_WIDTH * 2
 								),
 								new DhApiVec3d(
-										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH,  //++at least one block
-										++zMax * CLOUD_BLOCK_HEIGHT,
-										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH
+										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //at least one block size
+										++zMax * CLOUD_BLOCK_HEIGHT * 2,
+										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH * 2
 								),
 								new Color(255,255,255,255),  //color change by time, here just placeholder
 								EDhApiBlockMaterial.UNKNOWN
@@ -147,9 +151,37 @@ public class RendererDHCompat extends Renderer{
 	}
 
 	@Override
+	public float getCloudHeight() {
+		return super.getCloudHeight() + Common.CONFIG.getDhHeightEnhance();
+	}
+
+	@Override
 	protected int getRenderDistance() {
 		return super.getRenderDistance() * Common.CONFIG.getDhDistanceMultipler();
 	}
+
+	//TODO: we try scanning DH level wrapper to detect biome but instantly got a BIG performance issue
+/*	@Override
+	protected int getVanillaViewDistance() {
+		return DhApi.Delayed.configs.graphics().chunkRenderDistance().getValue();
+	}
+
+	@Override
+	protected boolean isChunkLoaded(World world, int x, int z) {
+		return DhApi.Delayed.terrainRepo.getSingleDataPointAtBlockPos(
+				DhApi.Delayed.worldProxy.getSinglePlayerLevel(), x, 80, z
+		).payload != null;
+	}
+
+	@Override
+	protected RegistryEntry<Biome> getBiome(World world, int x, int z) {
+		DhApiTerrainDataPoint dataPoint = DhApi.Delayed.terrainRepo.getSingleDataPointAtBlockPos(
+				DhApi.Delayed.worldProxy.getSinglePlayerLevel(), x, 80, z
+		).payload;
+		return dataPoint != null ?
+				(RegistryEntry<Biome>) dataPoint.biomeWrapper.getWrappedMcObject() :
+				world.getBiome(new BlockPos(x, 80, z));
+	}*/
 
 	//add RenderableBoxGroup build and replace.
 	@Override
@@ -203,7 +235,7 @@ public class RendererDHCompat extends Renderer{
 		if (cloudGrid == null) {
 			updateCloudGrid();
 		} else if (isGridNeedToUpdate()) {
-			this.startGridUpdateThread();
+			startGridUpdateThread();
 		}
 	}
 
@@ -217,9 +249,9 @@ public class RendererDHCompat extends Renderer{
 				+ (float)((WorldRendererAccessor)MinecraftClient.getInstance().worldRenderer).getTicks();
 		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double z = cameraPos.z + 3.9600000381469727;
-		double height = cloudHeight + Common.CONFIG.getDhHeightEnhance();
-		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH;  //trans to offset
-		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH;
+		double y = getCloudHeight();
+		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH * 2;  //offset by grid center
+		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH * 2;
 
 		/* TODO: culling?
 		    but we have only one group. considering is unnecessary..
@@ -238,6 +270,6 @@ public class RendererDHCompat extends Renderer{
 			}
 		}
 
-		group.setOriginBlockPos(new DhApiVec3d(-x, height, -z));
+		group.setOriginBlockPos(new DhApiVec3d(-x, y, -z));
 	}
 }

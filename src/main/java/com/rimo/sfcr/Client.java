@@ -4,6 +4,8 @@ import com.rimo.sfcr.Common.WorldInfoPayload;
 import com.rimo.sfcr.Common.WeatherPayload;
 import com.rimo.sfcr.config.Config;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
@@ -89,6 +91,7 @@ public class Client implements ClientModInitializer {
 		});
 	}
 
+	@Environment(EnvType.CLIENT)
 	public static void applyConfigChange(boolean oldEnableMod, boolean oldDHCompat) {
 		DATA.setConfig(CONFIG);
 		if (oldDHCompat != CONFIG.isEnableDHCompat()) {  //convert renderer class

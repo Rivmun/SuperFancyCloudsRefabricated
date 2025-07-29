@@ -9,6 +9,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -21,8 +22,8 @@ import java.util.List;
 public class Config {
 	private boolean enableMod = true;
 	private int cloudHeightOffset = 0;
-	private int cloudLayerHeight = 8;
-	private int renderDistance = 48;
+	private int cloudThickness = 34;
+	private int renderDistance = 31;
 	private boolean enableRenderDistanceFitToView = false;
 	private int sampleSteps = 2;
 	private boolean enableTerrainDodge = true;
@@ -53,8 +54,8 @@ public class Config {
 	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod;}
 	public int getCloudHeightOffset() {return cloudHeightOffset;}
 	public void setCloudHeightOffset(int cloudHeightOffset) {this.cloudHeightOffset = cloudHeightOffset;}
-	public int getCloudLayerHeight() {return cloudLayerHeight;}
-	public void setCloudLayerHeight(int cloudLayerHeight) {this.cloudLayerHeight = cloudLayerHeight;}
+	public int getCloudThickness() {return cloudThickness;}
+	public void setCloudThickness(int cloudThickness) {this.cloudThickness = cloudThickness;}
 	public int getRenderDistance() {return renderDistance;}
 	public void setRenderDistance(int renderDistance) {this.renderDistance = renderDistance;}
 	public boolean isEnableRenderDistanceFitToView() {return enableRenderDistanceFitToView;}
@@ -165,18 +166,18 @@ public class Config {
 	}
 
 	public boolean isFilterListHasNoBiome(RegistryEntry<Biome> biome) {
-		var isNoHas = false;
-		if (this.getBiomeBlackList().contains(biome.getKey().get().getValue().toString())) {
-			isNoHas = true;
+		boolean isHas = false;
+		if (this.getBiomeBlackList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
+			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.streamTags().toList()) {
 				if (this.getBiomeBlackList().contains("#" + tag.id().toString())) {
-					isNoHas = true;
+					isHas = true;
 					break;
 				}
 			}
 		}
-		return ! isNoHas;
+		return ! isHas;
 	}
 
 }

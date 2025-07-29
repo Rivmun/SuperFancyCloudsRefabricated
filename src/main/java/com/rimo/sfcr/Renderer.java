@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gl.UniformType;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec2f;
@@ -16,10 +17,11 @@ import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 
 import java.nio.ByteBuffer;
-import static com.rimo.sfcr.Common.CONFIG;
-import static com.rimo.sfcr.Common.DATA;
+
+import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
 	//Create custom renderPipeline
@@ -56,22 +58,22 @@ public class Renderer {
 			.build()
 	);
 	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
-	protected static final float CLOUD_BLOCK_WIDTH = 12.0f;
-	protected static final float CLOUD_BLOCK_HEIGHT = 4.0f;
+	public static final float CLOUD_BLOCK_WIDTH = 12.0f;
+	public static final float CLOUD_BLOCK_HEIGHT = 4.0f;
 
 	private SimplexNoiseSampler sampler;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
-	protected float cloudHeight;
+	private float cloudHeight;
 	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
 	protected boolean isResampling = false;
 	private int renderDistance;
 	private int cloudGridWidth;
-	private int cloudLayerHeight;
+	private int cloudThickness;
 
-	protected float vanillaCloudHeight;
-	protected int vanillaCloudRenderDistance;
-	protected int vanillaViewDistance;
+	private float vanillaCloudHeight;
+	private int vanillaCloudRenderDistance;
+	private int vanillaViewDistance;
 
 	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
 
@@ -80,7 +82,7 @@ public class Renderer {
 	//copy constructor: use to convert renderer type
 	public Renderer(Renderer renderer) {
 		renderer.stop();
-		this.setSampler(renderer.getSampler());
+		this.sampler = renderer.sampler;
 		this.setGridPos(renderer.gridX, renderer.gridY, renderer.gridZ);
 		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset());
 		this.setRenderDistance(renderer.vanillaViewDistance, renderer.vanillaCloudRenderDistance);
@@ -88,7 +90,7 @@ public class Renderer {
 
 	public synchronized void setRenderer(Config config) {
 		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
-		cloudLayerHeight = config.getCloudLayerHeight();
+		cloudThickness = config.getCloudThickness();
 		renderDistance = config.isEnableRenderDistanceFitToView() ?
 				vanillaViewDistance * 6 :
 				config.getRenderDistance() >= 32 ?
@@ -116,22 +118,19 @@ public class Renderer {
 
 	public void setCloudHeight(float height) {
 		vanillaCloudHeight = height;
-		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset();
+		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset() * CLOUD_BLOCK_HEIGHT;
+	}
+	public float getCloudHeight() {
+		return this.cloudHeight;
 	}
 
 	public void initSampler(long seed) {
 		this.sampler = new SimplexNoiseSampler(Random.create(seed));
 	}
-	public void setSampler(SimplexNoiseSampler sampler) {
-		this.sampler = sampler;
-	}
-	public SimplexNoiseSampler getSampler() {
-		return sampler;
-	}
 
 	protected CloudGrid getCloudGrid(int x, int z) {
-		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudLayerHeight];
-		int sx = x - this.getRenderDistance();
+		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
+		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
 		int sz = z - this.getRenderDistance();
 		World world = MinecraftClient.getInstance().player.getWorld();
 		double time = world.getTime() / 20.0;
@@ -149,20 +148,25 @@ public class Renderer {
 					if (CONFIG.isEnableWeatherDensity()) {
 						if (CONFIG.isEnableBiomeDensityByChunk()) {
 							if (CONFIG.isEnableBiomeDensityUseLoadedChunk()) {
-								Vec2f vec = new Vec2f(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).normalize();  // stepping pos near towards to player
-								float bx2 = bx;
-								float bz2 = bz;
-								while (! world.getChunkManager().isChunkLoaded((int) bx2 / 16, (int) bz2 / 16)
-										&& Math.abs(sx * cloudGridWidth - bx) + Math.abs(sz * cloudGridWidth - bz) > CLOUD_BLOCK_WIDTH * 4) {  //jump if too close
-									bx2 -= vec.x * CLOUD_BLOCK_WIDTH;
-									bz2 -= vec.y * CLOUD_BLOCK_WIDTH;
-								}
-								threshold = CONFIG.isFilterListHasNoBiome(world.getBiome(new BlockPos((int) bx2, 80, (int) bz2)))
-										? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int) bx2, 80, (int) bz2)).value().weather.downfall())
+								Vec2f centerB = new Vec2f(x + 0.5f, z + 0.5f).multiply(CLOUD_BLOCK_WIDTH);
+								Vec2f cellB = new Vec2f(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).multiply(CLOUD_BLOCK_WIDTH);  //from center to current cell
+								Vec2f unit = cellB.normalize().multiply(16);
+								if (cellB.length() > unit.multiply(this.getVanillaViewDistance()).length())
+									cellB = unit.multiply(this.getVanillaViewDistance());  //pick farthest pos in vanillaViewDistance to prevent invalid detect
+
+								while (! this.isChunkLoaded(world, (int)(centerB.x + cellB.x) / 16, (int)(centerB.y + cellB.y) / 16)
+										&& unit.dot(cellB) > 0)  //end if cellB was reversed
+									cellB = cellB.add(unit.negate());  //stepping close to center
+
+								cellB = cellB.add(centerB);  //trans to world pos
+								RegistryEntry<Biome> biome = this.getBiome(world, (int) cellB.x, (int) cellB.y);
+								threshold = CONFIG.isFilterListHasNoBiome(biome)
+										? getDensityThreshold(DATA.densityByWeather, biome.value().weather.downfall())
 										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
 							} else {
-								threshold = CONFIG.isFilterListHasNoBiome(world.getBiome(new BlockPos((int) bx, 80, (int) bz)))
-										? getDensityThreshold(DATA.densityByWeather, world.getBiome(new BlockPos((int) bx, 80, (int) bz)).value().weather.downfall())
+								RegistryEntry<Biome> biome = this.getBiome(world, (int) bx, (int) bz);
+								threshold = CONFIG.isFilterListHasNoBiome(biome)
+										? getDensityThreshold(DATA.densityByWeather, biome.value().weather.downfall())
 										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
 							}
 						} else {
@@ -172,22 +176,22 @@ public class Renderer {
 
 					// sampling...
 					if (CONFIG.isEnableTerrainDodge()) {
-						for (int cy = 0; cy < cloudLayerHeight; cy++) {
+						for (int cy = 0; cy < cloudThickness; cy++) {
 
 							// terrain dodge (detect light level)
 							grid[cx][cz][cy] = world.getLightLevel(LightType.SKY, new BlockPos(
 									(int) bx,
-									(int) (cloudHeight + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
+									(int) (getCloudHeight() + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
 									(int) bz  // cloud is moving, fix Z pos
 							)) == 15 && getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 						}
 					} else {
-						for (int cy = 0; cy < cloudLayerHeight; cy++) {
+						for (int cy = 0; cy < cloudThickness; cy++) {
 							grid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 						}
 					}
 				} else {
-					for (int cy = 0; cy < cloudLayerHeight; cy++) {
+					for (int cy = 0; cy < cloudThickness; cy++) {
 						grid[cx][cz][cy] = getCloudSample(sampler, sx, sz, 0, 0, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 					}
 				}
@@ -199,6 +203,11 @@ public class Renderer {
 	private float getDensityThreshold(float densityByWeather, float densityByBiome) {
 		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
 	}
+
+	//method below extract from getCloudGrid use to override by dhCompat, to redirect these value.
+	protected int getVanillaViewDistance() {return this.vanillaViewDistance;}
+	protected boolean isChunkLoaded(World world, int x, int z) {return world.isChunkLoaded(x, z);}
+	protected RegistryEntry<Biome> getBiome(World world, int x, int z) {return world.getBiome(new BlockPos(x, 80, z));}
 
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid() {
@@ -256,9 +265,9 @@ public class Renderer {
 				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
 					if (zOffset != 0) {
 						int thickness = 0;  //sum thickness to change cloud brightness
-						for (int h = cloudLayerHeight - 1; h >= 0; h--) {  //insert height traverse
-							if (byteBuffer.remaining() < 24)
-								return;  //java.nio.BufferOverflow Check, 24 is max put amount in single cell.
+						for (int h = cloudThickness - 1; h >= 0; h--) {  //insert height traverse
+							if (byteBuffer.remaining() < 30)
+								return;  //java.nio.BufferOverflow Check, 30 is max put amount in single cell.
 							if (this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness))
 								thickness++;
 							else
@@ -269,8 +278,8 @@ public class Renderer {
 						}
 					}
 					int thickness = 0;
-					for (int h = cloudLayerHeight - 1; h >= 0; h--) {
-						if (byteBuffer.remaining() < 24)
+					for (int h = cloudThickness - 1; h >= 0; h--) {
+						if (byteBuffer.remaining() < 30)
 							return;
 						if (this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness))
 							thickness++;
@@ -298,19 +307,16 @@ public class Renderer {
 			return false;  //jumping empty cell
 
 		//check neighbor and push it to next
-		boolean borderTop    = !(h + 1 <  cloudLayerHeight       && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
+		boolean borderTop    = !(h + 1 < cloudThickness && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
 		boolean borderBottom = !(h - 1 >= 0                      && cloudGrid.grids[x][z][h - 1]);
 		boolean borderEast   = !(x + 1 <  cloudGrid.grids.length && cloudGrid.grids[x + 1][z][h]);
 		boolean borderWest   = !(x - 1 >= 0                      && cloudGrid.grids[x - 1][z][h]);
 		boolean borderSouth  = !(z + 1 <  cloudGrid.grids.length && cloudGrid.grids[x][z + 1][h]);
 		boolean borderNorth  = !(z - 1 >= 0                      && cloudGrid.grids[x][z - 1][h]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
-//		if (cellState == 0)
-//			return true;  //jumping cell which fully surround by neighbor cells
-				//TODO: due to we jumped fully surrounded cells, inner face of this cells are disappear too. it causing some bad visual.
 
 		cellState |= (thickness << 6);
-		h += (cloudHeight - vanillaCloudHeight) / CLOUD_BLOCK_HEIGHT;  //trans to offset
+		h += CONFIG.getCloudHeightOffset();
 		if (isFancy) {
 			this.buildCloudCellFancy(byteBuffer, xOffset, h, zOffset, cellState);
 		} else {
@@ -349,7 +355,7 @@ public class Renderer {
 
 	private void buildCloudCellFancy(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {
 		int thickness = cellState >> 6;
-		if (hasBorderTop(cellState) && h <= this.gridY) {  //TODO: why needs "="?
+		if (hasBorderTop(cellState) && h < this.gridY) {
 			this.method_71098(byteBuffer, x, h, z, Direction.UP, 0, thickness);
 		}
 		if (hasBorderBottom(cellState) && h > this.gridY) {

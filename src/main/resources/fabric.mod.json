@@ -3,7 +3,7 @@
 	"id": "sfcr",
 	"version": "${version}",
 	"name": "SuperFancyClouds:Refabricated",
-	"description": "A client side mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
+	"description": "A mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
 	"authors": [
 		"Rimo"
 	],
@@ -36,7 +36,7 @@
 	"accessWidener": "sfcr.accesswidener",
 	"depends": {
 		"fabricloader": ">=0.15.0",
-		"minecraft": ">=1.21.5",
+		"minecraft": ">=1.21.6",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

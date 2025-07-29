@@ -7,6 +7,7 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -49,6 +50,31 @@ public class ConfigScreen {
 	}
 
 	private void buildCategory() {
+		//pre build
+		IntegerSliderEntry cloudHeightOffset = entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
+						, CONFIG.getCloudHeightOffset()
+						//due to vanilla cloudCell byteBuffer maximum only 128, any height higher than 128 must be blocked.
+						,-128
+						,128)
+				.setDefaultValue(0)
+				.setTextGetter(value -> {
+					if (value == 0)
+						return Text.translatable("text.sfcr.option.followVanilla");
+					return Text.of(value.toString());
+				})
+				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
+				.setSaveConsumer(CONFIG::setCloudHeightOffset)
+				.build();
+		BooleanListEntry isFitToView = entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
+						, CONFIG.isEnableRenderDistanceFitToView())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableRenderDistanceFitToView)
+				.build();
+
+		//custom warning
 		if (Client.isCustomDimensionConfig)
 			general.addEntry(entryBuilder
 					.startTextDescription(Text.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
@@ -65,47 +91,29 @@ public class ConfigScreen {
 				.build()
 		);
 		//cloud height offset
-		general.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
-						, CONFIG.getCloudHeightOffset()
-						,-128
-						,128)
-				.setDefaultValue(0)
-				.setTextGetter(value -> {
-					if (value == 0)
-						return Text.translatable("text.sfcr.option.followVanilla");
-					return Text.of(value.toString());
-				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudHeightOffset)
-				.build()
-		);
+		general.addEntry(cloudHeightOffset);
 		//cloud layer height
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudLayerThickness")
-						, CONFIG.getCloudLayerHeight()
+						, CONFIG.getCloudThickness()
 						,3
 						,66)
-				.setDefaultValue(10)
-				.setTextGetter(value -> Text.of(String.valueOf(value - 2)))
+				.setDefaultValue(34)
+				.setTextGetter(value -> {
+					cloudHeightOffset.setMaximum(128 - value + 2);
+					return Text.of(String.valueOf(value - 2));
+				})
 				.setTooltip(Text.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudLayerHeight)
+				.setSaveConsumer(CONFIG::setCloudThickness)
 				.build()
 		);
-		BooleanListEntry isFitToView = entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
-						, CONFIG.isEnableRenderDistanceFitToView())
-				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableRenderDistanceFitToView)
-				.build();
 		//cloud distance
 		general.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudRenderDistance")
 						, CONFIG.getRenderDistance()
 						,31
 						,128)
-				.setDefaultValue(48)
+				.setDefaultValue(31)
 				.setTextGetter(value -> {
 					if (value == 31)
 						return Text.translatable("text.sfcr.option.followVanilla").append(": " + MinecraftClient.getInstance().options.getCloudRenderDistance().getValue());
@@ -349,6 +357,16 @@ public class ConfigScreen {
 	}
 
 	private void buildCompatCategory() {
+		//Custom Dimension
+		compat.addEntry(entryBuilder
+				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
+						MinecraftClient.getInstance().world != null ?
+								(Client.isCustomDimensionConfig ? "§a" : "§c") + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
+								"§7null"
+				))
+				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
+				.build()
+		);
 		//Distant Horizons
 		BooleanListEntry dhCompatEntry = entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
@@ -383,14 +401,24 @@ public class ConfigScreen {
 				.setSaveConsumer(value -> CONFIG.setDhHeightEnhance(value * 16))
 				.build()
 		);
-		//Custom Dimension
 		compat.addEntry(entryBuilder
-				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
-						MinecraftClient.getInstance().world != null ?
-								(Client.isCustomDimensionConfig ? "§a" : "§c") + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
-								"§7null"
+				.startTextDescription(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk",
+//						CONFIG.isEnableBiomeDensityByChunk() ?
+//							Text.translatable("text.cloth-config.boolean.value.true") :
+							Text.translatable("text.cloth-config.boolean.value.false")
 				))
-				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
+				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
+				.build()
+		);
+		compat.addEntry(entryBuilder
+				.startTextDescription(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHLoadedChunk",
+//						CONFIG.isEnableBiomeDensityUseLoadedChunk() ?
+//							Text.translatable("text.cloth-config.boolean.value.true") :
+							Text.translatable("text.cloth-config.boolean.value.false")
+				))
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
+				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
 				.build()
 		);
 	}

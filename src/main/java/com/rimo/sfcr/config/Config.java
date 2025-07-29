@@ -1,13 +1,15 @@
 package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
-import me.shedaniel.autoconfig.ConfigData;
+import com.rimo.sfcr.Common;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,175 +19,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Config implements ConfigData {
-	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of(
-			"#minecraft:is_river"
-	));
-
-	public int getCloudHeight() {
-		return cloudHeight;
-	}
-
-	public void setCloudHeight(int cloudHeight) {
-		this.cloudHeight = cloudHeight;
-	}
-
-	public int getCloudLayerHeight() {
-		return cloudLayerHeight;
-	}
-
-	public void setCloudLayerHeight(int cloudLayerHeight) {
-		this.cloudLayerHeight = cloudLayerHeight;
-	}
-
-	public int getRenderDistance() {
-		return renderDistance;
-	}
-
-	public void setRenderDistance(int renderDistance) {
-		this.renderDistance = renderDistance;
-	}
-
-	public boolean isEnableRenderDistanceFitToView() {
-		return enableRenderDistanceFitToView;
-	}
-
-	public void setEnableRenderDistanceFitToView(boolean enableRenderDistanceFitToView) {
-		this.enableRenderDistanceFitToView = enableRenderDistanceFitToView;
-	}
-
-
-	public int getSampleSteps() {
-		return sampleSteps;
-	}
-
-	public void setSampleSteps(int sampleSteps) {
-		this.sampleSteps = sampleSteps;
-	}
-
-	public boolean isEnableTerrainDodge() {
-		return enableTerrainDodge;
-	}
-
-	public void setEnableTerrainDodge(boolean enableTerrainDodge) {
-		this.enableTerrainDodge = enableTerrainDodge;
-	}
-
-	public float getDensityThreshold() {
-		return densityThreshold;
-	}
-
-	public void setDensityThreshold(float densityThreshold) {
-		this.densityThreshold = densityThreshold;
-	}
-
-	public float getThresholdMultiplier() {
-		return thresholdMultiplier;
-	}
-
-	public void setThresholdMultiplier(float thresholdMultiplier) {
-		this.thresholdMultiplier = thresholdMultiplier;
-	}
-
-	public int getDensityPercent() {
-		return densityPercent;
-	}
-
-	public void setDensityPercent(int densityPercent) {
-		this.densityPercent = densityPercent;
-	}
-
-	public boolean isEnableWeatherDensity() {
-		return enableWeatherDensity;
-	}
-
-	public void setEnableWeatherDensity(boolean enableWeatherDensity) {
-		this.enableWeatherDensity = enableWeatherDensity;
-	}
-
-	public int getRainDensityPercent() {
-		return rainDensityPercent;
-	}
-
-	public void setRainDensityPercent(int rainDensityPercent) {
-		this.rainDensityPercent = rainDensityPercent;
-	}
-
-	public int getThunderDensityPercent() {
-		return thunderDensityPercent;
-	}
-
-	public void setThunderDensityPercent(int thunderDensityPercent) {
-		this.thunderDensityPercent = thunderDensityPercent;
-	}
-
-	public int getWeatherPreDetectTime() {
-		return weatherPreDetectTime;
-	}
-
-	public void setWeatherPreDetectTime(int weatherPreDetectTime) {
-		this.weatherPreDetectTime = weatherPreDetectTime;
-	}
-
-	public RefreshSpeed getRefreshSpeed() {
-		return refreshSpeed;
-	}
-
-	public void setRefreshSpeed(RefreshSpeed refreshSpeed) {
-		this.refreshSpeed = refreshSpeed;
-	}
-
-	public RefreshSpeed getWeatherRefreshSpeed() {
-		return weatherRefreshSpeed;
-	}
-
-	public void setWeatherRefreshSpeed(RefreshSpeed weatherRefreshSpeed) {
-		this.weatherRefreshSpeed = weatherRefreshSpeed;
-	}
-
-	public RefreshSpeed getDensityChangingSpeed() {
-		return densityChangingSpeed;
-	}
-
-	public void setDensityChangingSpeed(RefreshSpeed densityChangingSpeed) {
-		this.densityChangingSpeed = densityChangingSpeed;
-	}
-
-	public int getBiomeDensityPercent() {
-		return biomeDensityPercent;
-	}
-
-	public void setBiomeDensityPercent(int biomeDensityPercent) {
-		this.biomeDensityPercent = biomeDensityPercent;
-	}
-
-	public boolean isEnableBiomeDensityByChunk() {
-		return enableBiomeDensityByChunk;
-	}
-
-	public void setEnableBiomeDensityByChunk(boolean enableBiomeDensityByChunk) {
-		this.enableBiomeDensityByChunk = enableBiomeDensityByChunk;
-	}
-
-	public boolean isEnableBiomeDensityUseLoadedChunk() {
-		return enableBiomeDensityUseLoadedChunk;
-	}
-
-	public void setEnableBiomeDensityUseLoadedChunk(boolean enableBiomeDensityUseLoadedChunk) {
-		this.enableBiomeDensityUseLoadedChunk = enableBiomeDensityUseLoadedChunk;
-	}
-
-	public List<String> getBiomeBlackList() {
-		return biomeBlackList;
-	}
-
-	public void setBiomeBlackList(List<String> biomeBlackList) {
-		this.biomeBlackList = biomeBlackList;
-	}
-
-	private int cloudHeight = -1;
-	private int cloudLayerHeight = 8;
-	private int renderDistance = 48;
+public class Config {
+	private boolean enableMod = true;
+	private int cloudHeightOffset = 0;
+	private int cloudThickness = 34;
+	private int renderDistance = 31;
 	private boolean enableRenderDistanceFitToView = false;
 	private int sampleSteps = 2;
 	private boolean enableTerrainDodge = true;
@@ -203,41 +41,133 @@ public class Config implements ConfigData {
 	private boolean enableBiomeDensityByChunk = false;
 	private boolean enableBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeBlackList = DEF_BIOME_BLACKLIST;
+	private boolean enableBottomDim = true;
+	private boolean enableDynamic = true;
+	private boolean enableDebug = false;
+	private int cloudColor = 0xFFFFFF;
+	private boolean enableDuskBlush = true;
+	private boolean enableDHCompat = false;
+	private int dhDistanceMultipler = 1;
+	private int dhHeightEnhance = 0;
+
+	public boolean isEnableMod() {return enableMod;}
+	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod;}
+	public int getCloudHeightOffset() {return cloudHeightOffset;}
+	public void setCloudHeightOffset(int cloudHeightOffset) {this.cloudHeightOffset = cloudHeightOffset;}
+	public int getCloudThickness() {return cloudThickness;}
+	public void setCloudThickness(int cloudThickness) {this.cloudThickness = cloudThickness;}
+	public int getRenderDistance() {return renderDistance;}
+	public void setRenderDistance(int renderDistance) {this.renderDistance = renderDistance;}
+	public boolean isEnableRenderDistanceFitToView() {return enableRenderDistanceFitToView;}
+	public void setEnableRenderDistanceFitToView(boolean enableRenderDistanceFitToView) {this.enableRenderDistanceFitToView = enableRenderDistanceFitToView;}
+	public int getSampleSteps() {return sampleSteps;}
+	public void setSampleSteps(int sampleSteps) {this.sampleSteps = sampleSteps;}
+	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
+	public void setEnableTerrainDodge(boolean enableTerrainDodge) {this.enableTerrainDodge = enableTerrainDodge;}
+	public float getDensityThreshold() {return densityThreshold;}
+	public void setDensityThreshold(float densityThreshold) {this.densityThreshold = densityThreshold;}
+	public float getThresholdMultiplier() {return thresholdMultiplier;}
+	public void setThresholdMultiplier(float thresholdMultiplier) {this.thresholdMultiplier = thresholdMultiplier;}
+	public int getDensityPercent() {return densityPercent;}
+	public void setDensityPercent(int densityPercent) {this.densityPercent = densityPercent;}
+	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
+	public void setEnableWeatherDensity(boolean enableWeatherDensity) {this.enableWeatherDensity = enableWeatherDensity;}
+	public int getRainDensityPercent() {return rainDensityPercent;}
+	public void setRainDensityPercent(int rainDensityPercent) {this.rainDensityPercent = rainDensityPercent;}
+	public int getThunderDensityPercent() {return thunderDensityPercent;}
+	public void setThunderDensityPercent(int thunderDensityPercent) {this.thunderDensityPercent = thunderDensityPercent;}
+	public int getWeatherPreDetectTime() {return weatherPreDetectTime;}
+	public void setWeatherPreDetectTime(int weatherPreDetectTime) {this.weatherPreDetectTime = weatherPreDetectTime;}
+	public RefreshSpeed getRefreshSpeed() {return refreshSpeed;}
+	public void setRefreshSpeed(RefreshSpeed refreshSpeed) {this.refreshSpeed = refreshSpeed;}
+	public RefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
+	public void setWeatherRefreshSpeed(RefreshSpeed weatherRefreshSpeed) {this.weatherRefreshSpeed = weatherRefreshSpeed;}
+	public RefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
+	public void setDensityChangingSpeed(RefreshSpeed densityChangingSpeed) {this.densityChangingSpeed = densityChangingSpeed;}
+	public int getBiomeDensityPercent() {return biomeDensityPercent;}
+	public void setBiomeDensityPercent(int biomeDensityPercent) {this.biomeDensityPercent = biomeDensityPercent;}
+	public boolean isEnableBiomeDensityByChunk() {return enableBiomeDensityByChunk;}
+	public void setEnableBiomeDensityByChunk(boolean enableBiomeDensityByChunk) {this.enableBiomeDensityByChunk = enableBiomeDensityByChunk;}
+	public boolean isEnableBiomeDensityUseLoadedChunk() {return enableBiomeDensityUseLoadedChunk;}
+	public void setEnableBiomeDensityUseLoadedChunk(boolean enableBiomeDensityUseLoadedChunk) {this.enableBiomeDensityUseLoadedChunk = enableBiomeDensityUseLoadedChunk;}
+	public List<String> getBiomeBlackList() {return biomeBlackList;}
+	public void setBiomeBlackList(List<String> biomeBlackList) {this.biomeBlackList = biomeBlackList;}
+	public boolean isEnableDebug() {return enableDebug;}
+	public void setEnableDebug(boolean enableDebug) {this.enableDebug = enableDebug;}
+	public boolean isEnableBottomDim() {return enableBottomDim;}
+	public void setEnableBottomDim(boolean enableBottomDim) {this.enableBottomDim = enableBottomDim;}
+	public boolean isEnableDynamic() {return enableDynamic;}
+	public void setEnableDynamic(boolean enableDynamic) {this.enableDynamic = enableDynamic;}
+	public int getCloudColor() {return cloudColor;}
+	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
+	public boolean isEnableDuskBlush() {return enableDuskBlush;}
+	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
+	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public int getDhDistanceMultipler() {return dhDistanceMultipler;}
+	public void setDhDistanceMultipler(int dhDistanceMultipler) {this.dhDistanceMultipler = dhDistanceMultipler;}
+	public int getDhHeightEnhance() {return dhHeightEnhance;}
+	public void setDhHeightEnhance(int dhHeightEnhance) {this.dhHeightEnhance = dhHeightEnhance;}
+
+	private static final String OVERWORLD = "minecraft:overworld";
+	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");
+	public static final List<String> DEF_BIOME_BLACKLIST = new ArrayList<>(List.of("#minecraft:is_river"));
 
 	public static Config load() {
-		Gson gson = new Gson();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Client.MOD_ID + ".json");
+		return load(OVERWORLD);  //load default
+	}
+
+	public static Config load(String dimensionNamespace) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();  //gson.setPrettyPrinting() can output highly readable file.
 		Config config = new Config();
-		if (Files.exists(path)) {
-			try {
-				BufferedReader reader = Files.newBufferedReader(path);
-				config = gson.fromJson(reader, Config.class);
-				reader.close();
-			} catch (IOException | JsonParseException e) {
-				Client.LOGGER.error("config file read failure!");
+		Path path = DEFAULT_PATH;
+		Client.isCustomDimensionConfig = false;
+		if (!Files.exists(path))
+			save(config);  //write default file if not exist.
+		if (! dimensionNamespace.equals(OVERWORLD)) {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");  //sfcr_modName_dimensionName.json
+			Path path2 = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + dimensionNamespace + ".json");
+			if (Files.exists(path2)) {
+				path = path2;  //load dimension config if exist, or load default (path unmodified if not exist)
+				Client.isCustomDimensionConfig = true;
 			}
-		} else {
-			save(config);
 		}
+		try {
+			BufferedReader reader = Files.newBufferedReader(path);
+			config = gson.fromJson(reader, Config.class);
+			reader.close();
+		} catch (IOException | JsonParseException e) {
+			Common.LOGGER.error("Failed to read config file: " + path.getFileName());
+		}
+		Common.LOGGER.info("Load config file: " + path.getFileName());
 		return config;
 	}
 
 	public static void save(Config config) {
-		Gson gson = new Gson();
-		Path path = FabricLoader.getInstance().getConfigDir().resolve(Client.MOD_ID + ".json");
+		save(config, OVERWORLD);  //save default
+	}
+
+	public static void save(Config config, String dimensionNamespace) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		Path path = FabricLoader.getInstance().getConfigDir();
+		if (! dimensionNamespace.equals(OVERWORLD)) {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
+			path = path.resolve(Common.MOD_ID + dimensionNamespace + ".json");
+		} else
+			path = path.resolve(Common.MOD_ID + ".json");
 		try {
 			Files.createDirectories(path.getParent());
 			BufferedWriter writer = Files.newBufferedWriter(path);
 			gson.toJson(config, writer);
 			writer.close();
 		} catch (IOException e) {
-			Client.LOGGER.error("config file write failure!");
+			Common.LOGGER.error("Failed to write config file: " + path.getFileName());
 		}
 	}
 
-	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
-		var isHas = false;
-		if (this.getBiomeBlackList().contains(biome.getKey().get().getValue().toString())) {
+	public boolean isFilterListHasNoBiome(RegistryEntry<Biome> biome) {
+		boolean isHas = false;
+		if (this.getBiomeBlackList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
 			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.streamTags().toList()) {
@@ -247,7 +177,7 @@ public class Config implements ConfigData {
 				}
 			}
 		}
-		return isHas;
+		return ! isHas;
 	}
 
 }

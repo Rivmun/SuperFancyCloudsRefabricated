@@ -72,20 +72,22 @@ const vec4[] faceColors = vec4[](
 
 void main() {
     int quadVertex = gl_VertexID % 4;
-    int index = (gl_VertexID / 4) * 4;  //each face we putted byte num, edited to 4
+    //int index = (gl_VertexID / 4) * 3;
+    int index = (gl_VertexID / 4) * 5;  //each face we putted byte amount
 
-	//extract data
+    //extract data
     int cellX = texelFetch(CloudFaces, index).r;
     int cellZ = texelFetch(CloudFaces, index + 1).r;
     int cellH = texelFetch(CloudFaces, index + 2).r;  //add height
     int dirAndFlags = texelFetch(CloudFaces, index + 3).r;
+    int thickness = texelFetch(CloudFaces, index + 4).r;
 
     //read flag
     int direction = dirAndFlags & FLAG_MASK_DIR;
     bool isInsideFace = (dirAndFlags & FLAG_INSIDE_FACE) == FLAG_INSIDE_FACE;
     bool useTopColor = (dirAndFlags & FLAG_USE_TOP_COLOR) == FLAG_USE_TOP_COLOR;
 
-	//restore pos
+    //restore pos
     cellX = (cellX << 1) | ((dirAndFlags & FLAG_EXTRA_X) >> 7);
     cellZ = (cellZ << 1) | ((dirAndFlags & FLAG_EXTRA_Z) >> 6);
     cellH = (cellH << 1) | ((dirAndFlags & FLAG_EXTRA_H) >> 3);  //height
@@ -94,6 +96,10 @@ void main() {
     vec3 pos = (faceVertex * CellSize) + (vec3(cellX, cellH, cellZ) * CellSize) + CloudOffset;
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
+    //add thickness dim color
+    float thicknessColor = clamp((255 - thickness * 8) / 255.0f, 0.0, 1.0);
+    vec4 dimColor = vec4(thicknessColor, thicknessColor, thicknessColor, 1.0f);
+
     vertexDistance = fog_spherical_distance(pos);
-    vertexColor = (useTopColor ? faceColors[1] : faceColors[direction]) * CloudColor;
+    vertexColor = (useTopColor ? faceColors[1] : faceColors[direction]) * CloudColor * dimColor;
 }

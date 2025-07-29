@@ -2,30 +2,27 @@ package com.rimo.sfcr;
 
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.level.ServerWorldProperties;
 
+import static com.rimo.sfcr.Common.CONFIG;
+
 public class Data {
-	private final Config CONFIG;
-	protected Weather currentWeather;
-	protected Weather nextWeather;
+	protected Weather currentWeather = Weather.CLEAR;
+	protected Weather nextWeather = Weather.CLEAR;
 	protected float densityByWeather = 0f;
 	protected float densityByBiome = 0f;
 	private float targetDownFall = 1f;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
-	private int normalRefreshSpeed;  //use to control rebuild interval
+	private int normalRefreshSpeed;  //use to control rebuild interval in old code
 	private int weatheringRefreshSpeed;  //(same as above)
 	private int densityChangingSpeed;
 
 	Data(Config config) {
-		CONFIG = config;
-		normalRefreshSpeed = CONFIG.getRefreshSpeed().getValue();
-		weatheringRefreshSpeed = CONFIG.getWeatherRefreshSpeed().getValue();
-		densityChangingSpeed = CONFIG.getDensityChangingSpeed().getValue();
+		setConfig(config);
 	}
 
 	public void setConfig(Config config) {
@@ -34,42 +31,44 @@ public class Data {
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
 	}
 
-	public void updateWeather(MinecraftClient client) {
-		if (client.player == null)
-			return;
-		World world = client.player.getWorld();
-		if (world == null)
-			return;
-
-		if (world instanceof ServerWorld) {
-			// Weather Pre-detect
-			ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
-			if (worldProperties.isRaining()) {
-				if (worldProperties.isThundering()) {
-					nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.THUNDER;
-				} else {
-					nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
-							? Weather.THUNDER
-							: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.CLEAR : Weather.RAIN;
-				}
+	// return true if weather changed
+	public boolean updateWeather(ServerWorld world) {
+		// Weather Pre-detect
+		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
+		if (worldProperties.isRaining()) {
+			if (worldProperties.isThundering()) {
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Data.Weather.RAIN : Data.Weather.THUNDER;
 			} else {
-				if (worldProperties.getClearWeatherTime() != 0) {
-					nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.CLEAR;
-				} else {
-					nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
-							? worldProperties.getRainTime() < worldProperties.getThunderTime() ? Weather.RAIN : Weather.THUNDER
-							: Weather.CLEAR;
-				}
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
+						? Data.Weather.THUNDER
+						: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Data.Weather.CLEAR : Data.Weather.RAIN;
 			}
-		} else {  //server is remote...
-			nextWeather = world.isThundering() ? Weather.THUNDER :
-					world.isRaining() ? Weather.RAIN :
-							Weather.CLEAR;
+		} else {
+			if (worldProperties.getClearWeatherTime() != 0) {
+				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Data.Weather.RAIN : Data.Weather.CLEAR;
+			} else {
+				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
+						? worldProperties.getRainTime() < worldProperties.getThunderTime() ? Data.Weather.RAIN : Data.Weather.THUNDER
+						: Data.Weather.CLEAR;
+			}
 		}
+		if (currentWeather != nextWeather) {
+			currentWeather = nextWeather;
+			return true;
+		}
+		return false;
 	}
 
-	public void updateDensity(MinecraftClient client) {
-		ClientPlayerEntity player = client.player;
+	//only runs when connect to dedicated server without sfcr
+	public void updateWeatherClient(World world) {
+		if (world == null)
+			return;
+		nextWeather = world.isThundering() ? Weather.THUNDER :
+				world.isRaining() ? Weather.RAIN :
+						Weather.CLEAR;
+	}
+
+	public void updateDensity(PlayerEntity player) {
 		if (player == null)
 			return;
 		World world = player.getWorld();
@@ -89,8 +88,8 @@ public class Data {
 						|| densityByWeather > CONFIG.getDensityPercent() / 100f;
 			}
 			//Detect Biome Change
-			if (!CONFIG.isEnableBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
-				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
+			if (!CONFIG.isEnableBiomeDensityByChunk()) {		//Hasn't effected if use chunk data.
+				if (CONFIG.isFilterListHasNoBiome(world.getBiome(player.getBlockPos())))
 					targetDownFall = world.getBiome(player.getBlockPos()).value().weather.downfall();
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
@@ -130,7 +129,7 @@ public class Data {
 		return Math.abs(target - current) > 1f / speed ? (target > current ? current + 1f / speed : current - 1f / speed) : target;
 	}
 
-	private enum Weather {
+	public enum Weather {
 		CLEAR,
 		RAIN,
 		THUNDER

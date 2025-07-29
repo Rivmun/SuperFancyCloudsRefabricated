@@ -3,7 +3,7 @@
 	"id": "sfcr",
 	"version": "${version}",
 	"name": "SuperFancyClouds:Refabricated",
-	"description": "A client side mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
+	"description": "A mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
 	"authors": [
 		"Rimo"
 	],
@@ -12,30 +12,37 @@
 		"sources": "https://github.com/Rivmun/SuperFancyCloudsRefabricated",
 		"issues": "https://github.com.Rivemun/SuperFancyCloudsRefabricated/issues"
 	},
-	"license": "GPL v3",
+	"license": "MIT",
 	"icon": "icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"com.rimo.sfcr.Common"
+		],
 		"client": [
-          "com.rimo.sfcr.Client"
+			"com.rimo.sfcr.Client"
+		],
+		"server": [
+			"com.rimo.sfcr.Server"
 		],
 		"modmenu": [
 			"com.rimo.sfcr.config.ModMenuIntegration"
 		]
 	},
 	"mixins": [
-		"sfcr.mixins.json"
+		"sfcr.mixins.json",
+		"sfcr.distanthorizons.mixins.json"
 	],
 	"accessWidener": "sfcr.accesswidener",
 	"depends": {
 		"fabricloader": ">=0.15.0",
-		"minecraft": ">=1.21.5",
+		"minecraft": ">=1.21.6",
 		"java": ">=21",
-		"fabric-api": "*",
-		"cloth-config2":"*"
+		"fabric-api": "*"
 	},
 	"suggests": {
-		"modmenu": "*"
+		"modmenu": "*",
+		"cloth-config2":"*"
 	},
 	"custom": {
 		"modmenu": {

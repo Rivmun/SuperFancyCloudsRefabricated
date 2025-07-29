@@ -16,6 +16,9 @@ public abstract class GameOptionsMixin {
 	@Final @Shadow private SimpleOption<Integer> viewDistance;
 	@Final @Shadow private SimpleOption<Integer> cloudRenderDistance;
 
+	/*
+		grabbing renderDistance
+	 */
 	@Inject(method = "write", at = @At("RETURN"))
 	private void updateCloudRenderDistance(CallbackInfo ci) {
 		if (Client.RENDERER == null)

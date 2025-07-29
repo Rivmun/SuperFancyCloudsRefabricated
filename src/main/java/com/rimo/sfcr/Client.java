@@ -1,52 +1,106 @@
 package com.rimo.sfcr;
 
+import com.rimo.sfcr.Common.WorldInfoPayload;
+import com.rimo.sfcr.Common.WeatherPayload;
 import com.rimo.sfcr.config.Config;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Random;
+import static com.rimo.sfcr.Common.CONFIG;
+import static com.rimo.sfcr.Common.DATA;
 
 public class Client implements ClientModInitializer {
-	public static final String MOD_ID = "sfcr";
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static final Config CONFIG = Config.load();
-	public static Data DATA;
+	public static final boolean isDistantHorizonsLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
+	private static boolean hasServer = false;  //if not, calc density and weather on local; if yes, wait message payload from server.
+	public static boolean isCustomDimensionConfig = false;  //indicate current config is default or not.
 	public static Renderer RENDERER;
 
+	@Override
 	public void onInitializeClient() {
-		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			DATA = new Data(CONFIG);
-			RENDERER = new Renderer(CONFIG, DATA);
-		});
-
-		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-			RENDERER.setSampler(client.player.getWorld() instanceof ServerWorld world ?
-					world.getSeed() :
-					new Random().nextLong()
-			);
-			RENDERER.setRenderer(CONFIG);
-		});
-
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			DATA.updateWeather(client);
-			DATA.updateDensity(client);
-		});
-
 		ResourceManagerHelper.registerBuiltinResourcePack(
-				Identifier.of(MOD_ID, "cloud_shader"),
-				FabricLoader.getInstance().getModContainer(MOD_ID).get(),
+				Identifier.of(Common.MOD_ID, "cloud_shader"),
+				FabricLoader.getInstance().getModContainer(Common.MOD_ID).get(),
 				Text.translatable("text.sfcr.buildInResourcePack"),
 				ResourcePackActivationType.ALWAYS_ENABLED
 		);
+
+		//init mod
+		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
+		});
+
+		//init renderer
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			if (!hasServer)
+				RENDERER.initSampler(new Random().nextLong());
+			RENDERER.setRenderer(CONFIG);
+		});
+
+		//update
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (! CONFIG.isEnableMod())
+				return;
+			if (!hasServer && client.player != null)
+				DATA.updateWeatherClient(client.player.getWorld());
+			DATA.updateDensity(client.player);
+			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
+				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
+		});
+
+		//switch config
+		ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register((client, world) -> {
+			boolean oldEnableMod = CONFIG.isEnableMod();
+			boolean oldDHCompat = CONFIG.isEnableDHCompat();
+			CONFIG = Config.load(world.getRegistryKey().getValue().toString());
+			applyConfigChange(oldEnableMod, oldDHCompat);
+		});
+
+		//reset
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			hasServer = false;
+			RENDERER.stop();
+			if (isCustomDimensionConfig)
+				CONFIG = Config.load();
+		});
+
+		//world info receiver
+		ClientPlayNetworking.registerGlobalReceiver(WorldInfoPayload.ID, (payload, context) -> {
+			hasServer = true;
+			RENDERER.initSampler(payload.seed());
+			if (CONFIG.isEnableDebug())
+				Common.LOGGER.info("Receiver world info: " + payload.seed());
+		});
+
+		//weather receiver
+		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.ID, (payload, context) -> {
+			DATA.nextWeather = payload.weather();
+			if (CONFIG.isEnableDebug())
+				Common.LOGGER.info("Receiver weather: " + payload.weather().name());
+		});
 	}
+
+	@Environment(EnvType.CLIENT)
+	public static void applyConfigChange(boolean oldEnableMod, boolean oldDHCompat) {
+		DATA.setConfig(CONFIG);
+		if (oldDHCompat != CONFIG.isEnableDHCompat()) {  //convert renderer class
+			RENDERER = CONFIG.isEnableDHCompat() ?
+					new RendererDHCompat(RENDERER) :
+					new Renderer(RENDERER);
+		} else {
+			RENDERER.setRenderer(CONFIG);
+		}
+	}
+
 }

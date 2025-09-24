@@ -31,7 +31,7 @@ public class Common implements ModInitializer {
 		ServerPlayerEvents.JOIN.register(player -> {
 			if (! CONFIG.isEnableMod())
 				return;
-			ServerWorld world = player.getWorld();
+			ServerWorld world = player.getEntityWorld();
 			ServerPlayNetworking.send(player, new WorldInfoPayload(world.getSeed()));
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("Send info " + world.getSeed() + " to " + player.getName().getString());

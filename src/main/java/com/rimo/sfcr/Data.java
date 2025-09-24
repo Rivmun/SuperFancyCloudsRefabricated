@@ -71,7 +71,7 @@ public class Data {
 	public void updateDensity(PlayerEntity player) {
 		if (player == null)
 			return;
-		World world = player.getWorld();
+		World world = player.getEntityWorld();
 		if (world == null)
 			return;
 

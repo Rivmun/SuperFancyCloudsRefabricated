@@ -132,7 +132,7 @@ public class Renderer {
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
 		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
 		int sz = z - this.getRenderDistance();
-		World world = MinecraftClient.getInstance().player.getWorld();
+		World world = MinecraftClient.getInstance().player.getEntityWorld();
 		double time = world.getTime() / 20.0;
 		//float threshold = 0.5f;  //original
 		float threshold = CONFIG.getDensityThreshold();
@@ -307,7 +307,7 @@ public class Renderer {
 			return false;  //jumping empty cell
 
 		//check neighbor and push it to next
-		boolean borderTop    = !(h + 1 < cloudThickness && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
+		boolean borderTop    = !(h + 1 <  cloudThickness         && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
 		boolean borderBottom = !(h - 1 >= 0                      && cloudGrid.grids[x][z][h - 1]);
 		boolean borderEast   = !(x + 1 <  cloudGrid.grids.length && cloudGrid.grids[x + 1][z][h]);
 		boolean borderWest   = !(x - 1 >= 0                      && cloudGrid.grids[x - 1][z][h]);

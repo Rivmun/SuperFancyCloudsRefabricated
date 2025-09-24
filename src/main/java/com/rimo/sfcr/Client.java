@@ -53,7 +53,7 @@ public class Client implements ClientModInitializer {
 			if (! CONFIG.isEnableMod())
 				return;
 			if (!hasServer && client.player != null)
-				DATA.updateWeatherClient(client.player.getWorld());
+				DATA.updateWeatherClient(client.player.getEntityWorld());
 			DATA.updateDensity(client.player);
 			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
 				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.

@@ -6,10 +6,10 @@ import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -165,13 +165,13 @@ public class Config {
 		}
 	}
 
-	public boolean isFilterListHasNoBiome(RegistryEntry<Biome> biome) {
+	public boolean isFilterListHasNoBiome(Holder<Biome> biome) {
 		boolean isHas = false;
-		if (this.getBiomeBlackList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
+		if (this.getBiomeBlackList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).identifier().toString())) {
 			isHas = true;
 		} else {
-			for (TagKey<Biome> tag : biome.streamTags().toList()) {
-				if (this.getBiomeBlackList().contains("#" + tag.id().toString())) {
+			for (TagKey<Biome> tag : biome.tags().toList()) {
+				if (this.getBiomeBlackList().contains("#" + tag.location())) {
 					isHas = true;
 					break;
 				}

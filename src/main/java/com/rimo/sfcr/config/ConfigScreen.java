@@ -8,17 +8,17 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 public class ConfigScreen {
 	ConfigBuilder builder = ConfigBuilder.create();
 	ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
-	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
-	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
-	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
+	ConfigCategory general = builder.getOrCreateCategory(Component.translatable("text.sfcr.category.general"));
+	ConfigCategory density = builder.getOrCreateCategory(Component.translatable("text.sfcr.category.density"));
+	ConfigCategory compat = builder.getOrCreateCategory(Component.translatable("text.sfcr.category.compat"));
 
 	private final Config CONFIG = Common.CONFIG;
 	private final boolean oldEnableMod = CONFIG.isEnableMod();
@@ -26,10 +26,10 @@ public class ConfigScreen {
 	private final boolean oldBottomDim = CONFIG.isEnableBottomDim();
 
 	public Screen buildScreen() {
-		builder.setParentScreen(MinecraftClient.getInstance().currentScreen)
+		builder.setParentScreen(Minecraft.getInstance().screen)
 				.setTitle(Client.isCustomDimensionConfig ?
-						Text.translatable("text.sfcr.option.title.customDimensionMode") :
-						Text.translatable("text.sfcr.option.title")
+						Component.translatable("text.sfcr.option.title.customDimensionMode") :
+						Component.translatable("text.sfcr.option.title")
 				);
 		buildCategory();
 		buildDensityCategory();
@@ -38,12 +38,12 @@ public class ConfigScreen {
 		// Saving...
 		builder.setSavingRunnable(() -> {
 			if (Client.isCustomDimensionConfig)
-				Config.save(CONFIG, MinecraftClient.getInstance().world.getRegistryKey().getValue().toString());
+				Config.save(CONFIG, Minecraft.getInstance().level.dimension().identifier().toString());
 			else
 				Config.save(CONFIG);
 			Client.applyConfigChange(oldEnableMod, oldDHCompat);
-			if (MinecraftClient.getInstance().world != null && (oldEnableMod != CONFIG.isEnableMod() || oldBottomDim != CONFIG.isEnableBottomDim()))  //notify vanilla cloudRenderer to update
-				MinecraftClient.getInstance().worldRenderer.getCloudRenderer().scheduleTerrainUpdate();
+			if (Minecraft.getInstance().level != null && (oldEnableMod != CONFIG.isEnableMod() || oldBottomDim != CONFIG.isEnableBottomDim()))  //notify vanilla cloudRenderer to update
+				Minecraft.getInstance().levelRenderer.getCloudRenderer().markForRebuild();
 		});
 
 		return builder.build();
@@ -52,7 +52,7 @@ public class ConfigScreen {
 	private void buildCategory() {
 		//pre build
 		IntegerSliderEntry cloudHeightOffset = entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudHeight")
+				.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
 						, CONFIG.getCloudHeightOffset()
 						//due to vanilla cloudCell byteBuffer maximum only 128, any height higher than 128 must be blocked.
 						,-128
@@ -60,31 +60,31 @@ public class ConfigScreen {
 				.setDefaultValue(0)
 				.setTextGetter(value -> {
 					if (value == 0)
-						return Text.translatable("text.sfcr.option.followVanilla");
-					return Text.of(value.toString());
+						return Component.translatable("text.sfcr.option.followVanilla");
+					return Component.nullToEmpty(value.toString());
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudHeightOffset)
 				.build();
 		BooleanListEntry isFitToView = entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
 						, CONFIG.isEnableRenderDistanceFitToView())
 				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableRenderDistanceFitToView)
 				.build();
 
 		//custom warning
 		if (Client.isCustomDimensionConfig)
 			general.addEntry(entryBuilder
-					.startTextDescription(Text.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
-							"§b" + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString()
+					.startTextDescription(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
+							"§b" + Minecraft.getInstance().level.dimension().identifier()
 					))
 					.build()
 			);
 		//enable
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod"),
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableMod"),
 						CONFIG.isEnableMod())
 				.setDefaultValue(true)
 				.setSaveConsumer(CONFIG::setEnableMod)
@@ -94,32 +94,32 @@ public class ConfigScreen {
 		general.addEntry(cloudHeightOffset);
 		//cloud layer height
 		general.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudLayerThickness")
+				.startIntSlider(Component.translatable("text.sfcr.option.cloudLayerThickness")
 						, CONFIG.getCloudThickness()
 						,3
 						,66)
 				.setDefaultValue(34)
 				.setTextGetter(value -> {
 					cloudHeightOffset.setMaximum(128 - value + 2);
-					return Text.of(String.valueOf(value - 2));
+					return Component.nullToEmpty(String.valueOf(value - 2));
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudThickness)
 				.build()
 		);
 		//cloud distance
 		general.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudRenderDistance")
+				.startIntSlider(Component.translatable("text.sfcr.option.cloudRenderDistance")
 						, CONFIG.getRenderDistance()
 						,31
 						,128)
 				.setDefaultValue(31)
 				.setTextGetter(value -> {
 					if (value == 31)
-						return Text.translatable("text.sfcr.option.followVanilla").append(": " + MinecraftClient.getInstance().options.getCloudRenderDistance().getValue());
-					return Text.of(value.toString());
+						return Component.translatable("text.sfcr.option.followVanilla").append(": " + Minecraft.getInstance().options.cloudRange().get());
+					return Component.nullToEmpty(value.toString());
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRenderDistance)
 				.setRequirement(Requirement.isFalse(isFitToView))
 				.build()
@@ -128,28 +128,28 @@ public class ConfigScreen {
 		general.addEntry(isFitToView);
 		//cloud sample steps
 		general.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.sampleSteps")
+				.startIntSlider(Component.translatable("text.sfcr.option.sampleSteps")
 						, CONFIG.getSampleSteps()
 						,1
 						,3)
 				.setDefaultValue(2)
-				.setTextGetter(value -> Text.of(value.toString()))
-				.setTooltip(Text.translatable("text.sfcr.option.sampleSteps.@Tooltip"))
+				.setTextGetter(value -> Component.nullToEmpty(value.toString()))
+				.setTooltip(Component.translatable("text.sfcr.option.sampleSteps.@Tooltip"))
 				.setSaveConsumer(CONFIG::setSampleSteps)
 				.build()
 		);
 		//terrain dodge
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableTerrainDodge")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableTerrainDodge")
 						, CONFIG.isEnableTerrainDodge())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableTerrainDodge.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.enableTerrainDodge.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableTerrainDodge)
 				.build()
 		);
 		//cloud color
 		general.addEntry(entryBuilder
-				.startColorField(Text.translatable("text.sfcr.option.cloudColor")
+				.startColorField(Component.translatable("text.sfcr.option.cloudColor")
 						, CONFIG.getCloudColor())
 				.setDefaultValue(0xFFFFFF)
 				.setSaveConsumer(CONFIG::setCloudColor)
@@ -157,25 +157,25 @@ public class ConfigScreen {
 		);
 		//dusk blush
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDuskBlush")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableDuskBlush")
 						, CONFIG.isEnableDuskBlush())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableDuskBlush.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.enableDuskBlush.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDuskBlush)
 				.build()
 		);
 		//bottomDim
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableBottomDim")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableBottomDim")
 						, CONFIG.isEnableBottomDim())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableBottomDim.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.enableBottomDim.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableBottomDim)
 				.build()
 		);
 		//debug
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDebug")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableDebug")
 						, CONFIG.isEnableDebug())
 				.setDefaultValue(false)
 				.setSaveConsumer(CONFIG::setEnableDebug)
@@ -186,171 +186,171 @@ public class ConfigScreen {
 	private void buildDensityCategory() {
 		// threshold
 		density.addEntry(entryBuilder
-				.startFloatField(Text.translatable("text.sfcr.option.densityThreshold")
+				.startFloatField(Component.translatable("text.sfcr.option.densityThreshold")
 						, CONFIG.getDensityThreshold())
 				.setDefaultValue(1.3f)
 				.setMax(2f)
 				.setMin(-1f)
-				.setTooltip(Text.translatable("text.sfcr.option.densityThreshold.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.densityThreshold.@Tooltip"))
 				.setSaveConsumer(CONFIG::setDensityThreshold)
 				.build()
 		);
 		// threshold multiplier
 		density.addEntry(entryBuilder
-				.startFloatField(Text.translatable("text.sfcr.option.thresholdMultiplier")
+				.startFloatField(Component.translatable("text.sfcr.option.thresholdMultiplier")
 						, CONFIG.getThresholdMultiplier())
 				.setDefaultValue(1.5f)
 				.setMax(3f)
 				.setMin(0f)
-				.setTooltip(Text.translatable("text.sfcr.option.thresholdMultiplier.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.thresholdMultiplier.@Tooltip"))
 				.setSaveConsumer(CONFIG::setThresholdMultiplier)
 				.build()
 		);
 		//dynamic
 		density.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDynamic")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableDynamic")
 						, CONFIG.isEnableDynamic())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableDynamic.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.enableDynamic.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDynamic)
 				.build()
 		);
 		//density
 		density.addEntry(entryBuilder
-				.startTextDescription(Text.translatable("text.sfcr.option.cloudDensity.@PrefixText"))
+				.startTextDescription(Component.translatable("text.sfcr.option.cloudDensity.@PrefixText"))
 				.build()
 		);
 		//cloud common density
 		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.cloudDensity")
+				.startIntSlider(Component.translatable("text.sfcr.option.cloudDensity")
 						, CONFIG.getDensityPercent()
 						,0
 						,100)
 				.setDefaultValue(25)
-				.setTextGetter(value -> Text.of(value + "%"))
+				.setTextGetter(value -> Component.nullToEmpty(value + "%"))
 				.setSaveConsumer(CONFIG::setDensityPercent)
 				.build()
 		);
 		//weather
 		density.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.enableWeatherDensity")
 						, CONFIG.isEnableWeatherDensity())
 				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
 				.build()
 		);
 		//rain density
 		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.rainDensity")
+				.startIntSlider(Component.translatable("text.sfcr.option.rainDensity")
 						, CONFIG.getRainDensityPercent()
 						,0
 						,100)
 				.setDefaultValue(60)
-				.setTextGetter(value -> Text.of(value + "%"))
+				.setTextGetter(value -> Component.nullToEmpty(value + "%"))
 				.setSaveConsumer(CONFIG::setRainDensityPercent)
 				.build()
 		);
 		//thunder density
 		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.thunderDensity")
+				.startIntSlider(Component.translatable("text.sfcr.option.thunderDensity")
 						, CONFIG.getThunderDensityPercent()
 						,0
 						,100)
 				.setDefaultValue(90)
-				.setTextGetter(value -> Text.of(value + "%"))
+				.setTextGetter(value -> Component.nullToEmpty(value + "%"))
 				.setSaveConsumer(CONFIG::setThunderDensityPercent)
 				.build()
 		);
 		//weather pre-detect time
 		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.weatherPreDetectTime")
+				.startIntSlider(Component.translatable("text.sfcr.option.weatherPreDetectTime")
 						, CONFIG.getWeatherPreDetectTime()
 						,0
 						,30)
 				.setDefaultValue(10)
 				.setTextGetter(value -> {
 					if (value == 0)
-						return Text.translatable("text.sfcr.disabled");
-					return Text.translatable("text.sfcr.second", value);
+						return Component.translatable("text.sfcr.disabled");
+					return Component.translatable("text.sfcr.second", value);
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.weatherPreDetectTime.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.weatherPreDetectTime.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherPreDetectTime)
 				.build()
 		);
 		//cloud refresh speed
 		density.addEntry(entryBuilder
-				.startEnumSelector(Text.translatable("text.sfcr.option.cloudRefreshSpeed")
+				.startEnumSelector(Component.translatable("text.sfcr.option.cloudRefreshSpeed")
 						, RefreshSpeed.class
 						, CONFIG.getRefreshSpeed())
 				.setDefaultValue(RefreshSpeed.SLOW)
 				.setEnumNameProvider(value -> ((RefreshSpeed)value).getStringKey())
-				.setTooltip(Text.translatable("text.sfcr.option.cloudRefreshSpeed.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setRefreshSpeed)
 				.build()
 		);
 		//weather refresh speed
 		density.addEntry(entryBuilder
-				.startEnumSelector(Text.translatable("text.sfcr.option.weatherRefreshSpeed")
+				.startEnumSelector(Component.translatable("text.sfcr.option.weatherRefreshSpeed")
 						, RefreshSpeed.class
 						, CONFIG.getWeatherRefreshSpeed())
 				.setDefaultValue(RefreshSpeed.FAST)
 				.setEnumNameProvider(value -> ((RefreshSpeed)value).getStringKey())
-				.setTooltip(Text.translatable("text.sfcr.option.weatherRefreshSpeed.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.weatherRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherRefreshSpeed)
 				.build()
 		);
 		//density changing speed
 		density.addEntry(entryBuilder
-				.startEnumSelector(Text.translatable("text.sfcr.option.densityChangingSpeed")
+				.startEnumSelector(Component.translatable("text.sfcr.option.densityChangingSpeed")
 						, RefreshSpeed.class
 						, CONFIG.getDensityChangingSpeed())
 				.setDefaultValue(RefreshSpeed.SLOW)
 				.setEnumNameProvider(value -> ((RefreshSpeed)value).getStringKey())
-				.setTooltip(Text.translatable("text.sfcr.option.densityChangingSpeed.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.densityChangingSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setDensityChangingSpeed)
 				.build()
 		);
 		//biome detect
 		density.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.biomeDensityMultiplier")
+				.startIntSlider(Component.translatable("text.sfcr.option.biomeDensityMultiplier")
 						, CONFIG.getBiomeDensityPercent()
 						,0
 						,100)
 				.setDefaultValue(50)
 				.setTextGetter(value -> {
 					if (value == 0)
-						return Text.translatable("text.sfcr.disabled");
-					return Text.of(value + "%");
+						return Component.translatable("text.sfcr.disabled");
+					return Component.nullToEmpty(value + "%");
 				})
-				.setTooltip(Text.translatable("text.sfcr.option.biomeDensityMultiplier.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.biomeDensityMultiplier.@Tooltip"))
 				.setSaveConsumer(CONFIG::setBiomeDensityPercent)
 				.build()
 		);
 		//biome density affected by chunk
 		density.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.isBiomeDensityByChunk")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityByChunk")
 						, CONFIG.isEnableBiomeDensityByChunk())
 				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableBiomeDensityByChunk)
 				.build()
 		);
 		//biome density detect loaded chunk
 		density.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk")
+				.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk")
 						, CONFIG.isEnableBiomeDensityUseLoadedChunk())
 				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableBiomeDensityUseLoadedChunk)
 				.build()
 		);
 		//biome filter
 		density.addEntry(entryBuilder
-				.startStrList(Text.translatable("text.sfcr.option.biomeFilter")
+				.startStrList(Component.translatable("text.sfcr.option.biomeFilter")
 						, CONFIG.getBiomeBlackList())
 				.setDefaultValue(Config.DEF_BIOME_BLACKLIST)
-				.setTooltip(Text.translatable("text.sfcr.option.biomeFilter.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.biomeFilter.@Tooltip"))
 				.setSaveConsumer(CONFIG::setBiomeBlackList)
 				.build()
 		);
@@ -359,65 +359,66 @@ public class ConfigScreen {
 	private void buildCompatCategory() {
 		//Custom Dimension
 		compat.addEntry(entryBuilder
-				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
-						MinecraftClient.getInstance().world != null ?
-								(Client.isCustomDimensionConfig ? "§a" : "§c") + MinecraftClient.getInstance().world.getRegistryKey().getValue().toString() :
+				.startTextDescription(Component.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
+						Minecraft.getInstance().level != null ?
+								(Client.isCustomDimensionConfig ? "§a" : "§c") + Minecraft.getInstance().level.dimension().identifier() :
 								"§7null"
 				))
-				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 				.build()
 		);
 		//Distant Horizons
 		BooleanListEntry dhCompatEntry = entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
+				.startBooleanToggle(Component.translatable("text.sfcr.option.DHCompat"),
 						CONFIG.isEnableDHCompat())
 				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.DHCompat.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDHCompat)
 				.build();
-		compat.addEntry(dhCompatEntry);
+		if (Client.isDistantHorizonsLoaded)
+			compat.addEntry(dhCompatEntry);
 		//dh render distance
 		compat.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.DHCompat.enhanceDistance"),
+				.startIntSlider(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance"),
 						CONFIG.getDhDistanceMultipler(),
 						1,
 						8)
 				.setDefaultValue(1)
-				.setTextGetter(value -> Text.of(value + "x"))
-				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.enhanceDistance.@Tooltip"))
+				.setTextGetter(value -> Component.nullToEmpty(value + "x"))
+				.setTooltip(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance.@Tooltip"))
 				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
 				.setSaveConsumer(CONFIG::setDhDistanceMultipler)
 				.build()
 		);
 		//dh height enhance
 		compat.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.DHCompat.enhanceHeight"),
+				.startIntSlider(Component.translatable("text.sfcr.option.DHCompat.enhanceHeight"),
 						CONFIG.getDhHeightEnhance() / 16,
 						0,
 						32)
 				.setDefaultValue(0)
-				.setTextGetter(value -> Text.of(String.valueOf(value * 16)))
+				.setTextGetter(value -> Component.nullToEmpty(String.valueOf(value * 16)))
 				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
 				.setSaveConsumer(value -> CONFIG.setDhHeightEnhance(value * 16))
 				.build()
 		);
 		compat.addEntry(entryBuilder
-				.startTextDescription(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk",
+				.startTextDescription(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk",
 //						CONFIG.isEnableBiomeDensityByChunk() ?
-//							Text.translatable("text.cloth-config.boolean.value.true") :
-							Text.translatable("text.cloth-config.boolean.value.false")
+//							Component.translatable("text.cloth-config.boolean.value.true") :
+							Component.translatable("text.cloth-config.boolean.value.false")
 				))
-				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
 				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
 				.build()
 		);
 		compat.addEntry(entryBuilder
-				.startTextDescription(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHLoadedChunk",
+				.startTextDescription(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHLoadedChunk",
 //						CONFIG.isEnableBiomeDensityUseLoadedChunk() ?
-//							Text.translatable("text.cloth-config.boolean.value.true") :
-							Text.translatable("text.cloth-config.boolean.value.false")
+//							Component.translatable("text.cloth-config.boolean.value.true") :
+							Component.translatable("text.cloth-config.boolean.value.false")
 				))
-				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
+				.setTooltip(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk.@Tooltip"))
 				.setDisplayRequirement(Requirement.isTrue(dhCompatEntry))
 				.build()
 		);

@@ -1,5 +1,5 @@
 accessWidener v1 named
 
-accessible class net/minecraft/client/render/CloudRenderer$ViewMode
-accessible class net/minecraft/world/biome/Biome$Weather
-accessible field net/minecraft/world/biome/Biome weather Lnet/minecraft/world/biome/Biome$Weather;
+accessible class net/minecraft/client/renderer/CloudRenderer$RelativeCameraPos
+accessible class net/minecraft/world/level/biome/Biome$ClimateSettings
+accessible field net/minecraft/world/level/biome/Biome climateSettings Lnet/minecraft/world/level/biome/Biome$ClimateSettings;

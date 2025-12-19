@@ -83,12 +83,12 @@ public class Renderer {
 		renderer.stop();
 		this.sampler = renderer.sampler;
 		this.setGridPos(renderer.gridX, renderer.gridY, renderer.gridZ);
-		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset());
+		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset() * CLOUD_BLOCK_HEIGHT);
 		this.setRenderDistance(renderer.vanillaViewDistance, renderer.vanillaCloudRenderDistance);
 	}
 
 	public synchronized void setRenderer(Config config) {
-		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
+		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset() * CLOUD_BLOCK_HEIGHT;
 		cloudThickness = config.getCloudThickness();
 		renderDistance = config.isEnableRenderDistanceFitToView() ?
 				vanillaViewDistance * 6 :
@@ -176,12 +176,11 @@ public class Renderer {
 					// sampling...
 					if (CONFIG.isEnableTerrainDodge()) {
 						for (int cy = 0; cy < cloudThickness; cy++) {
-
 							// terrain dodge (detect light level)
 							grid[cx][cz][cy] = world.getBrightness(LightLayer.SKY, new BlockPos(
 									(int) bx,
 									(int) (getCloudHeight() + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
-									(int) bz  // cloud is moving, fix Z pos
+									(int) bz
 							)) == 15 && getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 						}
 					} else {

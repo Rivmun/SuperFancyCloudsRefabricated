@@ -42,7 +42,8 @@
 	},
 	"suggests": {
 		"modmenu": "*",
-		"cloth-config2":"*"
+		"cloth-config2":"*",
+		"yet_another_config_lib_v3": "*"
 	},
 	"custom": {
 		"modmenu": {

@@ -9,7 +9,7 @@
   "client": [
     "CloudRendererMixin",
     "OptionsMixin",
-    "LevelRendererMixin"
+    "ValueProbeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

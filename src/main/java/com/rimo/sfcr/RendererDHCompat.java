@@ -10,6 +10,10 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.attribute.EnvironmentAttributeProbe;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.phys.Vec3;
 
 import java.awt.*;
@@ -146,7 +150,7 @@ public class RendererDHCompat extends Renderer{
 
 	@Override
 	public float getCloudHeight() {
-		return super.getCloudHeight() + Common.CONFIG.getDhHeightEnhance();
+		return super.getCloudHeight() + Common.CONFIG.getDhHeightEnhance() + 200;
 	}
 
 	@Override
@@ -242,7 +246,7 @@ public class RendererDHCompat extends Renderer{
 		float cloudPhase = tickCounter.getGameTimeDeltaPartialTick(false)
 				+ (float)((LevelRendererAccessor)Minecraft.getInstance().levelRenderer).getTicks();
 		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
-		double z = cameraPos.z + 3.9600000381469727;
+		double z = cameraPos.z + 3.96F;
 		double y = getCloudHeight();
 		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH * 2;  //offset by grid center
 		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH * 2;
@@ -253,16 +257,15 @@ public class RendererDHCompat extends Renderer{
 		 */
 
 		//color
-//		ClientLevel world = Minecraft.getInstance().level;
-//		if (world != null && !group.isEmpty()) {
-//			int iColor = world.getCloudsColor(tickCounter.getGameTimeDeltaPartialTick(false));
-//			Color color = new Color(iColor);
-//			if (!group.getFirst().color.equals(color)) {
-//				for (DhApiRenderableBox box : group)
-//					box.color = color;
-//				group.triggerBoxChange();
-//			}
-//		}
+		if (!group.isEmpty()) {
+			int iColor = Minecraft.getInstance().gameRenderer.getMainCamera().attributeProbe().getValue(EnvironmentAttributes.CLOUD_COLOR, tickCounter.getGameTimeDeltaPartialTick(false));
+			Color color = new Color(iColor);
+			if (!group.getFirst().color.equals(color)) {
+				for (DhApiRenderableBox box : group)
+					box.color = color;
+				group.triggerBoxChange();
+			}
+		}
 
 		group.setOriginBlockPos(new DhApiVec3d(-x, y, -z));
 	}

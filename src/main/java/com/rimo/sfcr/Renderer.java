@@ -2,22 +2,22 @@ package com.rimo.sfcr;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.rimo.sfcr.config.Config;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gl.UniformType;
-import net.minecraft.client.render.VertexFormats;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+import net.minecraft.world.phys.Vec2;
 
 import java.nio.ByteBuffer;
 
@@ -29,12 +29,11 @@ public class Renderer {
 	@SuppressWarnings("RedundantArrayCreation")
 	public static final RenderPipeline SUPER_FANCY_CLOUDS = RenderPipelines.register(RenderPipeline
 			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					//public static final RenderPipeline.Snippet RENDERTYPE_SUPER_FANCY_CLOUDS_SNIPPET = RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET})
+					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
 					.withVertexShader("core/rendertype_superfancyclouds")  //use our own .vsh in custom build-in resourcepack
 					.withFragmentShader("core/rendertype_clouds")
 					.withBlend(BlendFunction.TRANSLUCENT)
-					.withVertexFormat(VertexFormats.EMPTY, VertexFormat.DrawMode.QUADS)
+					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
 					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
 					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
 					.buildSnippet()
@@ -45,11 +44,11 @@ public class Renderer {
 	@SuppressWarnings("RedundantArrayCreation")
 	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = RenderPipelines.register(RenderPipeline
 			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.TRANSFORMS_PROJECTION_FOG_SNIPPET})
+					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
 					.withVertexShader("core/rendertype_superfancyclouds_nth")
 					.withFragmentShader("core/rendertype_clouds")
 					.withBlend(BlendFunction.TRANSLUCENT)
-					.withVertexFormat(VertexFormats.EMPTY, VertexFormat.DrawMode.QUADS)
+					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
 					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
 					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
 					.buildSnippet()
@@ -57,11 +56,11 @@ public class Renderer {
 			.withLocation("pipeline/clouds")
 			.build()
 	);
-	//default cloudSize, see at net.minecraft.client.render.WorldRenderer:266
+	//default cloudSize
 	public static final float CLOUD_BLOCK_WIDTH = 12.0f;
 	public static final float CLOUD_BLOCK_HEIGHT = 4.0f;
 
-	private SimplexNoiseSampler sampler;
+	private SimplexNoise sampler;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
 	private float cloudHeight;
 	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
@@ -84,12 +83,12 @@ public class Renderer {
 		renderer.stop();
 		this.sampler = renderer.sampler;
 		this.setGridPos(renderer.gridX, renderer.gridY, renderer.gridZ);
-		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset());
+		this.setCloudHeight(renderer.cloudHeight - CONFIG.getCloudHeightOffset() * CLOUD_BLOCK_HEIGHT);
 		this.setRenderDistance(renderer.vanillaViewDistance, renderer.vanillaCloudRenderDistance);
 	}
 
 	public synchronized void setRenderer(Config config) {
-		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset();
+		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset() * CLOUD_BLOCK_HEIGHT;
 		cloudThickness = config.getCloudThickness();
 		renderDistance = config.isEnableRenderDistanceFitToView() ?
 				vanillaViewDistance * 6 :
@@ -125,15 +124,15 @@ public class Renderer {
 	}
 
 	public void initSampler(long seed) {
-		this.sampler = new SimplexNoiseSampler(Random.create(seed));
+		this.sampler = new SimplexNoise(RandomSource.create(seed));
 	}
 
 	protected CloudGrid getCloudGrid(int x, int z) {
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
 		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
 		int sz = z - this.getRenderDistance();
-		World world = MinecraftClient.getInstance().player.getEntityWorld();
-		double time = world.getTime() / 20.0;
+		Level world = Minecraft.getInstance().player.level();
+		double time = world.getGameTime() / 20.0;
 		//float threshold = 0.5f;  //original
 		float threshold = CONFIG.getDensityThreshold();
 
@@ -148,25 +147,25 @@ public class Renderer {
 					if (CONFIG.isEnableWeatherDensity()) {
 						if (CONFIG.isEnableBiomeDensityByChunk()) {
 							if (CONFIG.isEnableBiomeDensityUseLoadedChunk()) {
-								Vec2f centerB = new Vec2f(x + 0.5f, z + 0.5f).multiply(CLOUD_BLOCK_WIDTH);
-								Vec2f cellB = new Vec2f(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).multiply(CLOUD_BLOCK_WIDTH);  //from center to current cell
-								Vec2f unit = cellB.normalize().multiply(16);
-								if (cellB.length() > unit.multiply(this.getVanillaViewDistance()).length())
-									cellB = unit.multiply(this.getVanillaViewDistance());  //pick farthest pos in vanillaViewDistance to prevent invalid detect
+								Vec2 centerB = new Vec2(x + 0.5f, z + 0.5f).scale(CLOUD_BLOCK_WIDTH);
+								Vec2 cellB = new Vec2(cx - cloudGridWidth / 2f, cz - cloudGridWidth / 2f).scale(CLOUD_BLOCK_WIDTH);  //from center to current cell
+								Vec2 unit = cellB.normalized().scale(16);
+								if (cellB.length() > unit.scale(this.getVanillaViewDistance()).length())
+									cellB = unit.scale(this.getVanillaViewDistance());  //pick farthest pos in vanillaViewDistance to prevent invalid detect
 
 								while (! this.isChunkLoaded(world, (int)(centerB.x + cellB.x) / 16, (int)(centerB.y + cellB.y) / 16)
 										&& unit.dot(cellB) > 0)  //end if cellB was reversed
-									cellB = cellB.add(unit.negate());  //stepping close to center
+									cellB = cellB.add(unit.negated());  //stepping close to center
 
 								cellB = cellB.add(centerB);  //trans to world pos
-								RegistryEntry<Biome> biome = this.getBiome(world, (int) cellB.x, (int) cellB.y);
+								Holder<Biome> biome = this.getBiome(world, (int) cellB.x, (int) cellB.y);
 								threshold = CONFIG.isFilterListHasNoBiome(biome)
-										? getDensityThreshold(DATA.densityByWeather, biome.value().weather.downfall())
+										? getDensityThreshold(DATA.densityByWeather, biome.value().climateSettings.downfall())
 										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
 							} else {
-								RegistryEntry<Biome> biome = this.getBiome(world, (int) bx, (int) bz);
+								Holder<Biome> biome = this.getBiome(world, (int) bx, (int) bz);
 								threshold = CONFIG.isFilterListHasNoBiome(biome)
-										? getDensityThreshold(DATA.densityByWeather, biome.value().weather.downfall())
+										? getDensityThreshold(DATA.densityByWeather, biome.value().climateSettings.downfall())
 										: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
 							}
 						} else {
@@ -177,12 +176,11 @@ public class Renderer {
 					// sampling...
 					if (CONFIG.isEnableTerrainDodge()) {
 						for (int cy = 0; cy < cloudThickness; cy++) {
-
 							// terrain dodge (detect light level)
-							grid[cx][cz][cy] = world.getLightLevel(LightType.SKY, new BlockPos(
+							grid[cx][cz][cy] = world.getBrightness(LightLayer.SKY, new BlockPos(
 									(int) bx,
 									(int) (getCloudHeight() + (cy - 1.5f) * CLOUD_BLOCK_HEIGHT),
-									(int) bz  // cloud is moving, fix Z pos
+									(int) bz
 							)) == 15 && getCloudSample(sampler, sx, sz, 0, time, cx, cy, cz, CONFIG.getSampleSteps()) > threshold;
 						}
 					} else {
@@ -206,8 +204,8 @@ public class Renderer {
 
 	//method below extract from getCloudGrid use to override by dhCompat, to redirect these value.
 	protected int getVanillaViewDistance() {return this.vanillaViewDistance;}
-	protected boolean isChunkLoaded(World world, int x, int z) {return world.isChunkLoaded(x, z);}
-	protected RegistryEntry<Biome> getBiome(World world, int x, int z) {return world.getBiome(new BlockPos(x, 80, z));}
+	protected boolean isChunkLoaded(Level world, int x, int z) {return world.hasChunk(x, z);}
+	protected Holder<Biome> getBiome(Level world, int x, int z) {return world.getBiome(new BlockPos(x, 80, z));}
 
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid() {
@@ -252,7 +250,7 @@ public class Renderer {
 		- - - - - - - - - - - -
 	 */
 
-	public void buildCloudCells(ByteBuffer byteBuffer, boolean isFancy) {
+	public void buildMesh(ByteBuffer byteBuffer, boolean isFancy) {
 		if (cloudGrid == null)
 			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
 		if (isGridNeedToUpdate()) {
@@ -268,7 +266,7 @@ public class Renderer {
 						for (int h = cloudThickness - 1; h >= 0; h--) {  //insert height traverse
 							if (byteBuffer.remaining() < 30)
 								return;  //java.nio.BufferOverflow Check, 30 is max put amount in single cell.
-							if (this.method_72155(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness))
+							if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness))
 								thickness++;
 							else
 								if (thickness > 0)
@@ -281,7 +279,7 @@ public class Renderer {
 					for (int h = cloudThickness - 1; h >= 0; h--) {
 						if (byteBuffer.remaining() < 30)
 							return;
-						if (this.method_72155(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness))
+						if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness))
 							thickness++;
 						else
 							if (thickness > 0)
@@ -296,7 +294,7 @@ public class Renderer {
 	}
 
 	//return true if this grids has cells, to sum cloud thickness
-	private boolean method_72155(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
+	private boolean tryBuildCell(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
 		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grids pos
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
 		if (x < 0 || x >= cloudGrid.grids.length || z < 0 || z >= cloudGrid.grids.length)  //check bound
@@ -318,15 +316,15 @@ public class Renderer {
 		cellState |= (thickness << 6);
 		h += CONFIG.getCloudHeightOffset();
 		if (isFancy) {
-			this.buildCloudCellFancy(byteBuffer, xOffset, h, zOffset, cellState);
+			this.buildExtrudedCell(byteBuffer, xOffset, h, zOffset, cellState);
 		} else {
-			this.buildCloudCellFast(byteBuffer, xOffset, h, zOffset);
+			this.buildFlatCell(byteBuffer, xOffset, h, zOffset);
 		}
 		return true;
 	}
 
-	private void buildCloudCellFast(ByteBuffer byteBuffer, int x, int h, int z) {
-		this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 32, 0);
+	private void buildFlatCell(ByteBuffer byteBuffer, int x, int h, int z) {
+		this.encodeFace(byteBuffer, x, h, z, Direction.DOWN, 32, 0);
 	}
 
 	/*
@@ -340,8 +338,8 @@ public class Renderer {
 		└───────── odevity of x
 		we try save h's odevity to 4th bit
 	 */
-	private void method_71098(ByteBuffer byteBuffer, int x, int h, int z, Direction direction, int i, int thickness) {
-		int l = direction.getIndex() | i;
+	private void encodeFace(ByteBuffer byteBuffer, int x, int h, int z, Direction direction, int i, int thickness) {
+		int l = direction.ordinal() | i;
 		l |= (x & 1) << 7;
 		l |= (z & 1) << 6;
 		l |= (h & 1) << 3;  //add height odevity to l
@@ -353,30 +351,30 @@ public class Renderer {
 			byteBuffer.put((byte)thickness);
 	}
 
-	private void buildCloudCellFancy(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {
+	private void buildExtrudedCell(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {
 		int thickness = cellState >> 6;
 		if (hasBorderTop(cellState) && h < this.gridY) {
-			this.method_71098(byteBuffer, x, h, z, Direction.UP, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.UP, 0, thickness);
 		}
 		if (hasBorderBottom(cellState) && h > this.gridY) {
-			this.method_71098(byteBuffer, x, h, z, Direction.DOWN, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.DOWN, 0, thickness);
 		}
 		if (hasBorderNorth(cellState) && z > 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.NORTH, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.NORTH, 0, thickness);
 		}
 		if (hasBorderSouth(cellState) && z < 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.SOUTH, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.SOUTH, 0, thickness);
 		}
 		if (hasBorderWest(cellState) && x > 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
 		}
 		if (hasBorderEast(cellState) && x < 0) {
-			this.method_71098(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
+			this.encodeFace(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
 		}
 		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && Math.abs(h) <= this.gridY) {  //inner faces
 			Direction[] directions = Direction.values();
 			for (Direction direction : directions) {
-				this.method_71098(byteBuffer, x, h, z, direction, 16, thickness);
+				this.encodeFace(byteBuffer, x, h, z, direction, 16, thickness);
 			}
 		}
 	}
@@ -416,21 +414,21 @@ public class Renderer {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
 	}
 
-	public static double getCloudSample(SimplexNoiseSampler sampler, double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz, int step) {
-		double cloudVal = sampler.sample(
+	public static double getCloudSample(SimplexNoise sampler, double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz, int step) {
+		double cloudVal = sampler.getValue(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				(startZ + cz - zOffset) * baseFreq
 		);
 		if (step > 1) {
-			double cloudVal1 = sampler.sample(
+			double cloudVal1 = sampler.getValue(
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					(startZ + cz - zOffset) * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (step > 2) {
-				cloudVal2 = sampler.sample(
+				cloudVal2 = sampler.getValue(
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
 						(startZ + cz - zOffset) * l2Freq

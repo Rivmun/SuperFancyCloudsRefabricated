@@ -1,24 +1,18 @@
 package com.rimo.sfcr;
 
-import com.rimo.sfcr.mixin.WorldRendererAccessor;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup;
-//import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.world.ClientWorld;
-//import net.minecraft.registry.entry.RegistryEntry;
-//import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-//import net.minecraft.world.World;
-//import net.minecraft.world.biome.Biome;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.phys.Vec3;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,14 +125,14 @@ public class RendererDHCompat extends Renderer{
 						// Add AABB box
 						result.add(new DhApiRenderableBox(
 								new DhApiVec3d(  //TODO: why size must * 2?
-										(xMin - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //offset to center
-										zMin * CLOUD_BLOCK_HEIGHT * 2,
-										(yMin - w / 2) * CLOUD_BLOCK_WIDTH * 2
+										(xMin - w / 2) * CLOUD_BLOCK_WIDTH,  //offset to center
+										zMin * CLOUD_BLOCK_HEIGHT,
+										(yMin - w / 2) * CLOUD_BLOCK_WIDTH
 								),
 								new DhApiVec3d(
-										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //at least one block size
-										++zMax * CLOUD_BLOCK_HEIGHT * 2,
-										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH * 2
+										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH,  //at least one block size
+										++zMax * CLOUD_BLOCK_HEIGHT,
+										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH
 								),
 								new Color(255,255,255,255),  //color change by time, here just placeholder
 								EDhApiBlockMaterial.UNKNOWN
@@ -241,17 +235,17 @@ public class RendererDHCompat extends Renderer{
 
 	//to calc RenderableBoxGroup pos and culling, etc..
 	private void preRender(IDhApiRenderableBoxGroup group) {
-		Vec3d cameraPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
-		RenderTickCounter tickCounter = MinecraftClient.getInstance().getRenderTickCounter();
+		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+		DeltaTracker tickCounter = Minecraft.getInstance().getDeltaTracker();
 
-		//pos calc copy from net.minecraft.client.render.WorldRenderer
-		float cloudPhase = tickCounter.getTickProgress(false)
-				+ (float)((WorldRendererAccessor)MinecraftClient.getInstance().worldRenderer).getTicks();
+		//pos calc copy from net.minecraft.client.renderer.CloudRenderer:render()
+		float cloudPhase = (float)(Minecraft.getInstance().gameRenderer.getLevelRenderState().gameTime % ((long) 256 * 400L))
+				+ tickCounter.getGameTimeDeltaPartialTick(false);
 		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
-		double z = cameraPos.z + 3.9600000381469727;
+		double z = cameraPos.z + 3.96F;
 		double y = getCloudHeight();
-		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH * 2;  //offset by grid center
-		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH * 2;
+		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH;  //offset by grid center
+		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH;
 
 		/* TODO: culling?
 		    but we have only one group. considering is unnecessary..
@@ -259,11 +253,10 @@ public class RendererDHCompat extends Renderer{
 		 */
 
 		//color
-		ClientWorld world = MinecraftClient.getInstance().world;
-		if (world != null && !group.isEmpty()) {
-			int iColor = world.getCloudsColor(tickCounter.getTickProgress(false));
+		if (!group.isEmpty()) {
+			int iColor = Minecraft.getInstance().gameRenderer.getMainCamera().attributeProbe().getValue(EnvironmentAttributes.CLOUD_COLOR, tickCounter.getGameTimeDeltaPartialTick(false));
 			Color color = new Color(iColor);
-			if (!group.get(0).color.equals(color)) {
+			if (!group.getFirst().color.equals(color)) {
 				for (DhApiRenderableBox box : group)
 					box.color = color;
 				group.triggerBoxChange();

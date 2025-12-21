@@ -11,11 +11,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.fabric.api.resource.v1.pack.PackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import java.util.Random;
 import static com.rimo.sfcr.Common.CONFIG;
@@ -29,11 +29,11 @@ public class Client implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		ResourceManagerHelper.registerBuiltinResourcePack(
-				Identifier.of(Common.MOD_ID, "cloud_shader"),
+		ResourceLoader.registerBuiltinPack(
+				Identifier.fromNamespaceAndPath(Common.MOD_ID, "cloud_shader"),
 				FabricLoader.getInstance().getModContainer(Common.MOD_ID).get(),
-				Text.translatable("text.sfcr.buildInResourcePack"),
-				ResourcePackActivationType.ALWAYS_ENABLED
+				Component.translatable("text.sfcr.buildInResourcePack"),
+				PackActivationType.ALWAYS_ENABLED
 		);
 
 		//init mod
@@ -53,7 +53,7 @@ public class Client implements ClientModInitializer {
 			if (! CONFIG.isEnableMod())
 				return;
 			if (!hasServer && client.player != null)
-				DATA.updateWeatherClient(client.player.getEntityWorld());
+				DATA.updateWeatherClient(client.player.level());
 			DATA.updateDensity(client.player);
 			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
 				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
@@ -63,7 +63,7 @@ public class Client implements ClientModInitializer {
 		ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register((client, world) -> {
 			boolean oldEnableMod = CONFIG.isEnableMod();
 			boolean oldDHCompat = CONFIG.isEnableDHCompat();
-			CONFIG = Config.load(world.getRegistryKey().getValue().toString());
+			CONFIG = Config.load(world.dimension().identifier().toString());
 			applyConfigChange(oldEnableMod, oldDHCompat);
 		});
 
@@ -76,7 +76,7 @@ public class Client implements ClientModInitializer {
 		});
 
 		//world info receiver
-		ClientPlayNetworking.registerGlobalReceiver(WorldInfoPayload.ID, (payload, context) -> {
+		ClientPlayNetworking.registerGlobalReceiver(WorldInfoPayload.TYPE, (payload, context) -> {
 			hasServer = true;
 			RENDERER.initSampler(payload.seed());
 			if (CONFIG.isEnableDebug())
@@ -84,7 +84,7 @@ public class Client implements ClientModInitializer {
 		});
 
 		//weather receiver
-		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.ID, (payload, context) -> {
+		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.TYPE, (payload, context) -> {
 			DATA.nextWeather = payload.weather();
 			if (CONFIG.isEnableDebug())
 				Common.LOGGER.info("Receiver weather: " + payload.weather().name());

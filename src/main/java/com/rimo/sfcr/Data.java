@@ -1,11 +1,11 @@
 package com.rimo.sfcr;
 
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.level.ServerWorldProperties;
+import com.rimo.sfcr.mixin.ServerLevelAccessor;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ServerLevelData;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -32,9 +32,9 @@ public class Data {
 	}
 
 	// return true if weather changed
-	public boolean updateWeather(ServerWorld world) {
+	public boolean updateWeather(ServerLevel world) {
 		// Weather Pre-detect
-		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
+		ServerLevelData worldProperties = ((ServerLevelAccessor) world).getServerLevelData();
 		if (worldProperties.isRaining()) {
 			if (worldProperties.isThundering()) {
 				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Data.Weather.RAIN : Data.Weather.THUNDER;
@@ -60,7 +60,7 @@ public class Data {
 	}
 
 	//only runs when connect to dedicated server without sfcr
-	public void updateWeatherClient(World world) {
+	public void updateWeatherClient(Level world) {
 		if (world == null)
 			return;
 		nextWeather = world.isThundering() ? Weather.THUNDER :
@@ -68,10 +68,10 @@ public class Data {
 						Weather.CLEAR;
 	}
 
-	public void updateDensity(PlayerEntity player) {
+	public void updateDensity(Player player) {
 		if (player == null)
 			return;
-		World world = player.getEntityWorld();
+		Level world = player.level();
 		if (world == null)
 			return;
 
@@ -89,8 +89,8 @@ public class Data {
 			}
 			//Detect Biome Change
 			if (!CONFIG.isEnableBiomeDensityByChunk()) {		//Hasn't effected if use chunk data.
-				if (CONFIG.isFilterListHasNoBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = world.getBiome(player.getBlockPos()).value().weather.downfall();
+				if (CONFIG.isFilterListHasNoBiome(world.getBiome(player.blockPosition())))
+					targetDownFall = world.getBiome(player.blockPosition()).value().climateSettings.downfall();
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {

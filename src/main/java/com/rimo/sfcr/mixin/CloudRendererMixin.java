@@ -2,11 +2,10 @@ package com.rimo.sfcr.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.rimo.sfcr.Renderer;
-import net.minecraft.client.option.CloudRenderMode;
-import net.minecraft.client.render.CloudRenderer;
-import net.minecraft.client.render.CloudRenderer.ViewMode;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.renderer.CloudRenderer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,31 +26,36 @@ public abstract class CloudRendererMixin {
 	@Unique
 	float oldCloudHeight;
 	@Shadow
-	public int instanceCount;
+	private int quadCount;
 	@Shadow
-	public abstract void scheduleTerrainUpdate();
+	public abstract void markForRebuild();
+	@Shadow
+	private CloudRenderer.TextureData texture;
 
 	/*
 		grabbing camera pos of grid
 	 */
-	@Inject(method = "renderClouds", at = @At("INVOKE"), cancellable = true)
-	private void renderClouds(int color, CloudRenderMode mode, float cloudHeight, Vec3d cameraPos, float cloudPhase, CallbackInfo ci) {
+	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
+	private void render(int color, CloudStatus mode, float cloudHeight, Vec3 cameraPos, long l, float cloudPhase, CallbackInfo ci) {
 		if (!CONFIG.isEnableMod())
 			return;
 
-		double d = cameraPos.x + (double)(cloudPhase * 0.030000001F);
-		double e = cameraPos.z + 3.9600000381469727;
+		//keep xOffset compute as same as vanilla
+		float o = (float)(l % ((long) this.texture.width() * 400L)) + cloudPhase;
+		double d = cameraPos.x + (double)(o * 0.030000001F);
+		double e = cameraPos.z + 3.96F;
+
 		float f = (float)(cameraPos.y - (double)cloudHeight);
-		int x = MathHelper.floor(d / Renderer.CLOUD_BLOCK_WIDTH);
-		int y = MathHelper.floor(f / Renderer.CLOUD_BLOCK_HEIGHT);
-		int z = MathHelper.floor(e / Renderer.CLOUD_BLOCK_WIDTH);
+		int x = Mth.floor(d / Renderer.CLOUD_BLOCK_WIDTH);
+		int y = Mth.floor(f / Renderer.CLOUD_BLOCK_HEIGHT);
+		int z = Mth.floor(e / Renderer.CLOUD_BLOCK_WIDTH);
 
 		if (oldX != x || oldY != y || oldZ != z) {
 			if (oldY != y && (
 					f > RENDERER.getCloudHeight() ||
 					f < RENDERER.getCloudHeight() + CONFIG.getCloudThickness() * Renderer.CLOUD_BLOCK_HEIGHT
 			))
-				scheduleTerrainUpdate();  //forcibly vanilla cloud to update when Y changed.
+				markForRebuild();  //forcibly vanilla cloud to update when Y changed.
 			oldX = x;
 			oldY = y;
 			oldZ = z;
@@ -70,7 +74,7 @@ public abstract class CloudRendererMixin {
 	/*
 		redirect renderPipeline
 	 */
-	@ModifyVariable(method = "renderClouds", at = @At("STORE"))
+	@ModifyVariable(method = "render", at = @At("STORE"))
 	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
 		if (!CONFIG.isEnableMod())
 			return pipeline;
@@ -80,16 +84,16 @@ public abstract class CloudRendererMixin {
 	}
 
 	/*
-		Modifying instanceCount
+		Modifying instanceCount/quadCount
 		cuz we put more than 3 bits of vanilla to cloudFaces buffer.
 	 */
-	@Redirect(method = "renderClouds", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/CloudRenderer;instanceCount:I", opcode = Opcodes.GETFIELD))
-	private int getInstanceCount(CloudRenderer renderer) {
+	@Redirect(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/CloudRenderer;quadCount:I", opcode = Opcodes.GETFIELD))
+	private int getQuadCount(CloudRenderer renderer) {
 		if (!CONFIG.isEnableMod())
-			return instanceCount;
+			return quadCount;
 		if (!CONFIG.isEnableBottomDim())
-			return instanceCount * 3 / 4;
-		return instanceCount * 3 / 5;
+			return quadCount * 3 / 4;
+		return quadCount * 3 / 5;
 	}
 
 	/*
@@ -97,11 +101,11 @@ public abstract class CloudRendererMixin {
 		original x/z is reference to pixel pos of clouds.png, which is unnecessary to our sample method.
 		viewMode use to cull top/bottom face of clouds, but we make a multi layer clouds that needs culled by ourselves, this arg is useless.
 	 */
-	@Inject(method = "buildCloudCells", at = @At("INVOKE"), cancellable = true)
-	private void buildCloudCells(ViewMode viewMode, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int renderDistance, CallbackInfo ci) {
+	@Inject(method = "buildMesh", at = @At("HEAD"), cancellable = true)
+	private void buildMesh(CloudRenderer.RelativeCameraPos relativeCameraPos, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int cloudRange, CallbackInfo ci) {
 		if (!CONFIG.isEnableMod())
 			return;
-		RENDERER.buildCloudCells(byteBuffer, isFancy);
+		RENDERER.buildMesh(byteBuffer, isFancy);
 		ci.cancel();
 	}
 

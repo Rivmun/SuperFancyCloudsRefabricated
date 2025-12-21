@@ -270,7 +270,7 @@ public class ConfigScreenYACL {
 								})
 								.build())
 						.option(biomeDetectUseLoadedChunk)
-						.option(ListOption.<String>createBuilder()
+						.group(ListOption.<String>createBuilder()
 								.name(Component.translatable("text.sfcr.option.biomeFilter"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.biomeFilter.@Tooltip")))
 								.binding(Config.DEF_BIOME_BLACKLIST, CONFIG::getBiomeBlackList, CONFIG::setBiomeBlackList)

@@ -35,7 +35,7 @@ public abstract class CloudRendererMixin {
 	/*
 		grabbing camera pos of grid
 	 */
-	@Inject(method = "render", at = @At("INVOKE"), cancellable = true)
+	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
 	private void render(int color, CloudStatus mode, float cloudHeight, Vec3 cameraPos, long l, float cloudPhase, CallbackInfo ci) {
 		if (!CONFIG.isEnableMod())
 			return;
@@ -101,7 +101,7 @@ public abstract class CloudRendererMixin {
 		original x/z is reference to pixel pos of clouds.png, which is unnecessary to our sample method.
 		viewMode use to cull top/bottom face of clouds, but we make a multi layer clouds that needs culled by ourselves, this arg is useless.
 	 */
-	@Inject(method = "buildMesh", at = @At("INVOKE"), cancellable = true)
+	@Inject(method = "buildMesh", at = @At("HEAD"), cancellable = true)
 	private void buildMesh(CloudRenderer.RelativeCameraPos relativeCameraPos, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int cloudRange, CallbackInfo ci) {
 		if (!CONFIG.isEnableMod())
 			return;

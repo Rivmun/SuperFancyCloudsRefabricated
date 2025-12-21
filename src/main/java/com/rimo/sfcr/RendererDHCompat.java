@@ -1,6 +1,5 @@
 package com.rimo.sfcr;
 
-import com.rimo.sfcr.mixin.LevelRendererAccessor;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
@@ -10,13 +9,10 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.world.attribute.EnvironmentAttributeProbe;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.phys.Vec3;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -129,14 +125,14 @@ public class RendererDHCompat extends Renderer{
 						// Add AABB box
 						result.add(new DhApiRenderableBox(
 								new DhApiVec3d(  //TODO: why size must * 2?
-										(xMin - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //offset to center
-										zMin * CLOUD_BLOCK_HEIGHT * 2,
-										(yMin - w / 2) * CLOUD_BLOCK_WIDTH * 2
+										(xMin - w / 2) * CLOUD_BLOCK_WIDTH,  //offset to center
+										zMin * CLOUD_BLOCK_HEIGHT,
+										(yMin - w / 2) * CLOUD_BLOCK_WIDTH
 								),
 								new DhApiVec3d(
-										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //at least one block size
-										++zMax * CLOUD_BLOCK_HEIGHT * 2,
-										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH * 2
+										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH,  //at least one block size
+										++zMax * CLOUD_BLOCK_HEIGHT,
+										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH
 								),
 								new Color(255,255,255,255),  //color change by time, here just placeholder
 								EDhApiBlockMaterial.UNKNOWN
@@ -150,7 +146,7 @@ public class RendererDHCompat extends Renderer{
 
 	@Override
 	public float getCloudHeight() {
-		return super.getCloudHeight() + Common.CONFIG.getDhHeightEnhance() + 200;
+		return super.getCloudHeight() + Common.CONFIG.getDhHeightEnhance();
 	}
 
 	@Override
@@ -242,14 +238,14 @@ public class RendererDHCompat extends Renderer{
 		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
 		DeltaTracker tickCounter = Minecraft.getInstance().getDeltaTracker();
 
-		//pos calc copy from net.minecraft.client.render.WorldRenderer
-		float cloudPhase = tickCounter.getGameTimeDeltaPartialTick(false)
-				+ (float)((LevelRendererAccessor)Minecraft.getInstance().levelRenderer).getTicks();
+		//pos calc copy from net.minecraft.client.renderer.CloudRenderer:render()
+		float cloudPhase = (float)(Minecraft.getInstance().gameRenderer.getLevelRenderState().gameTime % ((long) 256 * 400L))
+				+ tickCounter.getGameTimeDeltaPartialTick(false);
 		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
 		double z = cameraPos.z + 3.96F;
 		double y = getCloudHeight();
-		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH * 2;  //offset by grid center
-		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH * 2;
+		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH;  //offset by grid center
+		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH;
 
 		/* TODO: culling?
 		    but we have only one group. considering is unnecessary..

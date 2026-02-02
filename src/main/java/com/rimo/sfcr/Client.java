@@ -55,7 +55,7 @@ public class Client implements ClientModInitializer {
 			if (!hasServer && client.player != null)
 				DATA.updateWeatherClient(client.player.level());
 			DATA.updateDensity(client.player);
-			if (RENDERER instanceof RendererDHCompat renderer && client.player != null)
+			if (RENDERER instanceof RendererDHCompat renderer)
 				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
 		});
 
@@ -80,14 +80,14 @@ public class Client implements ClientModInitializer {
 			hasServer = true;
 			RENDERER.initSampler(payload.seed());
 			if (CONFIG.isEnableDebug())
-				Common.LOGGER.info("Receiver world info: " + payload.seed());
+				Common.LOGGER.info("Receiver world info: {}", payload.seed());
 		});
 
 		//weather receiver
 		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.TYPE, (payload, context) -> {
 			DATA.nextWeather = payload.weather();
 			if (CONFIG.isEnableDebug())
-				Common.LOGGER.info("Receiver weather: " + payload.weather().name());
+				Common.LOGGER.info("Receiver weather: {}", payload.weather().name());
 		});
 	}
 

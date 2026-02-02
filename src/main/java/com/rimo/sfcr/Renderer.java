@@ -18,6 +18,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 import net.minecraft.world.phys.Vec2;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 
@@ -65,6 +66,7 @@ public class Renderer {
 	private float cloudHeight;
 	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
+	protected long lastResamplingTime;
 	protected boolean isResampling = false;
 	private int renderDistance;
 	private int cloudGridWidth;
@@ -127,7 +129,9 @@ public class Renderer {
 		this.sampler = new SimplexNoise(RandomSource.create(seed));
 	}
 
-	protected CloudGrid getCloudGrid(int x, int z) {
+	protected @Nullable CloudGrid getCloudGrid(int x, int z) {
+		if (Minecraft.getInstance().player == null) return null;
+
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
 		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
 		int sz = z - this.getRenderDistance();
@@ -195,6 +199,7 @@ public class Renderer {
 				}
 			}
 		}
+		this.lastResamplingTime = (long)time;
 		return new CloudGrid(grid, x, z);
 	}
 
@@ -210,6 +215,7 @@ public class Renderer {
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid() {
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
+		if (newGrid == null) return;
 		synchronized (this) {
 			if (cloudGrid != null) {
 				int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
@@ -251,8 +257,10 @@ public class Renderer {
 	 */
 
 	public void buildMesh(ByteBuffer byteBuffer, boolean isFancy) {
-		if (cloudGrid == null)
+		if (cloudGrid == null) {
 			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
+			if (cloudGrid == null) return;
+		}
 		if (isGridNeedToUpdate()) {
 			startGridUpdateThread();
 		}

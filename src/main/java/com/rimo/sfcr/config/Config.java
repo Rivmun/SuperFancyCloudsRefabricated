@@ -137,9 +137,9 @@ public class Config {
 			config = gson.fromJson(reader, Config.class);
 			reader.close();
 		} catch (IOException | JsonParseException e) {
-			Common.LOGGER.error("Failed to read config file: " + path.getFileName());
+			Common.LOGGER.error("Failed to read config file: {}", path.getFileName());
 		}
-		Common.LOGGER.info("Load config file: " + path.getFileName());
+		Common.LOGGER.info("Load config file: {}", path.getFileName());
 		return config;
 	}
 
@@ -161,7 +161,7 @@ public class Config {
 			gson.toJson(config, writer);
 			writer.close();
 		} catch (IOException e) {
-			Common.LOGGER.error("Failed to write config file: " + path.getFileName());
+			Common.LOGGER.error("Failed to write config file: {}", path.getFileName());
 		}
 	}
 

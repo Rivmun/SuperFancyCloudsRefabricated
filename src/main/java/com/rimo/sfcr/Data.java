@@ -72,8 +72,6 @@ public class Data {
 		if (player == null)
 			return;
 		Level world = player.level();
-		if (world == null)
-			return;
 
 		//Detect Weather Change
 		if (CONFIG.isEnableWeatherDensity()) {

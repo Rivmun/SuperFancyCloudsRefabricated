@@ -53,9 +53,8 @@ public abstract class CloudRendererMixin {
 		if (oldX != x || oldY != y || oldZ != z) {
 			if (oldY != y && (
 					f > RENDERER.getCloudHeight() ||
-					f < RENDERER.getCloudHeight() + CONFIG.getCloudThickness() * Renderer.CLOUD_BLOCK_HEIGHT
-			))
-				markForRebuild();  //forcibly vanilla cloud to update when Y changed.
+					f < RENDERER.getCloudHeight() + CONFIG.getCloudThickness() * Renderer.CLOUD_BLOCK_HEIGHT))
+				markForRebuild();  //forcibly vanilla cloud to update when player in cloud and Y changed.
 			oldX = x;
 			oldY = y;
 			oldZ = z;
@@ -99,7 +98,7 @@ public abstract class CloudRendererMixin {
 	/*
 		Redirect cells building is enough.
 		original x/z is reference to pixel pos of clouds.png, which is unnecessary to our sample method.
-		viewMode use to cull top/bottom face of clouds, but we make a multi layer clouds that needs culled by ourselves, this arg is useless.
+		relativeCameraPos use to cull top/bottom face of clouds, but we make a multi layer clouds that needs culled by ourselves, this arg is useless.
 	 */
 	@Inject(method = "buildMesh", at = @At("HEAD"), cancellable = true)
 	private void buildMesh(CloudRenderer.RelativeCameraPos relativeCameraPos, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int cloudRange, CallbackInfo ci) {

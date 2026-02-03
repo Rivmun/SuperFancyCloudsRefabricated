@@ -3,6 +3,7 @@ package com.rimo.sfcr.mixin;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.rimo.sfcr.Renderer;
 import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -65,6 +66,10 @@ public abstract class CloudRendererMixin {
 			oldCloudHeight = cloudHeight;
 			RENDERER.setCloudHeight(cloudHeight);
 		}
+
+		RENDERER.counting(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false) / 20.0);
+		if (RENDERER.isTimeToResampling())
+			markForRebuild();  //manually update
 
 		if (CONFIG.isEnableDHCompat())
 			ci.cancel();  //cancel vanilla build & render, only get pos for DHCompat.

@@ -26,7 +26,7 @@ import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
 	//Create custom renderPipeline
-	//when renderClouds init cloud pipeline, we redirect it by using Mixin.
+	//when renderClouds init cloud pipeline, we redirect it by Mixin.
 	@SuppressWarnings("RedundantArrayCreation")
 	public static final RenderPipeline SUPER_FANCY_CLOUDS = RenderPipelines.register(RenderPipeline
 			.builder(new RenderPipeline.Snippet[]{RenderPipeline
@@ -66,7 +66,7 @@ public class Renderer {
 	private float cloudHeight;
 	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
-	protected long lastResamplingTime;
+	private double lastResamplingTime;
 	protected boolean isResampling = false;
 	private int renderDistance;
 	private int cloudGridWidth;
@@ -129,8 +129,13 @@ public class Renderer {
 		this.sampler = new SimplexNoise(RandomSource.create(seed));
 	}
 
+	public void counting(double time) {
+		this.lastResamplingTime += time;
+	}
+
 	protected @Nullable CloudGrid getCloudGrid(int x, int z) {
-		if (Minecraft.getInstance().player == null) return null;
+		if (Minecraft.getInstance().player == null)
+			return null;
 
 		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
 		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
@@ -199,7 +204,7 @@ public class Renderer {
 				}
 			}
 		}
-		this.lastResamplingTime = (long)time;
+		this.lastResamplingTime = 0.0;
 		return new CloudGrid(grid, x, z);
 	}
 
@@ -215,7 +220,8 @@ public class Renderer {
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid() {
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
-		if (newGrid == null) return;
+		if (newGrid == null)
+			return;
 		synchronized (this) {
 			if (cloudGrid != null) {
 				int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
@@ -228,14 +234,20 @@ public class Renderer {
 		}
 	}
 
-	protected void startGridUpdateThread() {
+	protected synchronized void tryStartGridUpdateThread() {
+		if (isResampling)
+			return;
+		isResampling = true;
 		resamplingThread = new Thread(this::updateCloudGrid);
 		resamplingThread.start();
-		isResampling = true;
 	}
 
 	protected boolean isGridNeedToUpdate() {
-		return gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ && !isResampling;
+		return gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ;
+	}
+
+	public boolean isTimeToResampling() {
+		return lastResamplingTime > DATA.getResamplingInterval();
 	}
 
 	public void stop() {
@@ -246,6 +258,7 @@ public class Renderer {
 			//Ignore...
 		}
 		cloudGrid = null;
+		lastResamplingTime = 0.0;
 	}
 
 	/*
@@ -259,10 +272,12 @@ public class Renderer {
 	public void buildMesh(ByteBuffer byteBuffer, boolean isFancy) {
 		if (cloudGrid == null) {
 			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
-			if (cloudGrid == null) return;
+			if (cloudGrid == null)
+				return;
 		}
-		if (isGridNeedToUpdate()) {
-			startGridUpdateThread();
+		//vanilla cloudRenderer already checked gridPos, here unnecessary. timeCheck here use to prevent update too frequently.
+		if (isTimeToResampling()) {
+			tryStartGridUpdateThread();
 		}
 
 		for(int l = 0; l <= 2 * renderDistance; ++l) {
@@ -422,7 +437,7 @@ public class Renderer {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
 	}
 
-	public static double getCloudSample(SimplexNoise sampler, double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz, int step) {
+	private static double getCloudSample(SimplexNoise sampler, double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz, int step) {
 		double cloudVal = sampler.getValue(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,

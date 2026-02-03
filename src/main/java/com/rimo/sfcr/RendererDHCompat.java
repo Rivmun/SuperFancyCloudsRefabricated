@@ -181,7 +181,8 @@ public class RendererDHCompat extends Renderer{
 	@Override
 	protected void updateCloudGrid() {
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
-		if (newGrid == null) return;
+		if (newGrid == null)
+			return;
 		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
 				Common.MOD_ID + ":clouds",
 				new DhApiVec3d(0, 0, 0),
@@ -229,8 +230,8 @@ public class RendererDHCompat extends Renderer{
 			return;  //save battery if DH render was disabled.
 		if (cloudGrid == null) {
 			updateCloudGrid();  //directly update at first time
-		} else if (isGridNeedToUpdate()) {
-			startGridUpdateThread();
+		} else if (isGridNeedToUpdate() && isTimeToResampling()) {  //DH jumped vanilla check, so we must check by ourselves
+			tryStartGridUpdateThread();
 		}
 	}
 

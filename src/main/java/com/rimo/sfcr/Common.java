@@ -35,7 +35,7 @@ public class Common implements ModInitializer {
 			ServerLevel world = player.level();
 			ServerPlayNetworking.send(player, new WorldInfoPayload(world.getSeed()));
 			if (CONFIG.isEnableDebug())
-				LOGGER.info("Send info " + world.getSeed() + " to " + player.getName().getString());
+				LOGGER.info("Send info {} to {}", world.getSeed(), player.getName().getString());
 		});
 
 		//weather sender
@@ -47,7 +47,7 @@ public class Common implements ModInitializer {
 						ServerPlayNetworking.send(player, new WeatherPayload(DATA.nextWeather))
 				);
 				if (CONFIG.isEnableDebug())
-					LOGGER.info("Broadcast next weather: " + DATA.nextWeather.name());
+					LOGGER.info("Broadcast next weather: {}", DATA.nextWeather.name());
 			}
 		});
 	}

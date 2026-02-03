@@ -25,6 +25,10 @@ public class Data {
 		setConfig(config);
 	}
 
+	public int getResamplingInterval() {
+		return ((isWeatherChange || isBiomeChange) ? weatheringRefreshSpeed : normalRefreshSpeed) / 5;
+	}
+
 	public void setConfig(Config config) {
 		normalRefreshSpeed = config.getRefreshSpeed().getValue();
 		weatheringRefreshSpeed = config.getWeatherRefreshSpeed().getValue();
@@ -124,7 +128,11 @@ public class Data {
 	}
 
 	private float stepDensity(float target, float current, float speed) {
-		return Math.abs(target - current) > 1f / speed ? (target > current ? current + 1f / speed : current - 1f / speed) : target;
+		return Math.abs(target - current) > 1f / speed ?
+				(target > current ?
+						current + 1f / speed :
+						current - 1f / speed) :
+				target;
 	}
 
 	public enum Weather {

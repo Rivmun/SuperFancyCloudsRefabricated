@@ -30,7 +30,7 @@ public abstract class OptionsMixin {
 	}
 
 	/*
-		always fancy
+		always fancy, to prevent DH disabled vanilla cloudRenderer
 	 */
 	@Inject(method = "getCloudsType", at = @At("RETURN"), cancellable = true)
 	private void getCloudsType(CallbackInfoReturnable<CloudStatus> cir) {

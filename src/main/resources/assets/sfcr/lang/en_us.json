@@ -1,9 +1,11 @@
 {
 	"text.sfcr.option.title": "SuperFancyClouds: Refabricated",
 	"text.sfcr.buildInResourcePack": "SuperFancyClouds Shader",
+	"text.sfcr.shaderpackEnabled": "SFCR disabled when shaderpack loaded.",
 
 	"text.sfcr.category.general": "General",
 	"text.sfcr.option.enableMod": "Enable?",
+	"text.sfcr.option.enableMod.@Tooltip": "Due to compatibility issue, this option always FALSE if you're using shaderpack.",
 	"text.sfcr.option.enableDebug": "Debug Output",
 	"text.sfcr.option.cloudHeight": "Cloud Height Offset",
 	"text.sfcr.option.cloudHeight.@Tooltip": "Measure in cloud block.",

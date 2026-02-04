@@ -1,9 +1,11 @@
 {
 	"text.sfcr.option.title": "超级华丽云：重织",
 	"text.sfcr.buildInResourcePack": "超级华丽云着色器",
+	"text.sfcr.shaderpackEnabled": "当光影包启用时，SFCR 将自动禁用。",
 
 	"text.sfcr.category.general": "常规",
 	"text.sfcr.option.enableMod": "启用模组？",
+	"text.sfcr.option.enableMod.@Tooltip": "由于兼容性问题，该选项在您使用光影包时永远为否。",
 	"text.sfcr.option.enableDebug": "调试输出",
 	"text.sfcr.option.cloudHeight": "云高度偏移",
 	"text.sfcr.option.cloudHeight.@Tooltip": "单位为云块。",

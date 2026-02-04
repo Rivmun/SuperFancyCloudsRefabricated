@@ -87,6 +87,7 @@ public class ConfigScreenCloth {
 				.startBooleanToggle(Component.translatable("text.sfcr.option.enableMod"),
 						CONFIG.isEnableMod())
 				.setDefaultValue(true)
+						.setTooltip(Component.translatable("text.sfcr.option.enableMod.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableMod)
 				.build()
 		);

@@ -90,6 +90,7 @@ public class ConfigScreenYACL {
 						.name(Component.translatable("text.sfcr.category.general"))
 						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("text.sfcr.option.enableMod"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.enableMod.@Tooltip")))
 								.binding(true, CONFIG::isEnableMod, CONFIG::setEnableMod)
 								.controller(BooleanControllerBuilder::create)
 								.build())

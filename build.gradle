@@ -50,6 +50,8 @@ dependencies {
 	modCompileOnly "maven.modrinth:DistantHorizonsApi:${project.distant_horizon_api_version}"
 	//Distant Horizon
 	modRuntimeOnly "maven.modrinth:DistantHorizons:${project.distant_horizon_version}"
+	//Iris
+	modCompileOnly("maven.modrinth:iris:${project.iris_version}")
 }
 
 processResources {

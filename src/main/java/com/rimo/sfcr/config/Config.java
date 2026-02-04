@@ -50,8 +50,8 @@ public class Config {
 	private int dhDistanceMultipler = 1;
 	private int dhHeightEnhance = 0;
 
-	public boolean isEnableMod() {return enableMod;}
-	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod;}
+	public boolean isEnableMod() {return enableMod && !Client.isIrisLoadedShader;}
+	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod && !Client.isIrisLoadedShader;}
 	public int getCloudHeightOffset() {return cloudHeightOffset;}
 	public void setCloudHeightOffset(int cloudHeightOffset) {this.cloudHeightOffset = cloudHeightOffset;}
 	public int getCloudThickness() {return cloudThickness;}

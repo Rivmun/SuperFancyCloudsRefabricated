@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.fabricmc.fabric.api.resource.v1.pack.PackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
@@ -23,6 +24,7 @@ import static com.rimo.sfcr.Common.DATA;
 
 public class Client implements ClientModInitializer {
 	public static final boolean isDistantHorizonsLoaded = FabricLoader.getInstance().isModLoaded("distanthorizons");
+	public static boolean isIrisLoadedShader = false;
 	private static boolean hasServer = false;  //if not, calc density and weather on local; if yes, wait message payload from server.
 	public static boolean isCustomDimensionConfig = false;  //indicate current config is default or not.
 	public static Renderer RENDERER;
@@ -38,6 +40,8 @@ public class Client implements ClientModInitializer {
 
 		//init mod
 		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+			if (FabricLoader.getInstance().isModLoaded("iris"))
+				isIrisLoadedShader = IrisApi.getInstance().getConfig().areShadersEnabled();
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 		});
 

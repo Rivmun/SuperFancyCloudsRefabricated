@@ -30,7 +30,8 @@
 		]
 	},
 	"mixins": [
-		"sfcr.mixins.json"
+		"sfcr.mixins.json",
+		"sfcr.iris.mixins.json"
 	],
 	"accessWidener": "sfcr.accesswidener",
 	"depends": {
@@ -43,6 +44,9 @@
 		"modmenu": "*",
 		"cloth-config2":"*",
 		"yet_another_config_lib_v3": "*"
+	},
+	"conflicts": {
+		"iris": "*"
 	},
 	"custom": {
 		"modmenu": {

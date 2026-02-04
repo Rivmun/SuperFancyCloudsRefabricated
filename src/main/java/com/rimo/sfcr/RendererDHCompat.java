@@ -230,7 +230,7 @@ public class RendererDHCompat extends Renderer{
 			return;  //save battery if DH render was disabled.
 		if (cloudGrid == null) {
 			updateCloudGrid();  //directly update at first time
-		} else if (isGridNeedToUpdate() && isTimeToResampling()) {  //DH jumped vanilla check, so we must check by ourselves
+		} else if (isGridNeedToUpdate() || isTimeToResampling()) {  //DH jumped vanilla check, so we must check by ourselves
 			tryStartGridUpdateThread();
 		}
 	}

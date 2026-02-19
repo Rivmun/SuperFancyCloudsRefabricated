@@ -78,7 +78,7 @@ public abstract class CloudRendererMixin {
 	/*
 		redirect renderPipeline
 	 */
-	@ModifyVariable(method = "render", at = @At("STORE"))
+	@ModifyVariable(method = "render", at = @At("STORE"), name = "renderPipeline")
 	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
 		if (!CONFIG.isEnableMod())
 			return pipeline;

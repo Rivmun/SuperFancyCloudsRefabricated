@@ -64,10 +64,10 @@ public class Renderer {
 	private SimplexNoise sampler;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
 	private float cloudHeight;
-	protected CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
+	protected volatile CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
-	private double lastResamplingTime;
-	protected boolean isResampling = false;
+	protected volatile boolean isResampling = false;
+	private volatile double resamplingTimer = 0.0;
 	private int renderDistance;
 	private int cloudGridWidth;
 	private int cloudThickness;
@@ -98,8 +98,8 @@ public class Renderer {
 						config.getRenderDistance() :
 						vanillaCloudRenderDistance;
 		cloudGridWidth = this.getRenderDistance() * 2 + 1;
-		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grids with null x/z is useless
-			cloudGrid = getCloudGrid(gridX, gridZ);
+//		if (cloudGrid != null)  //ensure gridX/Z isn't null. init grids with null x/z is useless
+//			cloudGrid = getCloudGrid(gridX, gridZ);
 	}
 
 	public void setGridPos(int x, int y, int z) {
@@ -130,7 +130,7 @@ public class Renderer {
 	}
 
 	public void counting(double time) {
-		this.lastResamplingTime += time;
+		this.resamplingTimer += time;
 	}
 
 	protected @Nullable CloudGrid getCloudGrid(int x, int z) {
@@ -204,7 +204,6 @@ public class Renderer {
 				}
 			}
 		}
-		this.lastResamplingTime = 0.0;
 		return new CloudGrid(grid, x, z);
 	}
 
@@ -222,23 +221,33 @@ public class Renderer {
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
 		if (newGrid == null)
 			return;
+		if (cloudGrid != null) {
+			int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
+			int newOffset = Math.abs(gridX - newGrid.centerX) + Math.abs(gridZ - newGrid.centerZ);
+			if (newOffset > oldOffset)
+				return;  //pick grids closer to player
+		}
 		synchronized (this) {
-			if (cloudGrid != null) {
-				int oldOffset = Math.abs(gridX - cloudGrid.centerX) + Math.abs(gridZ - cloudGrid.centerZ);
-				int newOffset = Math.abs(gridX - newGrid.centerX) + Math.abs(gridZ - newGrid.centerZ);
-				if (newOffset > oldOffset)
-					return;  //pick grids closer to player
-			}
 			cloudGrid = newGrid;
-			isResampling = false;
 		}
 	}
 
-	protected synchronized void tryStartGridUpdateThread() {
+	protected void tryStartGridUpdateThread() {
 		if (isResampling)
 			return;
 		isResampling = true;
-		resamplingThread = new Thread(this::updateCloudGrid);
+		resamplingThread = new Thread(() -> {
+			try {
+				this.updateCloudGrid();
+			} catch (Exception e) {
+				//
+			} finally {
+				synchronized (this) {
+					isResampling = false;
+					resamplingTimer = 0.0;
+				}
+			}
+		});
 		resamplingThread.start();
 	}
 
@@ -247,7 +256,7 @@ public class Renderer {
 	}
 
 	public boolean isTimeToResampling() {
-		return lastResamplingTime > DATA.getResamplingInterval();
+		return resamplingTimer > DATA.getResamplingInterval();
 	}
 
 	public void stop() {
@@ -258,7 +267,6 @@ public class Renderer {
 			//Ignore...
 		}
 		cloudGrid = null;
-		lastResamplingTime = 0.0;
 	}
 
 	/*
@@ -270,15 +278,13 @@ public class Renderer {
 	 */
 
 	public void buildMesh(ByteBuffer byteBuffer, boolean isFancy) {
-		if (cloudGrid == null) {
-			cloudGrid = getCloudGrid(gridX, gridZ);  //direct resample at first time
-			if (cloudGrid == null)
-				return;
-		}
-		//vanilla cloudRenderer already checked gridPos, here unnecessary. timeCheck here use to prevent update too frequently.
-		if (isTimeToResampling()) {
-			tryStartGridUpdateThread();
-		}
+		if (this.cloudGrid == null)
+			this.cloudGrid = getCloudGrid(gridX, gridZ);  //resampling directly at first time
+		CloudGrid cloudGrid;  //make a snapshot to prevent concurrent violate
+		cloudGrid = this.cloudGrid;
+		if (cloudGrid == null)
+			return;
+		tryStartGridUpdateThread();  //vanilla renderer already checked grid pos, time checking we made in mixin
 
 		for(int l = 0; l <= 2 * renderDistance; ++l) {
 			for(int xOffset = -l; xOffset <= l; ++xOffset) {
@@ -289,7 +295,7 @@ public class Renderer {
 						for (int h = cloudThickness - 1; h >= 0; h--) {  //insert height traverse
 							if (byteBuffer.remaining() < 30)
 								return;  //java.nio.BufferOverflow Check, 30 is max put amount in single cell.
-							if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness))
+							if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, -zOffset, renderDistance, thickness, cloudGrid))
 								thickness++;
 							else
 								if (thickness > 0)
@@ -302,7 +308,7 @@ public class Renderer {
 					for (int h = cloudThickness - 1; h >= 0; h--) {
 						if (byteBuffer.remaining() < 30)
 							return;
-						if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness))
+						if (this.tryBuildCell(byteBuffer, isFancy, xOffset, h, zOffset, renderDistance, thickness, cloudGrid))
 							thickness++;
 						else
 							if (thickness > 0)
@@ -317,7 +323,7 @@ public class Renderer {
 	}
 
 	//return true if this grids has cells, to sum cloud thickness
-	private boolean tryBuildCell(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness) {
+	private boolean tryBuildCell(ByteBuffer byteBuffer, boolean isFancy, int xOffset, int h, int zOffset, int renderDistance, int thickness, CloudGrid cloudGrid) {
 		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grids pos
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
 		if (x < 0 || x >= cloudGrid.grids.length || z < 0 || z >= cloudGrid.grids.length)  //check bound

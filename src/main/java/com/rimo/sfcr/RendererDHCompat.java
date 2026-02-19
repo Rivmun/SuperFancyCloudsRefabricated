@@ -22,7 +22,7 @@ import java.util.List;
 	We convert our cloudGrid to renderableBoxGroup and add it to DH's renderPass
 	Also, thread-ify it.
  */
-public class RendererDHCompat extends Renderer{
+public class RendererDHCompat extends Renderer {
 	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
 	private IDhApiRenderableBoxGroup group;
 
@@ -124,15 +124,15 @@ public class RendererDHCompat extends Renderer{
 
 						// Add AABB box
 						result.add(new DhApiRenderableBox(
-								new DhApiVec3d(  //TODO: why size must * 2?
-										(xMin - w / 2) * CLOUD_BLOCK_WIDTH,  //offset to center
-										zMin * CLOUD_BLOCK_HEIGHT,
-										(yMin - w / 2) * CLOUD_BLOCK_WIDTH
+								new DhApiVec3d(  //TODO: why size must * 2 to same to vanilla?
+										(xMin - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //offset to center
+										zMin * CLOUD_BLOCK_HEIGHT * 2,
+										(yMin - w / 2) * CLOUD_BLOCK_WIDTH * 2
 								),
 								new DhApiVec3d(
-										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH,  //at least one block size
-										++zMax * CLOUD_BLOCK_HEIGHT,
-										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH
+										(++xMax - w / 2) * CLOUD_BLOCK_WIDTH * 2,  //++at least one block size
+										++zMax * CLOUD_BLOCK_HEIGHT * 2,
+										(++yMax - w / 2) * CLOUD_BLOCK_WIDTH * 2
 								),
 								new Color(255,255,255,255),  //color change by time, here just placeholder
 								EDhApiBlockMaterial.UNKNOWN
@@ -183,6 +183,12 @@ public class RendererDHCompat extends Renderer{
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
 		if (newGrid == null)
 			return;
+		if (cloudGrid != null) {
+			int oldOffset = Math.abs(gridX - cloudGrid.centerX()) + Math.abs(gridZ - cloudGrid.centerZ());
+			int newOffset = Math.abs(gridX - newGrid.centerX()) + Math.abs(gridZ - newGrid.centerZ());
+			if (newOffset > oldOffset)
+				return;  //pick grids closer to player
+		}
 		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
 				Common.MOD_ID + ":clouds",
 				new DhApiVec3d(0, 0, 0),
@@ -194,19 +200,12 @@ public class RendererDHCompat extends Renderer{
 		newGroup.setShading(cloudShading);
 		newGroup.setPreRenderFunc(renderParam -> preRender(newGroup));
 		synchronized (this) {
-			if (cloudGrid != null) {
-				int oldOffset = Math.abs(gridX - cloudGrid.centerX()) + Math.abs(gridZ - cloudGrid.centerZ());
-				int newOffset = Math.abs(gridX - newGrid.centerX()) + Math.abs(gridZ - newGrid.centerZ());
-				if (newOffset > oldOffset)
-					return;  //pick grids closer to player
-			}
 			IDhApiCustomRenderRegister renderRegister = DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister();
 			if (group != null)
 				renderRegister.remove(group.getId());  //clear old group
 			renderRegister.add(newGroup);
 			cloudGrid = newGrid;
 			group = newGroup;
-			isResampling = false;
 		}
 	}
 
@@ -243,11 +242,11 @@ public class RendererDHCompat extends Renderer{
 		//pos calc copy from net.minecraft.client.renderer.CloudRenderer:render()
 		float cloudPhase = (float)(Minecraft.getInstance().gameRenderer.getLevelRenderState().gameTime % ((long) 256 * 400L))
 				+ tickCounter.getGameTimeDeltaPartialTick(false);
-		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);
+		double x = cameraPos.x + (double)(cloudPhase * 0.030000001F);  //TODO: why cloudLayer's x pos is unstable in game?
 		double z = cameraPos.z + 3.96F;
-		double y = getCloudHeight();
-		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH;  //offset by grid center
-		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH;
+		double y = getCloudHeight();  //TODO: why cloudHeight is follow by player?
+		x -= cloudGrid.centerX() * CLOUD_BLOCK_WIDTH * 2;  //offset by grid center
+		z -= cloudGrid.centerZ() * CLOUD_BLOCK_WIDTH * 2;
 
 		/* TODO: culling?
 		    but we have only one group. considering is unnecessary..

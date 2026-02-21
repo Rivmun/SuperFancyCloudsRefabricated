@@ -12,7 +12,7 @@ import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.LightType;
 
-public class CloudData implements CloudDataImplement {
+public class CloudData implements ICloudData {
 
 	private static SimplexNoiseSampler cloudNoise;
 

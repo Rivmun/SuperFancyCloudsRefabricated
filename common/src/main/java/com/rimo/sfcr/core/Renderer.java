@@ -442,7 +442,7 @@ public class Renderer {
 
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
-			t = t > 22500 ? t - 22000 : t + 1500;
+			t = t > 22500 ? t - 22500 : t + 1500;
 			r = (int) (r * (1 - Math.sin(t / 2000d * Math.PI) / 8));
 			g = (int) (g * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
 			b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));

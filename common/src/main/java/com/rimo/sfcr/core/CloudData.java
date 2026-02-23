@@ -128,25 +128,26 @@ public class CloudData implements ICloudData {
 					var pz = (startZ - width / 2f + cz + 0.5f) * CONFIG.getCloudBlockSize();
 
 					// calculating density...
-					if (CONFIG.isEnableWeatherDensity() && CONFIG.isBiomeDensityByChunk()) {
-						if (CONFIG.isBiomeDensityUseLoadedChunk()) {
-							var vec = new Vec2f(cx - width / 2, cz - width / 2).normalize();		// stepping pos near towards to player
-							var px2 = px;
-							var pz2 = pz;
-							while (!world.getChunkManager().isChunkLoaded((int) px2 / 16, (int) pz2 / 16) && Math.abs(scrollX - px) + Math.abs(scrollZ - pz) > CONFIG.getCloudBlockSize() * 4) {
-								px2 -= vec.x * CONFIG.getCloudBlockSize();
-								pz2 -= vec.y * CONFIG.getCloudBlockSize();
+					if (CONFIG.isEnableWeatherDensity()) {
+						if (CONFIG.isBiomeDensityByChunk()) {
+							if (CONFIG.isBiomeDensityUseLoadedChunk()) {
+								var cellPos = new Vec2f((float) px, (float) pz);
+								var unit = cellPos.normalize().multiply(16);  //measure as chunk
+								while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
+										&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
+									cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
+
+								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) cellPos.x, 80, (int) cellPos.y)))
+										? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) cellPos.x, 80, (int) cellPos.y)).value().getPrecipitation(new BlockPos((int) cellPos.x, 80, (int) cellPos.y))))
+										: getCloudDensityThreshold(densityByWeather, densityByBiome);
+							} else {
+								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px, 80, (int) pz)))
+										? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px, 80, (int) pz)).value().getPrecipitation(new BlockPos((int) px, 80, (int) pz))))
+										: getCloudDensityThreshold(densityByWeather, densityByBiome);
 							}
-							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px2, 80, (int) pz2)))
-									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px2, 80, (int) pz2)).value().getPrecipitation(new BlockPos((int) px2, 80, (int) pz2))))
-									: getCloudDensityThreshold(densityByWeather, densityByBiome);
 						} else {
-							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px, 80, (int) pz)))
-									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px, 80, (int) pz)).value().getPrecipitation(new BlockPos((int) px, 80, (int) pz))))
-									: getCloudDensityThreshold(densityByWeather, densityByBiome);
+							f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 						}
-					} else {
-						f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 					}
 
 					// sampling...

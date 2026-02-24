@@ -1,10 +1,11 @@
 package com.rimo.sfcr.config;
 
-import com.rimo.sfcr.Common;
+import com.rimo.sfcr.Client;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
+import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.MinecraftClient;
@@ -13,6 +14,8 @@ import net.minecraft.text.Text;
 
 import java.util.List;
 
+import static com.rimo.sfcr.Client.applyConfigChange;
+import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class ConfigScreen {
@@ -26,16 +29,18 @@ public class ConfigScreen {
 	ConfigCategory clouds = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.clouds"));
 	ConfigCategory fog = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
-
-	private final CommonConfig CONFIG = Common.CONFIG;
+	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
 
 	private int fogMin, fogMax;
+	private final boolean oldEnableMod = CONFIG.isEnableMod();
+	private final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
 
 	public Screen buildScreen() {
 		buildGeneralCategory();
 		buildCloudsCategory();
 		buildFogCategory();
 		buildDensityCategory();
+		buildCompatCategory();
 		builder.setTransparentBackground(true);
 
 		//Update when saving
@@ -45,11 +50,25 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			Common.CONFIG.save();
+			CONFIG.save();
 			DATA.setConfig(CONFIG);
+			applyConfigChange(oldEnableMod, oldEnableDHCompat);
 		});
 
 		return builder.build();
+	}
+
+	private void buildCompatCategory() {
+		//Distant Horizons
+		BooleanListEntry dhCompatEntry = entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.DHCompat"),
+						CONFIG.isEnableDHCompat())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.build();
+		if (Client.isDistantHorizonsLoaded)
+			compat.addEntry(dhCompatEntry);
 	}
 
 	private void buildGeneralCategory() {
@@ -137,18 +156,6 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableServerConfig)
 				.build()
 		);
-		//server sync time
-		general.addEntry(entryBuilder
-				.startIntSlider(Text.translatable("text.sfcr.option.syncTime")
-						, CONFIG.getSecPerSync() / 15
-						, 1
-						, 20)
-				.setDefaultValue(4)
-				.setTextGetter(value -> Text.translatable("text.sfcr.second", value * 15))
-				.setTooltip(Text.translatable("text.sfcr.option.syncTime.@Tooltip"))
-				.setSaveConsumer(value -> CONFIG.setSecPerSync(value * 15))
-				.build()
-		);
 		//DEBUG
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.debug")
@@ -180,9 +187,9 @@ public class ConfigScreen {
 		clouds.addEntry(entryBuilder
 				.startDropdownMenu(Text.translatable("text.sfcr.option.cloudBlockSize")
 						,TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
-				.setDefaultValue(16)
+				.setDefaultValue(12)
 				.setSuggestionMode(false)
-				.setSelections(List.of(2, 4, 8, 16))
+				.setSelections(List.of(2, 4, 8, 12, 16))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudBlockSize.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudBlockSize)
 				.build()
@@ -263,15 +270,15 @@ public class ConfigScreen {
 	}
 
 	private void buildFogCategory() {
-		//fog auto distance
-		fog.addEntry(entryBuilder
+		BooleanListEntry autoFog = entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.fogAutoDistance")
 						, CONFIG.isFogAutoDistance())
 				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.fogAutoDistance.@Tooltip"))
 				.setSaveConsumer(CONFIG::setFogAutoDistance)
-				.build()
-		);
+				.build();
+		//fog auto distance
+		fog.addEntry(autoFog);
 		//fog min dist.
 		fog.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.fogMinDistance")
@@ -282,6 +289,7 @@ public class ConfigScreen {
 				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.fogMinDistance.@Tooltip"))
 				.setSaveConsumer(newValue -> fogMin = newValue)
+				.setDisplayRequirement(Requirement.isFalse(autoFog))
 				.build()
 		);
 		//fog max dist.
@@ -294,6 +302,7 @@ public class ConfigScreen {
 				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.fogMaxDistance.@Tooltip"))
 				.setSaveConsumer(newValue -> fogMax = newValue)
+				.setDisplayRequirement(Requirement.isFalse(autoFog))
 				.build()
 		);
 	}

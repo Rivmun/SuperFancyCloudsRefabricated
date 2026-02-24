@@ -122,8 +122,6 @@ public class CloudData {
 				}
 			}
 		}
-
-		computingCloudMesh();
 	}
 
 	/* - - - - - Sampler Core - - - - - */
@@ -177,7 +175,7 @@ public class CloudData {
 		vertexList.add(z - width / 2f);
 	}
 
-	protected void computingCloudMesh() {
+	protected CloudData computingCloudMesh() {
 		for (int cx = 0; cx < width; cx++) {
 			for (int cy = 0; cy < height; cy++) {
 				for (int cz = 0; cz < width; cz++) {
@@ -247,6 +245,7 @@ public class CloudData {
 				}
 			}
 		}
+		return this;
 	}
 
 	public enum CloudDataType {

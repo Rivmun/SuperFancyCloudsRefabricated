@@ -31,9 +31,6 @@ public class CloudMidData extends CloudData {
 				}
 			}
 		}
-
-		// Use normal function
-		computingCloudMesh();
 	}
 
 }

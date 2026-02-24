@@ -33,6 +33,5 @@ public class CloudFadeData extends CloudData {
 				}
 			}
 		}
-		computingCloudMesh();
 	}
 }

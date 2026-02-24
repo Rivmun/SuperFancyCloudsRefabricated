@@ -2,7 +2,6 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.CommonConfig;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
@@ -19,17 +18,22 @@ import org.joml.Matrix4f;
 import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
-	private final Identifier whiteTexture = new Identifier(Common.MOD_ID, "white.png");
-	private final ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<>();
+	private final Identifier whiteTexture = new Identifier(MOD_ID, "white.png");
+	protected final ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<>();
 	private VertexBuffer cloudsBuffer;
-	private boolean isResampling = false;
-	private Thread resamplingThread;
-	private float cloudHeight;
-	private int oldGridX, oldGridZ;
-	private Vec3d oldColor = Vec3d.ZERO;
-	private double resamplingTimer = 0.0;  //manual update counter
+	protected boolean isResampling = false;
+	protected Thread resamplingThread;
+	protected float cloudHeight;
+	protected int oldGridX, oldGridZ;
+	protected Vec3d oldColor = Vec3d.ZERO;
+	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
 	public int cullStateSkipped, cullStateShown;  //debug counter
+
+	public Renderer() {}
+	public Renderer(Renderer renderer) {
+		renderer.stop();
+	}
 
 	//Rewrite of vanilla renderClouds invoke by mixin
 	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
@@ -39,19 +43,12 @@ public class Renderer {
 			return;
 		this.cloudHeight = cloudHeight;
 
-		//Setup render system
-		RenderSystem.disableCull();
-		RenderSystem.enableBlend();
-		RenderSystem.enableDepthTest();
-		RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
-		RenderSystem.depthMask(true);
-
 		//vanilla cloud pos calculation
 		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
 		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
 		double timeOffset = (ticks + tickDelta) * 0.03F;
-		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //pos where to draw cloud layer
-		double cloudY = cloudHeight - (float)cameraY + 0.33F;
+		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
+		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
 		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
@@ -61,11 +58,7 @@ public class Renderer {
 		float zOffsetInGrid = (float) (cloudZ - Math.floor(cloudZ));
 		Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
-		cloudColor = new Vec3d(
-				cloudColor.x + (1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
-				cloudColor.y + (1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
-				cloudColor.z + (1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
-		);
+		cloudColor = getBrightMultiplier(cloudColor);
 		synchronized (this) {
 			xOffsetInGrid += GridX - oldGridX;
 			zOffsetInGrid += GridZ - oldGridZ;
@@ -93,6 +86,13 @@ public class Renderer {
 			});
 			resamplingThread.start();
 		}
+
+		//Setup render system
+		RenderSystem.disableCull();
+		RenderSystem.enableBlend();
+		RenderSystem.enableDepthTest();
+		RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
+		RenderSystem.depthMask(true);
 
 		//cloud mesh rebuilt
 		/* NOTE:
@@ -288,16 +288,15 @@ public class Renderer {
 		}
 	}
 
-	private void collectCloudData(int x, int z) {
+	protected void collectCloudData(int x, int z) {
 		CloudData tmp;
-		CloudFadeData fadeIn = null, fadeOut = null;
-		CloudMidData midBody = null;
+		CloudData fadeIn = null, fadeOut = null, midBody = null;
 
-		tmp = new CloudData(x, z, DATA.densityByWeather, DATA.densityByBiome);
+		tmp = new CloudData(x, z, DATA.densityByWeather, DATA.densityByBiome).computingCloudMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN);
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT);
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY);
+			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN).computingCloudMesh();
+			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT).computingCloudMesh();
+			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY).computingCloudMesh();
 		}
 		synchronized (this) {
 			cloudDataGroup.clear();
@@ -310,7 +309,7 @@ public class Renderer {
 		}
 	}
 
-	private int getCloudColor(long worldTime, CloudData data) {
+	protected int getCloudColor(long worldTime, @Nullable CloudData data) {
 		int a = 255;
 		int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
 		int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
@@ -318,10 +317,13 @@ public class Renderer {
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
-		switch (data.getDataType()) {
-			case NORMAL, TRANS_MID_BODY: break;
-			case TRANS_IN: a = (int) (a - a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f); break;
-			case TRANS_OUT: a = (int) (a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f); break;
+		if (data != null) {
+			a = switch (data.getDataType()) {
+				case NORMAL -> a;
+				case TRANS_IN -> (int) (a - a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f);
+				case TRANS_MID_BODY -> a;
+				case TRANS_OUT -> (int) (a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f);
+			};
 		}
 
 		// Color changed by time...
@@ -338,6 +340,14 @@ public class Renderer {
 		}
 
 		return ColorHelper.Argb.getArgb(a, r, g, b);
+	}
+
+	protected Vec3d getBrightMultiplier(Vec3d cloudColor) {
+		return cloudColor.add(
+				(1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
+				(1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
+				(1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
+		);
 	}
 
 	public float getCloudHeight() {

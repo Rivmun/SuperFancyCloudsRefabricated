@@ -1,6 +1,6 @@
 package com.rimo.sfcr.mixin;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.SimpleOption;
 import org.spongepowered.asm.mixin.Final;
@@ -18,12 +18,11 @@ public abstract class GameOptionsMixin {
 	private SimpleOption<Integer> viewDistance;
 
 	//Update cloudRenderDistance when view distance is changed.
-	@Inject(method = "write", at = @At("RETURN"), cancellable = true)
+	@Inject(method = "write", at = @At("RETURN"))
 	private void updateCloudRenderDistance(CallbackInfo ci) {
-		if (SFCReMod.COMMON_CONFIG.isCloudRenderDistanceFitToView()) {
-			SFCReMod.COMMON_CONFIG.setCloudRenderDistance(viewDistance.getValue() * 12);
-			SFCReMod.COMMON_CONFIG.save();
+		if (Common.CONFIG.isCloudRenderDistanceFitToView()) {
+			Common.CONFIG.setCloudRenderDistance(viewDistance.getValue() * 12);
+			Common.CONFIG.save();
 		}
-		ci.cancel();
 	}
 }

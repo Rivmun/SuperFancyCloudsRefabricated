@@ -1,6 +1,5 @@
 package com.rimo.sfcr.config;
 
-import com.rimo.sfcr.util.CloudRefreshSpeed;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
@@ -27,7 +26,7 @@ public class CoreConfig {
 	protected int cloudDensityPercent = 25;
 	protected int rainDensityPercent = 60;
 	protected int thunderDensityPercent = 90;
-	protected CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
+	protected CommonConfig.CloudRefreshSpeed densityChangingSpeed = CommonConfig.CloudRefreshSpeed.SLOW;
 	private int snowDensity = 60;
 	private int rainDensity = 90;
 	private int noneDensity = 0;
@@ -48,7 +47,7 @@ public class CoreConfig {
 	public int getCloudDensityPercent() {return cloudDensityPercent;}
 	public int getRainDensityPercent() {return rainDensityPercent;}
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
-	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
+	public CommonConfig.CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getSnowDensity() {return snowDensity;}
 	public int getRainDensity() {return rainDensity;}
 	public int getNoneDensity() {return noneDensity;}
@@ -69,7 +68,7 @@ public class CoreConfig {
 	public void setCloudDensityPercent(int density) {cloudDensityPercent = density;}
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
-	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
+	public void setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setSnowDensity(int density) {snowDensity = density;}
 	public void setRainDensity(int density) {rainDensity = density;}
 	public void setNoneDensity(int density) {noneDensity = density;}

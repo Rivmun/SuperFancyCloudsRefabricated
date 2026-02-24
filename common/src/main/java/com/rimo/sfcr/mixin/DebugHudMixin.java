@@ -1,6 +1,7 @@
 package com.rimo.sfcr.mixin;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.gui.hud.DebugHud;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,11 +17,11 @@ public abstract class DebugHudMixin {
 		List<String> list = callback.getReturnValue();
 
 		// Add Debug Strings
-		if (SFCReMod.COMMON_CONFIG.isEnableMod())
+		if (Common.CONFIG.isEnableMod())
 			list.add("[SFCR] Mesh Built: " +
-					 SFCReMod.RENDERER.cullStateShown + " / " +
-					(SFCReMod.RENDERER.cullStateSkipped + SFCReMod.RENDERER.cullStateShown) + " faces, " +
-					 SFCReMod.RENDERER.cullStateSkipped + " Skipped.");
+					 Client.RENDERER.cullStateShown + " / " +
+					(Client.RENDERER.cullStateSkipped + Client.RENDERER.cullStateShown) + " faces, " +
+					 Client.RENDERER.cullStateSkipped + " Skipped.");
 
 		callback.setReturnValue(list);
 	}

@@ -1,8 +1,6 @@
 package com.rimo.sfcr.config;
 
-import com.rimo.sfcr.SFCReMod;
-import com.rimo.sfcr.util.CloudRefreshSpeed;
-import com.rimo.sfcr.util.CullMode;
+import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -14,6 +12,8 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
 import java.util.List;
+
+import static com.rimo.sfcr.Common.DATA;
 
 public class ConfigScreen {
 
@@ -27,7 +27,7 @@ public class ConfigScreen {
 	ConfigCategory fog = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.fog"));
 	ConfigCategory density = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.density"));
 
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
+	private final CommonConfig CONFIG = Common.CONFIG;
 
 	private int fogMin, fogMax;
 
@@ -45,8 +45,8 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			SFCReMod.COMMON_CONFIG.save();
-			SFCReMod.RENDERER.updateConfig(CONFIG);
+			Common.CONFIG.save();
+			DATA.setConfig(CONFIG);
 		});
 
 		return builder.build();
@@ -90,12 +90,12 @@ public class ConfigScreen {
 				.build()
 		);
 		//cull mode
-		EnumListEntry<CullMode> cullMode = entryBuilder
+		EnumListEntry<CommonConfig.CullMode> cullMode = entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.cullMode")
-						, CullMode.class
+						, CommonConfig.CullMode.class
 						, CONFIG.getCullMode())
-				.setDefaultValue(CullMode.RECTANGULAR)
-				.setEnumNameProvider(value -> ((CullMode) value).getName())
+				.setDefaultValue(CommonConfig.CullMode.RECTANGULAR)
+				.setEnumNameProvider(value -> ((CommonConfig.CullMode) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.cullMode.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCullMode)
 				.build();
@@ -109,7 +109,7 @@ public class ConfigScreen {
 				.setDefaultValue(10)
 				.setTextGetter(value -> Text.of(value / 10f + "x"))
 				.setTooltip(Text.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
-				.setRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
+				.setRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
 				.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 				.build()
 		);
@@ -377,10 +377,10 @@ public class ConfigScreen {
 		//cloud refresh speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.cloudRefreshSpeed")
-						,CloudRefreshSpeed.class
+						, CommonConfig.CloudRefreshSpeed.class
 						, CONFIG.getNormalRefreshSpeed())
-				.setDefaultValue(CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CommonConfig.CloudRefreshSpeed.SLOW)
+				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setNormalRefreshSpeed)
 				.build()
@@ -388,10 +388,10 @@ public class ConfigScreen {
 		//weather refresh speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.weatherRefreshSpeed")
-						,CloudRefreshSpeed.class
+						, CommonConfig.CloudRefreshSpeed.class
 						, CONFIG.getWeatherRefreshSpeed())
-				.setDefaultValue(CloudRefreshSpeed.FAST)
-				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CommonConfig.CloudRefreshSpeed.FAST)
+				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.weatherRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherRefreshSpeed)
 				.build()
@@ -399,10 +399,10 @@ public class ConfigScreen {
 		//density changing speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.densityChangingSpeed")
-						,CloudRefreshSpeed.class
+						, CommonConfig.CloudRefreshSpeed.class
 						, CONFIG.getDensityChangingSpeed())
-				.setDefaultValue(CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CommonConfig.CloudRefreshSpeed.SLOW)
+				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.densityChangingSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setDensityChangingSpeed)
 				.build()

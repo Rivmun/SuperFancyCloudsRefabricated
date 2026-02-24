@@ -2,10 +2,9 @@ package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.rimo.sfcr.SFCReMod;
-import com.rimo.sfcr.util.CloudRefreshSpeed;
-import com.rimo.sfcr.util.CullMode;
+import com.rimo.sfcr.Common;
 import dev.architectury.platform.Platform;
+import net.minecraft.text.Text;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -112,9 +111,9 @@ public class CommonConfig extends CoreConfig {
 	}
 
 	//load
-	public void load() {
+	public CommonConfig load() {
 		Gson gson = new Gson();
-		Path path = Platform.getConfigFolder().resolve(SFCReMod.MOD_ID + ".json");
+		Path path = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
 		if (Files.exists(path)) {
 			try {
 				BufferedReader reader = Files.newBufferedReader(path);
@@ -122,24 +121,70 @@ public class CommonConfig extends CoreConfig {
 				reader.close();
 				this.setCommonConfig(config);
 			} catch (IOException | JsonParseException e) {
-				SFCReMod.exceptionCatcher(e);
+				Common.exceptionCatcher(e);
 			}
 		} else {
 			this.save();
 		}
+		return this;
 	}
 
 	//save
 	public void save() {
 		Gson gson = new Gson();
-		Path path = Platform.getConfigFolder().resolve(SFCReMod.MOD_ID + ".json");
+		Path path = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
 		try {
 			Files.createDirectories(path.getParent());
 			BufferedWriter writer = Files.newBufferedWriter(path);
 			gson.toJson(this, writer);
 			writer.close();
 		} catch (IOException e) {
-			SFCReMod.exceptionCatcher(e);
+			Common.exceptionCatcher(e);
+		}
+	}
+
+	public enum CloudRefreshSpeed {
+		VERY_SLOW,
+		SLOW,
+		NORMAL,
+		FAST,
+		VERY_FAST;
+
+		public int getValue() {
+			switch (this) {
+				case VERY_FAST -> {return 5;}
+				case FAST -> {return 10;}
+				case NORMAL -> {return 20;}
+				case SLOW -> {return 30;}
+				case VERY_SLOW -> {return 40;}
+			}
+			return 20;
+		}
+
+		public Text getName() {
+			switch (this) {
+				case VERY_FAST -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_FAST");}
+				case FAST -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.FAST");}
+				case NORMAL -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.NORMAL");}
+				case SLOW -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.SLOW");}
+				case VERY_SLOW -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW");}
+			}
+			return Text.of("");
+		}
+	}
+
+	public enum CullMode {
+		NONE,
+		CIRCULAR,
+		RECTANGULAR;
+
+		public Text getName() {
+			switch (this) {
+				case NONE -> {return Text.translatable("text.sfcr.disabled");}
+				case CIRCULAR -> {return Text.translatable("text.sfcr.enum.cullMode.circular");}
+				case RECTANGULAR -> {return Text.translatable("text.sfcr.enum.cullMode.rectangular");}
+			}
+			return null;
 		}
 	}
 }

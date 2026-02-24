@@ -2,11 +2,8 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.CommonConfig;
-import com.rimo.sfcr.util.CloudDataType;
-import com.rimo.sfcr.util.CullMode;
-import com.rimo.sfcr.util.WeatherType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
@@ -19,233 +16,148 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
+import static com.rimo.sfcr.Common.*;
+
 public class Renderer {
+	private final Identifier whiteTexture = new Identifier(Common.MOD_ID, "white.png");
+	private final ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<>();
+	private VertexBuffer cloudsBuffer;
+	private boolean isResampling = false;
+	private Thread resamplingThread;
+	private float cloudHeight;
+	private int oldGridX, oldGridZ;
+	private Vec3d oldColor = Vec3d.ZERO;
+	private double resamplingTimer = 0.0;  //manual update counter
+	private int rebuildTimer = 0;  //measure in ticks
+	public int cullStateSkipped, cullStateShown;  //debug counter
 
-	private final Runtime RUNTIME = SFCReMod.RUNTIME;
-	private final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
-
-	private float cloudDensityByWeather = 0f;
-	private float cloudDensityByBiome = 0f;
-	private float targetDownFall = 1f;
-	private boolean isWeatherChange = false;
-	private boolean isBiomeChange = false;
-	public float cloudHeight;
-
-	private int normalRefreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
-	private int weatheringRefreshSpeed = CONFIG.getWeatherRefreshSpeed().getValue() / 2;
-	private int densityChangingSpeed = CONFIG.getDensityChangingSpeed().getValue();
-
-	private final Identifier whiteTexture = new Identifier("sfcr", "white.png");
-
-	public VertexBuffer cloudBuffer;
-
-	public ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<>();
-
-	public Thread dataProcessThread;
-	public boolean isProcessingData = false;
-
-	public int moveTimer = 40;
-	public double time;
-	private double timeRebuild;
-
-	public double xScroll;
-	public double zScroll;
-
-	public int cullStateSkipped = 0;
-	public int cullStateShown = 0;
-
-	public void init() {
-		CloudData.initSampler(SFCReMod.RUNTIME.seed);
-		isProcessingData = false;
-	}
-
-	public void tick() {
-
-		if (MinecraftClient.getInstance().player == null)
+	//Rewrite of vanilla renderClouds invoke by mixin
+	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	                   ClientWorld world, int ticks) {
+		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+		if (Float.isNaN(cloudHeight))
 			return;
+		this.cloudHeight = cloudHeight;
 
-		if (!CONFIG.isEnableMod())
-			return;
+		//Setup render system
+		RenderSystem.disableCull();
+		RenderSystem.enableBlend();
+		RenderSystem.enableDepthTest();
+		RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
+		RenderSystem.depthMask(true);
 
-		if (MinecraftClient.getInstance().isInSingleplayer() && MinecraftClient.getInstance().isPaused())
-			return;
+		//vanilla cloud pos calculation
+		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
+		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
+		double timeOffset = (ticks + tickDelta) * 0.03F;
+		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //pos where to draw cloud layer
+		double cloudY = cloudHeight - (float)cameraY + 0.33F;
+		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
+		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
+		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
+		int GridZ = (int) Math.floor(cloudZ);
+		float xOffsetInGrid = (float) (cloudX - Math.floor(cloudX));  //cloud offset in current grid
+		//float yOffsetInGrid = (float) ((cloudY / CLOUD_BLOCK_HEIGHT - Math.floor(cloudY / CLOUD_BLOCK_HEIGHT)) * CLOUD_BLOCK_HEIGHT);
+		float zOffsetInGrid = (float) (cloudZ - Math.floor(cloudZ));
+		Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
-		if (!MinecraftClient.getInstance().world.getDimension().hasSkyLight())
-			return;
+		cloudColor = new Vec3d(
+				cloudColor.x + (1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
+				cloudColor.y + (1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
+				cloudColor.z + (1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
+		);
+		synchronized (this) {
+			xOffsetInGrid += GridX - oldGridX;
+			zOffsetInGrid += GridZ - oldGridZ;
+		}
 
-		//If already processing, don't start up again.
-		if (isProcessingData)
-			return;
+		//refresh check
+		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
+		if (! isResampling && resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4) {
+			isResampling = true;
+			resamplingTimer = 0.0;
+			oldColor = cloudColor;
+			resamplingThread = new Thread(() -> {  //start data refresh thread
+				try {
+					collectCloudData(GridX, GridZ);
+				} catch (Exception e) {
+					exceptionCatcher(e);
+				} finally {
+					synchronized (this) {
+						oldGridX = GridX;  //delayed update to prevent flicker
+						oldGridZ = GridZ;
+					}
+					rebuildTimer = 999;  //let cloudCell rebuilt instantly
+					isResampling = false;
+				}
+			});
+			resamplingThread.start();
+		}
 
-		var player = MinecraftClient.getInstance().player;
-		var world = MinecraftClient.getInstance().world;
-		var xScroll = (int) (player.getX() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
-		var zScroll = (int) (player.getZ() / CONFIG.getCloudBlockSize()) * CONFIG.getCloudBlockSize();
-
-		int timeOffset = (int) (Math.floor(time / 6) * 6);
-
-		RUNTIME.clientTick(world);
-
-		//Detect Weather Change
-		if (CONFIG.isEnableWeatherDensity()) {
-			if (world.isThundering()) {
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather < CONFIG.getThunderDensityPercent() / 100f;
-			} else if (world.isRaining()) {
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.RAIN && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather != CONFIG.getRainDensityPercent() / 100f;
-			} else {		//Clear...
-				isWeatherChange = RUNTIME.nextWeather != WeatherType.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
-						|| cloudDensityByWeather > CONFIG.getCloudDensityPercent() / 100f;
+		//cloud mesh rebuilt
+		/* NOTE:
+		 * When cloudData is too HUGE, .upload() will get big lag, so we made a soft culling in rebuild to decrease upload size.
+		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
+		 * We made a lot of small lags to replace a single big lag, it's hard to say which is better...
+		 */
+		if (++ rebuildTimer > CONFIG.getRebuildInterval()) {
+			rebuildTimer = 0;
+			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), xOffsetInGrid, cloudHeight);
+			if (cb != null) {
+				if (cloudsBuffer != null)
+					cloudsBuffer.close();
+				cloudsBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+				cloudsBuffer.bind();
+				cloudsBuffer.upload(cb);
+				VertexBuffer.unbind();
 			}
+		}
 
-			//Detect Biome Change
-			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effect if use chunk data.
-				if (!CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = CONFIG.getDownfall(world.getBiome(player.getBlockPos()).value().getPrecipitation(player.getBlockPos()));
-				isBiomeChange = cloudDensityByBiome != targetDownFall;
+		//Setup shader
+		RenderSystem.setShader(GameRenderer::getPositionTexColorNormalProgram);
+		RenderSystem.setShaderTexture(0, whiteTexture);
+		if (CONFIG.isEnableFog()) {
+			BackgroundRenderer.setFogBlack();
+			if (!CONFIG.isFogAutoDistance()) {
+				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
+				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
+			} else {
+				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
+				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 			}
 		} else {
-			isWeatherChange = false;
-			isBiomeChange = false;
+			BackgroundRenderer.clearFog();
+		}
+		matrices.push();
+		matrices.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
+		matrices.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
+		RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
+
+		if (cloudsBuffer != null) {
+			cloudsBuffer.bind();
+			for (int s = 0; s < 2; ++s) {
+				if (s == 0) {
+					RenderSystem.colorMask(false, false, false, false);
+				} else {
+					RenderSystem.colorMask(true, true, true, true);
+				}
+				cloudsBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
+			}
+			VertexBuffer.unbind();
 		}
 
-		//Refresh Processing...
-		if (timeOffset != moveTimer || xScroll != this.xScroll || zScroll != this.zScroll) {
-			moveTimer = timeOffset;
-			isProcessingData = true;
-
-			//Density Change by Weather
-			if (CONFIG.isEnableWeatherDensity()) {
-				if (isWeatherChange) {
-					switch (RUNTIME.nextWeather) {
-						case THUNDER -> cloudDensityByWeather = nextDensityStep(CONFIG.getThunderDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
-						case RAIN -> cloudDensityByWeather = nextDensityStep(CONFIG.getRainDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
-						case CLEAR -> cloudDensityByWeather = nextDensityStep(CONFIG.getCloudDensityPercent() / 100f, cloudDensityByWeather, densityChangingSpeed);
-					}
-				} else {
-					switch (RUNTIME.nextWeather) {
-						case THUNDER -> cloudDensityByWeather = CONFIG.getThunderDensityPercent() / 100f;
-						case RAIN -> cloudDensityByWeather = CONFIG.getRainDensityPercent() / 100f;
-						case CLEAR -> cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f;
-					}
-				}
-				//Density Change by Biome
-				if (!CONFIG.isBiomeDensityByChunk()) {
-					cloudDensityByBiome = isBiomeChange ? nextDensityStep(targetDownFall, cloudDensityByBiome, densityChangingSpeed) : targetDownFall;
-				} else {
-					cloudDensityByBiome = 0.5f;		//Output common value if use chunk.
-				}
-			} else {		//Initialize if disabled detect in rain/thunder.
-				cloudDensityByWeather = CONFIG.getCloudDensityPercent() / 100f;
-				cloudDensityByBiome = 0f;
-			}
-
-			dataProcessThread = new Thread(() -> collectCloudData(xScroll, zScroll));
-			dataProcessThread.start();
-
-			if (CONFIG.isEnableDebug()) {
-				SFCReMod.LOGGER.info("wc: " + isWeatherChange + ", bc: " + isBiomeChange + ", wd: " + cloudDensityByWeather + ", bd: " + cloudDensityByBiome);
-			}
-		}
+		//Restore render system
+		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+		matrices.pop();
+		RenderSystem.enableCull();
+		RenderSystem.disableBlend();
+		RenderSystem.defaultBlendFunc();
 	}
 
-	public void render(ClientWorld world, MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ) {
-
-		cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
-
-		if (!Float.isNaN(cloudHeight)) {
-			//Setup render system
-			RenderSystem.disableCull();
-			RenderSystem.enableBlend();
-			RenderSystem.enableDepthTest();
-			RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
-			RenderSystem.depthMask(true);
-
-			Vec3d cloudColor = world.getCloudsColor(tickDelta);
-			Vec3d cloudColor2 = new Vec3d(
-					cloudColor.x + (1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
-					cloudColor.y + (1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
-					cloudColor.z + (1 - cloudColor.z) * CONFIG.getCloudBrightMultiplier()
-			);
-
-			synchronized (this) {
-
-				if (!MinecraftClient.getInstance().isInSingleplayer() || !MinecraftClient.getInstance().isPaused())
-					SFCReMod.RUNTIME.partialOffset += MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f * CONFIG.getCloudBlockSize() / 16f;
-
-				if ((isWeatherChange && cloudDensityByBiome != 0) || (isBiomeChange && cloudDensityByWeather != 0)) {
-					time += MinecraftClient.getInstance().getLastFrameDuration() / weatheringRefreshSpeed;
-				} else {
-					time += MinecraftClient.getInstance().getLastFrameDuration() / normalRefreshSpeed;		//20.0f for origin
-				}
-
-				if (++timeRebuild > CONFIG.getRebuildInterval()) {
-					timeRebuild = 0;
-					BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer());
-
-					if (cb != null) {
-						if (cloudBuffer != null)
-							cloudBuffer.close();
-						cloudBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-
-						cloudBuffer.bind();
-						cloudBuffer.upload(cb);
-						VertexBuffer.unbind();
-					}
-				}
-
-				//Setup shader
-				if (cloudBuffer != null) {
-					RenderSystem.setShader(GameRenderer::getPositionTexColorNormalProgram);
-					RenderSystem.setShaderTexture(0, whiteTexture);
-					if (CONFIG.isEnableFog()) {
-						BackgroundRenderer.setFogBlack();
-						if (!CONFIG.isFogAutoDistance()) {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
-						} else {
-							RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
-							RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
-						}
-					} else {
-						BackgroundRenderer.clearFog();
-					}
-
-					matrices.push();
-					matrices.translate(-cameraX, -cameraY, -cameraZ);
-					matrices.translate(xScroll + 0.01f, cloudHeight - CONFIG.getCloudBlockSize() + 0.01f, zScroll + SFCReMod.RUNTIME.partialOffset);
-
-					RenderSystem.setShaderColor((float) cloudColor2.x, (float) cloudColor2.y, (float) cloudColor2.z, 1);
-					cloudBuffer.bind();
-
-					for (int s = 0; s < 2; ++s) {
-						if (s == 0) {
-							RenderSystem.colorMask(false, false, false, false);
-						} else {
-							RenderSystem.colorMask(true, true, true, true);
-						}
-
-						cloudBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
-					}
-
-					VertexBuffer.unbind();
-					matrices.pop();
-
-					//Restore render system
-					RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-				}
-			}
-			RenderSystem.enableCull();
-			RenderSystem.disableBlend();
-			RenderSystem.defaultBlendFunc();
-		}
-	}
-
-	public void clean() {
+	public void stop() {
 		try {
-			if (dataProcessThread != null)
-				dataProcessThread.join();
+			if (resamplingThread != null)
+				resamplingThread.join();
 		} catch (Exception e) {
 			//Ignore...
 		}
@@ -270,22 +182,20 @@ public class Renderer {
 	};
 
 	// Building mesh
-	@Nullable
-	private BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder) {
-
+	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, double offset, float cloudHeight) {
 		var client = MinecraftClient.getInstance();
 		Vec3d camVec = null;
 		Vec3d[] camProjBorder = null;
 		double fovCos = 0, extraAngleSin = 0;
 
-		if (CONFIG.getCullMode().equals(CullMode.CIRCULAR)) {
+		if (CONFIG.getCullMode().equals(CommonConfig.CullMode.CIRCULAR)) {
 			camVec = new Vec3d(
 					-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw())),
 					-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch())),
 					 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()))
 			).normalize();
 			fovCos = Math.cos(Math.toRadians(client.options.getFov().getValue() * client.player.getFovMultiplier() * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
-		} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
+		} else if (CONFIG.getCullMode().equals(CommonConfig.CullMode.RECTANGULAR)) {
 			var camProj = client.gameRenderer.getCamera().getProjection();
 			camProjBorder = new Vec3d[]{
 					camProj.getTopRight().crossProduct(camProj.getTopLeft()).normalize(),			//up
@@ -301,136 +211,110 @@ public class Renderer {
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
-		for (CloudData data : cloudDataGroup) {
-			try {
+		try {
+			for (CloudData data : cloudDataGroup) {
 				var colorModifier = getCloudColor(client.world.getTimeOfDay(), data);
 				int normCount = data.normalList.size();
 
 				for (int i = 0; i < normCount; i++) {
 					int normIndex = data.normalList.getByte(i);		// exacting data...
-					var nx = normals[normIndex][0];
-					var ny = normals[normIndex][1];
-					var nz = normals[normIndex][2];
+					float nx = normals[normIndex][0];
+					float ny = normals[normIndex][1];
+					float nz = normals[normIndex][2];
 					float[][] verCache = new float[4][3];
 					for (int j = 0; j < 4; j++) {
-						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3) * CONFIG.getCloudBlockSize();
-						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1) * CONFIG.getCloudBlockSize() / 2;
-						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2) * CONFIG.getCloudBlockSize();
+						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3);
+						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1);
+						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2);
+					}
+					boolean isDrawn = false;
+
+					for (int j = 0; j <= 3; j ++) {  //Culling & Draw
+						Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc culling
+								(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
+								verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - client.gameRenderer.getCamera().getPos().y,
+								(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
+						).normalize();
+						if (j == 0) {
+							if (CONFIG.isEnableNormalCull() && new Vec3d(nx, ny, nz).dotProduct(cloudVec) > 0.003805F)  //Normal Culling
+								break;
+						}
+						boolean isInRange = true;
+						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {  //Position Culling
+							continue;
+						} else if (camProjBorder != null) {
+							for (Vec3d plane : camProjBorder) {
+								if (plane.dotProduct(cloudVec) < extraAngleSin) {
+									isInRange = false;
+									break;  //skipped if this vertex out of any projection plane
+								}
+							}
+						}
+						if (isInRange) {
+							for (int k = 0; k < 4; k++) {
+								builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+							}
+							isDrawn = true;
+							break;
+						}
 					}
 
-					// Normal Culling
-					if (!CONFIG.isEnableNormalCull() || new Vec3d(nx, ny, nz).dotProduct(new Vec3d(
-							verCache[0][0] + 0.01f,
-							verCache[0][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
-							verCache[0][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
-									).normalize()) < 0.003805f) {		// clouds is moving, z-pos isn't precise, so leave some margin
-
-						// Position Culling
-						int j = -1;
-						while (++j < 4) {
-							Vec3d cloudVec = new Vec3d(
-									verCache[j][0] + 0.01f,
-									verCache[j][1] + cloudHeight + 0.01f - CONFIG.getCloudBlockSize() - client.gameRenderer.getCamera().getPos().y,
-									verCache[j][2] + SFCReMod.RUNTIME.partialOffset + 0.7f
-							).normalize();
-							boolean isInRange = true;
-
-							if (CONFIG.getCullMode().equals(CullMode.CIRCULAR) && camVec.dotProduct(cloudVec) < fovCos) {
-								continue;
-							} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
-								for (Vec3d plane : camProjBorder)
-									if (plane.dotProduct(cloudVec) < extraAngleSin) {
-										isInRange = false;
-										break;
-									}
-							}
-
-							if (isInRange) {
-								for (int k = 0; k < 4; k++)
-									builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
-								break;
-							}
-						}
-
-						if (j < 4) {
-							cullStateShown++;
-						} else {
-							cullStateSkipped++;
-						}
+					if (isDrawn) {
+						cullStateShown++;
 					} else {
 						cullStateSkipped++;
 					}
 				}
-			} catch (Exception e) {
-				SFCReMod.exceptionCatcher(e);
-			}
 
-			if (data.getDataType().equals(CloudDataType.NORMAL)) {
-				break;
-			} else if (data.getDataType().equals(CloudDataType.TRANS_MID_BODY)) {
-				data.tick();
-				if (data.getLifeTime() <= 0) {		// Clear if lifetime reach end
-					while (!cloudDataGroup.get(0).getDataType().equals(CloudDataType.NORMAL)) {
-						cloudDataGroup.remove(0);
+				if (data.getDataType().equals(CloudData.CloudDataType.NORMAL)) {
+					break;
+				} else if (data.getDataType().equals(CloudData.CloudDataType.TRANS_MID_BODY)) {
+					data.tick();
+					if (data.getLifeTime() <= 0) {		// Clear if lifetime reach end
+						while (!cloudDataGroup.get(0).getDataType().equals(CloudData.CloudDataType.NORMAL)) {
+							cloudDataGroup.remove(0);
+						}
 					}
+					break;		// Only render IN, BODY, OUT till its life end and remove.
+				} else {
+					data.tick();
 				}
-				break;		// Only render IN, BODY, OUT till its life end and remove.
-			} else {
-				data.tick();
 			}
-		}
 
-		try {
 			return builder.end();
 		} catch (Exception e) {
-			SFCReMod.exceptionCatcher(e);
+			exceptionCatcher(e);
 			return null;
 		}
 	}
 
-	private void collectCloudData(double scrollX, double scrollZ) {
-
+	private void collectCloudData(int x, int z) {
 		CloudData tmp;
 		CloudFadeData fadeIn = null, fadeOut = null;
 		CloudMidData midBody = null;
 
-		try {
-			RUNTIME.checkFullOffset();
-
-			tmp = new CloudData(scrollX, scrollZ, cloudDensityByWeather, cloudDensityByBiome);
-			if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-				fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_IN);
-				fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudDataType.TRANS_OUT);
-				midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudDataType.TRANS_MID_BODY);
-			}
-
-			synchronized (this) {
-				cloudDataGroup.clear();
-
-				if (midBody != null) {
-					cloudDataGroup.add(fadeIn);
-					cloudDataGroup.add(fadeOut);
-					cloudDataGroup.add(midBody);
-				}
-				cloudDataGroup.add(tmp);
-
-				this.xScroll = scrollX;
-				this.zScroll = scrollZ;
-			}
-			RUNTIME.checkPartialOffset();
-			timeRebuild = CONFIG.getRebuildInterval();		//Instant refresh once to prevent flicker.
-		} catch (Exception e) {		// Debug
-			SFCReMod.exceptionCatcher(e);
+		tmp = new CloudData(x, z, DATA.densityByWeather, DATA.densityByBiome);
+		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
+			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN);
+			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT);
+			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY);
 		}
-
-		isProcessingData = false;
+		synchronized (this) {
+			cloudDataGroup.clear();
+			if (midBody != null) {
+				cloudDataGroup.add(fadeIn);
+				cloudDataGroup.add(fadeOut);
+				cloudDataGroup.add(midBody);
+			}
+			cloudDataGroup.add(tmp);
+		}
 	}
 
 	private int getCloudColor(long worldTime, CloudData data) {
-		var a = 255;
-		var r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
-		var g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
-		var b = (CONFIG.getCloudColor() & 0x0000FF);
+		int a = 255;
+		int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
+		int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
+		int b = (CONFIG.getCloudColor() & 0x0000FF);
 		int t = (int) (worldTime % 24000);
 
 		// Alpha changed by cloud type and lifetime
@@ -456,14 +340,7 @@ public class Renderer {
 		return ColorHelper.Argb.getArgb(a, r, g, b);
 	}
 
-	private float nextDensityStep(float target, float current, float speed) {
-		return Math.abs(target - current) > 1f / speed ? (target > current ? current + 1f / speed : current - 1f / speed) : target;
-	}
-
-	//Update Setting.
-	public void updateConfig(CommonConfig config) {
-		normalRefreshSpeed = config.getNormalRefreshSpeed().getValue();
-		weatheringRefreshSpeed = config.getWeatherRefreshSpeed().getValue() / 2;
-		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
+	public float getCloudHeight() {
+		return cloudHeight;
 	}
 }

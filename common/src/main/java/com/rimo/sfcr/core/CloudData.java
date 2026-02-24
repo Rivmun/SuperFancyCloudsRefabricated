@@ -1,8 +1,8 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.CommonConfig;
-import com.rimo.sfcr.util.CloudDataType;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.client.MinecraftClient;
@@ -11,13 +11,11 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.LightType;
+import net.minecraft.world.World;
 
-public class CloudData implements ICloudData {
-
+public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
-
-	protected final Runtime RUNTIME = SFCReMod.RUNTIME;
-	protected final CommonConfig CONFIG = SFCReMod.COMMON_CONFIG;
+	protected final CommonConfig CONFIG = Common.CONFIG;
 
 	private final CloudDataType dataType;
 	private float lifeTime;
@@ -32,19 +30,19 @@ public class CloudData implements ICloudData {
 	protected int startZ;
 
 	// Normal constructor
-	public CloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
+	public CloudData(int x, int z, float densityByWeather, float densityByBiome) {
 		dataType = CloudDataType.NORMAL;
 		width = CONFIG.getCloudRenderDistance();
 		height = CONFIG.getCloudLayerThickness();
-		startX = (int) (scrollX / CONFIG.getCloudBlockSize());
-		startZ = (int) (scrollZ / CONFIG.getCloudBlockSize()) - RUNTIME.fullOffset;
+		startX = x;
+		startZ = z;
 		_cloudData = new boolean[width][height][width];
 
-		collectCloudData(scrollX, scrollZ, densityByWeather, densityByBiome);
+		collectCloudData(x, z, densityByWeather, densityByBiome);
 	}
 
 	// Overload
-	public CloudData(CloudData prevData, CloudData nextData, CloudDataType type) {
+	public CloudData(CloudDataType type) {
 		dataType = type;
 		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
 	}
@@ -63,6 +61,71 @@ public class CloudData implements ICloudData {
 	public CloudDataType getDataType() {return dataType;}
 	public float getLifeTime() {return lifeTime;}
 
+	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
+		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
+	}
+
+	private void collectCloudData(int x, int z, float densityByWeather, float densityByBiome) {
+		World world = MinecraftClient.getInstance().world;
+		if (world == null)
+			return;
+
+		float f = 0.5f;		// origin threshold
+		final double time = world.getTime() / 20.0;
+		final int h = 80;  //height sampling use to get biome
+		final float sx = x - width / 2f;  //sampling start pos
+		final float sz = z - width / 2f;
+
+		for (int cx = 0; cx < width; cx++) {
+			for (int cz = 0; cz < width; cz++) {
+
+				int bx = (int) (sx + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
+				int bz = (int) (sz + cz + 0.5f) * CONFIG.getCloudBlockSize();
+
+				// calculating density...
+				if (CONFIG.isEnableWeatherDensity()) {
+					if (CONFIG.isBiomeDensityByChunk()) {
+						if (CONFIG.isBiomeDensityUseLoadedChunk()) {
+							Vec2f cellPos = new Vec2f(bx, bz);
+							Vec2f unit = cellPos.normalize().multiply(16);  //measure as chunk
+							while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
+									&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
+								cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
+
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) cellPos.x, h, (int) cellPos.y)))
+									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) cellPos.x, h, (int) cellPos.y)).value().getPrecipitation(new BlockPos((int) cellPos.x, h, (int) cellPos.y))))
+									: getCloudDensityThreshold(densityByWeather, densityByBiome);
+						} else {
+							f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(bx, h, bz)))
+									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos(bx, h, bz)).value().getPrecipitation(new BlockPos(bx, h, bz))))
+									: getCloudDensityThreshold(densityByWeather, densityByBiome);
+						}
+					} else {
+						f = getCloudDensityThreshold(densityByWeather, densityByBiome);
+					}
+				}
+
+				// sampling...
+				if (CONFIG.isEnableTerrainDodge()) {
+					for (int cy = 0; cy < height; cy++) {
+						// terrain dodge (detect light level)
+						_cloudData[cx][cy][cz] = world.getLightLevel(LightType.SKY, new BlockPos(
+								bx,
+								(int) (Client.RENDERER.getCloudHeight() + (cy - 2) * CONFIG.getCloudBlockSize() / 2f),
+								bz
+						)) == 15 && getCloudSample(sx, sz, 0, time, cx, cy, cz) > f;
+					}
+				} else {
+					for (int cy = 0; cy < height; cy++) {
+						_cloudData[cx][cy][cz] = getCloudSample(sx, sz, 0, time, cx, cy, cz) > f;
+					}
+				}
+			}
+		}
+
+		computingCloudMesh();
+	}
+
 	/* - - - - - Sampler Core - - - - - */
 
 	private static final float baseFreq = 0.05f;
@@ -78,24 +141,24 @@ public class CloudData implements ICloudData {
 		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
 	}
 
-	private double getCloudSample(double startX, double startZ, double timeOffset, double cx, double cy, double cz) {
+	private double getCloudSample(double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz) {
 		double cloudVal = cloudNoise.sample(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
-				(startZ + cz - RUNTIME.fullOffset) * baseFreq
+				(startZ + cz + zOffset) * baseFreq
 		);
 		if (CONFIG.getSampleSteps() > 1) {
 			double cloudVal1 = cloudNoise.sample(
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-					(startZ + cz - RUNTIME.fullOffset) * l1Freq
+					(startZ + cz + zOffset) * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (CONFIG.getSampleSteps() > 2) {
 				cloudVal2 = cloudNoise.sample(
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
-						(startZ + cz - RUNTIME.fullOffset) * l2Freq
+						(startZ + cz + zOffset) * l2Freq
 				);
 				//Smooth floor function...
 				cloudVal2 *= 3;
@@ -104,79 +167,6 @@ public class CloudData implements ICloudData {
 			cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
 		}
 		return cloudVal * remappedValue(1 - (cy + 1) / 32);		//cloudVal ~ [-1, 2]
-	}
-
-	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
-		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
-	}
-
-	@Override
-	public void collectCloudData(double scrollX, double scrollZ, float densityByWeather, float densityByBiome) {
-		try {
-			double startX = scrollX / CONFIG.getCloudBlockSize();
-			double startZ = scrollZ / CONFIG.getCloudBlockSize();
-
-			double timeOffset = Math.floor(RUNTIME.time / 6) * 6;
-
-			var world = MinecraftClient.getInstance().world;
-			var f = 0.5f;		// origin
-
-			for (int cx = 0; cx < width; cx++) {
-				for (int cz = 0; cz < width; cz++) {
-
-					var px = (startX - width / 2f + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
-					var pz = (startZ - width / 2f + cz + 0.5f) * CONFIG.getCloudBlockSize();
-
-					// calculating density...
-					if (CONFIG.isEnableWeatherDensity()) {
-						if (CONFIG.isBiomeDensityByChunk()) {
-							if (CONFIG.isBiomeDensityUseLoadedChunk()) {
-								var cellPos = new Vec2f((float) px, (float) pz);
-								var unit = cellPos.normalize().multiply(16);  //measure as chunk
-								while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
-										&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
-									cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
-
-								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) cellPos.x, 80, (int) cellPos.y)))
-										? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) cellPos.x, 80, (int) cellPos.y)).value().getPrecipitation(new BlockPos((int) cellPos.x, 80, (int) cellPos.y))))
-										: getCloudDensityThreshold(densityByWeather, densityByBiome);
-							} else {
-								f = !CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) px, 80, (int) pz)))
-										? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) px, 80, (int) pz)).value().getPrecipitation(new BlockPos((int) px, 80, (int) pz))))
-										: getCloudDensityThreshold(densityByWeather, densityByBiome);
-							}
-						} else {
-							f = getCloudDensityThreshold(densityByWeather, densityByBiome);
-						}
-					}
-
-					// sampling...
-					if (CONFIG.isEnableTerrainDodge()) {
-						for (int cy = 0; cy < height; cy++) {
-							// terrain dodge (detect light level)
-							_cloudData[cx][cy][cz] = world.getLightLevel(LightType.SKY, new BlockPos(
-									(int) px,
-									(int) (SFCReMod.RENDERER.cloudHeight + (cy - 2) * CONFIG.getCloudBlockSize() / 2f),
-									(int) (pz + CONFIG.getCloudBlockSize() / 4f)        // cloud is moving...fix Z pos
-							)) == 15 && getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f;
-						}
-					} else {
-						for (int cy = 0; cy < height; cy++) {
-							_cloudData[cx][cy][cz] = getCloudSample(startX, startZ, timeOffset, cx, cy, cz) > f;
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			SFCReMod.exceptionCatcher(e);
-		}
-
-		computingCloudMesh();
-	}
-
-	@Override
-	public void collectCloudData(CloudData prevData, CloudData nextData) {
-		// Leave empty here for child.
 	}
 
 	/* - - - - - Mesh Computing - - - - - */
@@ -257,5 +247,12 @@ public class CloudData implements ICloudData {
 				}
 			}
 		}
+	}
+
+	public enum CloudDataType {
+		NORMAL,
+		TRANS_IN,
+		TRANS_MID_BODY,
+		TRANS_OUT
 	}
 }

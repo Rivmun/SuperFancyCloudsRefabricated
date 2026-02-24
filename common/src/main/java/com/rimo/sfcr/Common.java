@@ -58,9 +58,10 @@ public class Common {
 
 	//Debug
 	public static void exceptionCatcher(Exception e) {
-		LOGGER.error(e.toString());
+		StringBuilder text = new StringBuilder(MOD_ID + " got an error: " + e.toString());
 		for (StackTraceElement i : e.getStackTrace()) {
-			LOGGER.error("{}:{}", i.getClassName(), i.getLineNumber());
+			text.append("\n    at ").append(i.toString());
 		}
+		LOGGER.error(text.toString());
 	}
 }

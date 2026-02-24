@@ -3,18 +3,19 @@ package com.rimo.sfcr.config;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CoreConfig {
 
-	public static final List<String> DEF_BIOME_FILTER_LIST = new ArrayList<String>(List.of(
+	public static final List<String> DEF_BIOME_FILTER_LIST = new ArrayList<>(List.of(
 			"#minecraft:is_river"
 	));
 
 	protected int cloudHeight = 192;
-	protected int cloudBlockSize = 16;
+	protected int cloudBlockSize = 12;
 	protected int cloudLayerThickness = 32;
 	protected int sampleSteps = 2;
 	protected int cloudColor = 0xFFFFFF;
@@ -101,7 +102,7 @@ public class CoreConfig {
 
 	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
 		var isHas = false;
-		if (this.getBiomeFilterList().contains(biome.getKey().get().getValue().toString())) {
+		if (this.getBiomeFilterList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
 			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.streamTags().toList()) {

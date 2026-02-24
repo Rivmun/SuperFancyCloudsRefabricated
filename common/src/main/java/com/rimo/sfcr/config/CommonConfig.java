@@ -2,6 +2,7 @@ package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import dev.architectury.platform.Platform;
 import net.minecraft.text.Text;
@@ -17,7 +18,6 @@ public class CommonConfig extends CoreConfig {
 	private boolean enableMod = true;
 	private boolean enableDebug = false;
 	private boolean enableServerConfig = false;
-	private int secPerSync = 60;
 	private boolean enableFog = true;
 	private boolean enableNormalCull = true;
 	private CullMode cullMode = CullMode.RECTANGULAR;
@@ -35,12 +35,13 @@ public class CommonConfig extends CoreConfig {
 	private int fogMaxDistance = 4;
 	//----DYNAMIC----
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
+	//----COMPAT-----
+	private boolean isEnableDHCompat = Client.isDistantHorizonsLoaded;
 
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableServerConfig() {return enableServerConfig;}
-	public int getSecPerSync() {return secPerSync;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
@@ -55,12 +56,12 @@ public class CommonConfig extends CoreConfig {
 	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
+	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 
 	//input func.
 	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
-	public void setSecPerSync(int value) {secPerSync = value; }
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
@@ -82,12 +83,12 @@ public class CommonConfig extends CoreConfig {
 	}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
+	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 
 	public void setCommonConfig(CommonConfig config) {		//TODO: Why do I need to write this sht...
 		this.enableMod						= config.enableMod;
 		this.enableDebug					= config.enableDebug;
 		this.enableServerConfig				= config.enableServerConfig;
-		this.secPerSync						= config.secPerSync;
 		this.cloudRenderDistance			= config.cloudRenderDistance;
 		this.cloudRenderDistanceFitToView	= config.cloudRenderDistanceFitToView;
 		this.normalRefreshSpeed				= config.normalRefreshSpeed;

@@ -12,17 +12,15 @@ import java.util.List;
 
 @Mixin(DebugHud.class)
 public abstract class DebugHudMixin {
+	// Add Debug Strings
 	@Inject(method = "getLeftText", at = @At("RETURN"), cancellable = true)
 	public void getLeftText(CallbackInfoReturnable<List<String>> callback) {
 		List<String> list = callback.getReturnValue();
-
-		// Add Debug Strings
 		if (Common.CONFIG.isEnableMod())
-			list.add("[SFCR] Mesh Built: " +
-					 Client.RENDERER.cullStateShown + " / " +
-					(Client.RENDERER.cullStateSkipped + Client.RENDERER.cullStateShown) + " faces, " +
-					 Client.RENDERER.cullStateSkipped + " Skipped.");
-
+			list.add("[SFCR] mesh: " +
+					 Client.RENDERER.cullStateShown + " built, " +
+					 Client.RENDERER.cullStateSkipped + " skipped, " +
+					(Client.RENDERER.cullStateSkipped + Client.RENDERER.cullStateShown) + " total.");
 		callback.setReturnValue(list);
 	}
 }

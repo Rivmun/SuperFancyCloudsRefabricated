@@ -10,8 +10,6 @@
 	"text.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather & biome.",
 	"text.sfcr.option.enableServer": "Sync with Server",
 	"text.sfcr.option.enableServer.@Tooltip": "When enabled, your sampler / height / density etc.\nwill synchronized with server if you connect to\na server which installed SFCR.\nAlso control whether you sync data to other player\nwhen you're host in LAN game.",
-	"text.sfcr.option.syncTime": "Data Sending Interval",
-	"text.sfcr.option.syncTime.@Tooltip": "When you're host, How often\nthe cloud position data will be sync to client.",
 	"text.sfcr.option.enableNormalCull": "Normal Culling",
 	"text.sfcr.option.enableNormalCull.@Tooltip": "Cull clouds face that no facing towards you.\nKnown Issue: slightly delay when player moving.",
 	"text.sfcr.option.cullMode": "View Culling",
@@ -45,7 +43,7 @@
 
 	"text.sfcr.category.fog": "Fog",
 	"text.sfcr.option.fogAutoDistance": "Auto Adjust Fog Distance",
-	"text.sfcr.option.fogAutoDistance.@Tooltip": "Fog distance will auto adjust depends on view distance and cloud block size.\n\"Fog Distance\" Value will be ignored.",
+	"text.sfcr.option.fogAutoDistance.@Tooltip": "Fog distance will auto adjust depends on view distance and cloud block size.",
 	"text.sfcr.option.fogMinDistance": "Fog Start Distance",
 	"text.sfcr.option.fogMinDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if bigger than END.",
 	"text.sfcr.option.fogMaxDistance": "Fog End Distance",
@@ -80,6 +78,10 @@
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "\"Detect From Chunk\" needs enabled.\nDistant cloud which no chunk beneath it\nwill try to detect loaded chunk nearby player\ninstead of use sample data.\nEnabled it can smoother cloud near and distant, \nbut will make distant flicker due to chunk change.",
 	"text.sfcr.option.biomeFilter": "Biome Affect Filter",
 	"text.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormat: §omodid:biomeid§r or §o#modid:biometag§r",
+
+	"text.sfcr.category.compat": "Compat",
+	"text.sfcr.option.DHCompat": "Distant Horizons",
+	"text.sfcr.option.DHCompat.@Tooltip": "Enable this if you want render SFCR cloud above\nDH LOD chunk without incorrect covered.\n§4NOTE:\n- Cloud no longer transparent due to DH render system.\n- \"Smooth Change\" option has no working in this compat.\n- Cloud may not render in front of vanilla chunk.",
 
 	"text.sfcr.command.sync_request": "[SFCRe] Requesting sync to server...",
 	"text.sfcr.command.sync_succ": "[SFCRe] Sync successfully!",

@@ -11,8 +11,6 @@
 	"text.sfcr.option.enableWeatherDensity.@Tooltip": "使云的密度随当前天气与群系变化。",
 	"text.sfcr.option.enableServer": "服务器同步",
 	"text.sfcr.option.enableServer.@Tooltip": "启用后，当你连接到安装有 SFCR 的服务器时，\n云层采样/云高度/密度等将与其同步。\n该选项在局域网游戏中同时也控制你\n是否向其他玩家共享云层数据。",
-	"text.sfcr.option.syncTime": "主机数据发送间隔",
-	"text.sfcr.option.syncTime.@Tooltip": "当你是是多人游戏的主机时，\n多久会向其他客户端同步一次云层位置数据。",
 	"text.sfcr.option.enableNormalCull": "法线剔除",
 	"text.sfcr.option.enableNormalCull.@Tooltip": "剔除不面向玩家的云层面。\n已知问题：玩家移动时该剔除会有略微的延迟。",
 	"text.sfcr.option.cullMode": "视野剔除",
@@ -46,7 +44,7 @@
 
 	"text.sfcr.category.fog": "迷雾",
 	"text.sfcr.option.fogAutoDistance": "自动调整迷雾距离",
-	"text.sfcr.option.fogAutoDistance.@Tooltip": "迷雾距离将根据云层显示距离和云块大小自动调整，\n“迷雾距离”将被忽略。",
+	"text.sfcr.option.fogAutoDistance.@Tooltip": "迷雾距离将根据云层显示距离和云块大小自动调整。",
 	"text.sfcr.option.fogMinDistance": "迷雾起始距离",
 	"text.sfcr.option.fogMinDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若大于结束距离，则会自动进行交换。",
 	"text.sfcr.option.fogMaxDistance": "迷雾结束距离",
@@ -81,6 +79,10 @@
 	"text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip": "需启用“基于区块”。\n下方没有区块的远处的云会检测靠近玩家的已加载的区块，\n而非使用采样器数据。\n启用可使云层远近自然过渡，但会造成远处云层因区块加载而闪烁。",
 	"text.sfcr.option.biomeFilter": "群系影响过滤",
 	"text.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r 或 §o#modid:biometag§r",
+
+	"text.sfcr.category.compat": "兼容",
+	"text.sfcr.option.DHCompat": "Distant Horizons",
+	"text.sfcr.option.DHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 因为DH的渲染特性，云层将不再透明。\n- 启用该兼容后“平滑变化”功能将失效。\n- 云层将无法渲染在原版区块前方。",
 
 	"text.sfcr.command.sync_request": "[SFCRe] 与服务器同步中...",
 	"text.sfcr.command.sync_succ": "[SFCRe] 同步成功！",

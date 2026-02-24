@@ -22,8 +22,7 @@ dependencies {
         exclude(group: "net.fabricmc.fabric-api")
 	}
     // Distant Horizons
-    modCompileOnly("maven.modrinth:DistantHorizonsApi:${rootProject.distant_horizon_api_version}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${rootProject.distant_horizon_version}")
+    modApi("maven.modrinth:DistantHorizonsApi:${rootProject.distant_horizon_api_version}")
 }
 
 publishing {

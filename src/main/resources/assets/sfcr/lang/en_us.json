@@ -10,8 +10,6 @@
 	"text.sfcr.option.enableWeatherDensity.@Tooltip": "Let the clouds density change with current weather & biome.",
 	"text.sfcr.option.enableServer": "Sync with Server",
 	"text.sfcr.option.enableServer.@Tooltip": "When enabled, your sampler / height / density etc.\nwill synchronized with server if you connect to\na server which installed SFCR.\nAlso control whether you sync data to other player\nwhen you're host in LAN game.",
-	"text.sfcr.option.enableNormalCull": "Normal Culling",
-	"text.sfcr.option.enableNormalCull.@Tooltip": "Cull clouds face that no facing towards you.\nKnown Issue: slightly delay when player moving.",
 	"text.sfcr.option.cullMode": "View Culling",
 	"text.sfcr.option.cullMode.@Tooltip": "Circular - remove face that away from center point of screen\nRectangular - remove face that no appear in screen strictly",
 	"text.sfcr.option.cullRadianMultiplier": "- View Culling Angle Multiplier",

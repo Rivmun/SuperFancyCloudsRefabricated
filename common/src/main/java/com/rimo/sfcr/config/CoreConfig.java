@@ -16,7 +16,7 @@ public class CoreConfig {
 
 	protected int cloudHeight = 192;
 	protected int cloudBlockSize = 12;
-	protected int cloudLayerThickness = 32;
+	protected int cloudLayerThickness = 10;
 	protected int sampleSteps = 2;
 	protected int cloudColor = 0xFFFFFF;
 	protected float cloudBrightMultiplier = 0.1f;

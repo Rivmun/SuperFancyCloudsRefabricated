@@ -34,10 +34,11 @@ dependencies {
 	modImplementation "com.terraformersmc:modmenu:7.0.0"
 
     // Cloth Config
-    //modImplementation("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}") {
-    //    exclude(group: "net.fabricmc.fabric-api")
-    //}
+    modRuntimeOnly("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
 
+    //Distant Horizons
     modRuntimeOnly("maven.modrinth:DistantHorizons:${rootProject.distant_horizon_version}")
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }

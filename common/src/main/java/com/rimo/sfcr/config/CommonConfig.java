@@ -19,13 +19,12 @@ public class CommonConfig extends CoreConfig {
 	private boolean enableDebug = false;
 	private boolean enableServerConfig = false;
 	private boolean enableFog = true;
-	private boolean enableNormalCull = true;
 	private CullMode cullMode = CullMode.RECTANGULAR;
 	private float cullRadianMultiplier = 1.0f;
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	//----CLOUDS----
-	private int cloudRenderDistance = 96;
+	private int cloudRenderDistance = 64;
 	private boolean cloudRenderDistanceFitToView = false;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private boolean enableTerrainDodge = true;
@@ -36,7 +35,7 @@ public class CommonConfig extends CoreConfig {
 	//----DYNAMIC----
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	//----COMPAT-----
-	private boolean isEnableDHCompat = Client.isDistantHorizonsLoaded;
+	private boolean isEnableDHCompat = false;
 
 	//output func.
 	public boolean isEnableMod() {return enableMod;}
@@ -46,7 +45,6 @@ public class CommonConfig extends CoreConfig {
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
-	public boolean isEnableNormalCull() {return enableNormalCull;}
 	public CullMode getCullMode() {return cullMode;}
 	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
 	public int getRebuildInterval() {return rebuildInterval;}
@@ -66,7 +64,6 @@ public class CommonConfig extends CoreConfig {
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
-	public void setEnableNormalCull(boolean isEnable) {enableNormalCull = isEnable;}
 	public void setCullMode(CullMode cullMode) {this.cullMode = cullMode;}
 	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
@@ -93,7 +90,6 @@ public class CommonConfig extends CoreConfig {
 		this.cloudRenderDistanceFitToView	= config.cloudRenderDistanceFitToView;
 		this.normalRefreshSpeed				= config.normalRefreshSpeed;
 		this.enableTerrainDodge				= config.enableTerrainDodge;
-		this.enableNormalCull				= config.enableNormalCull;
 		this.cullMode = config.cullMode;
 		this.cullRadianMultiplier			= config.cullRadianMultiplier;
 		this.rebuildInterval				= config.rebuildInterval;
@@ -103,12 +99,13 @@ public class CommonConfig extends CoreConfig {
 		this.fogMaxDistance					= config.fogMaxDistance;
 		this.enableSmoothChange				= config.enableSmoothChange;
 		this.weatherRefreshSpeed			= config.weatherRefreshSpeed;
+		this.isEnableDHCompat = config.isEnableDHCompat;
 		this.setCoreConfig(config);
 	}
 
 	//conversion
 	public int getAutoFogMaxDistance() {
-		return (int) (cloudRenderDistance / 48f * cloudRenderDistance / 48f * cloudBlockSize / 16f);
+		return (int) (cloudRenderDistance / 16f * cloudRenderDistance / 16f * cloudBlockSize / 16f);
 	}
 
 	//load

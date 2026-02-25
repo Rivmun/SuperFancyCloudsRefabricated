@@ -173,7 +173,8 @@ public class RendererDHCompat extends Renderer {
 
 		//refresh check
 		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
-		if (! isResampling && resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ) {
+		if (! MinecraftClient.getInstance().isPaused() && ! isResampling &&
+				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ)) {
 			isResampling = true;
 			resamplingTimer = 0.0;
 			resamplingThread = new Thread(() -> {  //start data refresh thread
@@ -263,7 +264,7 @@ public class RendererDHCompat extends Renderer {
 		double zOffsetInGrid = cameraPos.getZ() / cloudBlockWidth + 0.33F - oldGridZ;
 		xOffsetInGrid *= cloudBlockWidth;  //turns to blocks
 		zOffsetInGrid *= cloudBlockWidth;
-		/* After 7 hours of debugs, I'm fk realized there should be simply "cameraPos - offset" ...
+		/* I'm fk realized there should be simply "cameraPos - offset" ...
 		 * W T F to my brain (╯‵□′)╯︵┻━┻ */
 		double cloudX = cameraPos.getX() - xOffsetInGrid;
 		double cloudZ = cameraPos.getZ() - zOffsetInGrid;

@@ -3,8 +3,6 @@ package com.rimo.sfcr.core;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.CommonConfig;
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -13,6 +11,8 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
+
 public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
 	protected final CommonConfig CONFIG = Common.CONFIG;
@@ -20,8 +20,8 @@ public class CloudData {
 	private final CloudDataType dataType;
 	private float lifeTime;
 
-	protected FloatArrayList vertexList = new FloatArrayList();
-	protected ByteArrayList normalList = new ByteArrayList();
+	protected ArrayList<Float> vertexList = new ArrayList<>();
+	protected ArrayList<Byte> normalList = new ArrayList<>();
 	protected boolean[][][] _cloudData;
 
 	protected int width;
@@ -32,7 +32,7 @@ public class CloudData {
 	// Normal constructor
 	public CloudData(int x, int z, float densityByWeather, float densityByBiome) {
 		dataType = CloudDataType.NORMAL;
-		width = CONFIG.getCloudRenderDistance();
+		width = CONFIG.getCloudRenderDistance() * 2 + 1;
 		height = CONFIG.getCloudLayerThickness();
 		startX = x;
 		startZ = z;
@@ -56,8 +56,6 @@ public class CloudData {
 	}
 
 	// Access
-	public FloatArrayList getVertexList() {return vertexList;}
-	public ByteArrayList getNormalList() {return normalList;}
 	public CloudDataType getDataType() {return dataType;}
 	public float getLifeTime() {return lifeTime;}
 
@@ -170,82 +168,112 @@ public class CloudData {
 	/* - - - - - Mesh Computing - - - - - */
 
 	protected void addVertex(float x, float y, float z) {
-		vertexList.add(x - width / 2f);
+		vertexList.add(x);
 		vertexList.add(y);
-		vertexList.add(z - width / 2f);
+		vertexList.add(z);
 	}
 
+	/*
+	 * try port 1.21.6+ vanilla mesh build function here...
+	 */
 	protected CloudData computingCloudMesh() {
-		for (int cx = 0; cx < width; cx++) {
-			for (int cy = 0; cy < height; cy++) {
-				for (int cz = 0; cz < width; cz++) {
-					if (!_cloudData[cx][cy][cz])
-						continue;
-
-					//Right
-					if (cx == width - 1 || !_cloudData[cx + 1][cy][cz]) {
-						addVertex(cx + 1, cy, cz);
-						addVertex(cx + 1, cy, cz + 1);
-						addVertex(cx + 1, cy + 1, cz + 1);
-						addVertex(cx + 1, cy + 1, cz);
-
-						normalList.add((byte) 0);
+		int renderDistance = (width - 1) / 2;
+		for(int l = 0; l <= 2 * renderDistance; ++l) {
+			for (int xOffset = - l; xOffset <= l; ++ xOffset) {
+				int zOffset = l - Math.abs(xOffset);
+				// circular-like culling...
+				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
+					if (zOffset != 0) {
+						for (int y = 0; y < height; ++ y) {
+							tryBuildCell(xOffset, y, - zOffset, renderDistance);
+						}
 					}
-
-					//Left....
-					if (cx == 0 || !_cloudData[cx - 1][cy][cz]) {
-						addVertex(cx, cy, cz);
-						addVertex(cx, cy, cz + 1);
-						addVertex(cx, cy + 1, cz + 1);
-						addVertex(cx, cy + 1, cz);
-
-						normalList.add((byte) 1);
-					}
-
-					//Up....
-					if (cy == height - 1 || !_cloudData[cx][cy + 1][cz]) {
-						addVertex(cx, cy + 1, cz);
-						addVertex(cx + 1, cy + 1, cz);
-						addVertex(cx + 1, cy + 1, cz + 1);
-						addVertex(cx, cy + 1, cz + 1);
-
-						normalList.add((byte) 2);
-					}
-
-					//Down
-					if (cy == 0 || !_cloudData[cx][cy - 1][cz]) {
-						addVertex(cx, cy, cz);
-						addVertex(cx + 1, cy, cz);
-						addVertex(cx + 1, cy, cz + 1);
-						addVertex(cx, cy, cz + 1);
-
-						normalList.add((byte) 3);
-					}
-
-
-					//Forward....
-					if (cz == width - 1 || !_cloudData[cx][cy][cz + 1]) {
-						addVertex(cx, cy, cz + 1);
-						addVertex(cx + 1, cy, cz + 1);
-						addVertex(cx + 1, cy + 1, cz + 1);
-						addVertex(cx, cy + 1, cz + 1);
-
-						normalList.add((byte) 4);
-					}
-
-					//Backward
-					if (cz == 0 || !_cloudData[cx][cy][cz - 1]) {
-						addVertex(cx, cy, cz);
-						addVertex(cx + 1, cy, cz);
-						addVertex(cx + 1, cy + 1, cz);
-						addVertex(cx, cy + 1, cz);
-
-						normalList.add((byte) 5);
+					for (int y = 0; y < height; ++ y) {
+						tryBuildCell(xOffset, y, zOffset, renderDistance);
 					}
 				}
 			}
 		}
 		return this;
+	}
+
+	private void tryBuildCell(int xOffset, int y, int zOffset, int renderDistance) {
+		int x = xOffset + renderDistance;  //trans to list index
+		int z = zOffset + renderDistance;
+		if (!_cloudData[x][y][z])
+			return;  //ignore empty...
+		boolean borderTop    = !(y + 1 <  height            && _cloudData[x][y + 1][z]);  // outOfBound || isNotNeighbor
+		boolean borderBottom = !(y - 1 >= 0                 && _cloudData[x][y - 1][z]);
+		boolean borderSouth  = !(z + 1 <  _cloudData.length && _cloudData[x][y][z + 1]);
+		boolean borderNorth  = !(z - 1 >= 0                 && _cloudData[x][y][z - 1]);
+		boolean borderEast   = !(x + 1 <  _cloudData.length && _cloudData[x + 1][y][z]);
+		boolean borderWest   = !(x - 1 >= 0                 && _cloudData[x -1 ][y][z]);
+		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
+		buildExtrudedCell(xOffset, y, zOffset, cellState);
+	}
+
+	private void buildExtrudedCell(int x, int y, int z, int cellState) {
+		int playerGridY = (int) ((MinecraftClient.getInstance().gameRenderer.getCamera().getPos().getY() - CONFIG.getCloudHeight()) / CONFIG.getCloudBlockSize() * 2);
+		if (hasBorderTop(cellState) && y < playerGridY) {  //facing (normals) culling...
+			addVertex(x, y + 1, z);
+			addVertex(x + 1, y + 1, z);
+			addVertex(x + 1, y + 1, z + 1);
+			addVertex(x, y + 1, z + 1);
+			normalList.add((byte) 2);
+		}
+		if (hasBorderBottom(cellState) && y > playerGridY) {
+			addVertex(x, y, z);
+			addVertex(x + 1, y, z);
+			addVertex(x + 1, y, z + 1);
+			addVertex(x, y, z + 1);
+			normalList.add((byte) 3);
+		}
+		if (hasBorderSouth(cellState) && z < 0) {
+			addVertex(x, y, z + 1);
+			addVertex(x + 1, y, z + 1);
+			addVertex(x + 1, y + 1, z + 1);
+			addVertex(x, y + 1, z + 1);
+			normalList.add((byte) 4);
+		}
+		if (hasBorderNorth(cellState) && z > 0) {
+			addVertex(x, y, z);
+			addVertex(x + 1, y, z);
+			addVertex(x + 1, y + 1, z);
+			addVertex(x, y + 1, z);
+			normalList.add((byte) 5);
+		}
+		if (hasBorderEast(cellState) && x < 0) {
+			addVertex(x + 1, y, z);
+			addVertex(x + 1, y, z + 1);
+			addVertex(x + 1, y + 1, z + 1);
+			addVertex(x + 1, y + 1, z);
+			normalList.add((byte) 0);
+		}
+		if (hasBorderWest(cellState) && x > 0) {
+			addVertex(x, y, z);
+			addVertex(x, y, z + 1);
+			addVertex(x, y + 1, z + 1);
+			addVertex(x, y + 1, z);
+			normalList.add((byte) 1);
+		}
+	}
+	private static boolean hasBorderTop(int packed) {
+		return (packed >> 5 & 1) != 0;
+	}
+	private static boolean hasBorderBottom(int packed) {
+		return (packed >> 4 & 1) != 0;
+	}
+	private static boolean hasBorderEast(int packed) {
+		return (packed >> 3 & 1) != 0;
+	}
+	private static boolean hasBorderWest(int packed) {
+		return (packed >> 2 & 1) != 0;
+	}
+	private static boolean hasBorderSouth(int packed) {
+		return (packed >> 1 & 1) != 0;
+	}
+	private static boolean hasBorderNorth(int packed) {
+		return (packed >> 0 & 1) != 0;
 	}
 
 	public enum CloudDataType {

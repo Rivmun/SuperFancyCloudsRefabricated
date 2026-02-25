@@ -3,7 +3,6 @@ package com.rimo.sfcr.core;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.rimo.sfcr.config.CommonConfig;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
@@ -15,16 +14,18 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
+import java.util.ArrayList;
+
 import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
 	private final Identifier whiteTexture = new Identifier(MOD_ID, "white.png");
-	protected final ObjectArrayList<CloudData> cloudDataGroup = new ObjectArrayList<>();
+	protected final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
-	protected int oldGridX, oldGridZ;
+	protected int oldGridX, oldGridY, oldGridZ;
 	protected Vec3d oldColor = Vec3d.ZERO;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
@@ -42,6 +43,7 @@ public class Renderer {
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;
+		boolean isPause = MinecraftClient.getInstance().isPaused();
 
 		//vanilla cloud pos calculation
 		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
@@ -51,7 +53,7 @@ public class Renderer {
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
-		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
+		int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
 		float xOffsetInGrid = (float) (cloudX - Math.floor(cloudX));  //cloud offset in current grid
 		//float yOffsetInGrid = (float) ((cloudY / CLOUD_BLOCK_HEIGHT - Math.floor(cloudY / CLOUD_BLOCK_HEIGHT)) * CLOUD_BLOCK_HEIGHT);
@@ -66,9 +68,12 @@ public class Renderer {
 
 		//refresh check
 		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
-		if (! isResampling && resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4) {
+		if (! isPause && ! isResampling &&
+				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4 ||
+				oldGridY != GridY && cameraY > cloudHeight && cameraY < cloudHeight + CONFIG.getCloudLayerThickness() * CLOUD_BLOCK_HEIGHT)) {
 			isResampling = true;
 			resamplingTimer = 0.0;
+			oldGridY = GridY;
 			oldColor = cloudColor;
 			resamplingThread = new Thread(() -> {  //start data refresh thread
 				try {
@@ -100,7 +105,7 @@ public class Renderer {
 		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
 		 * We made a lot of small lags to replace a single big lag, it's hard to say which is better...
 		 */
-		if (++ rebuildTimer > CONFIG.getRebuildInterval()) {
+		if (! isPause && ++ rebuildTimer > CONFIG.getRebuildInterval()) {
 			rebuildTimer = 0;
 			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), xOffsetInGrid, cloudHeight);
 			if (cb != null) {
@@ -122,7 +127,7 @@ public class Renderer {
 				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
 			} else {
-				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 2);
+				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getAutoFogMaxDistance() / 4);
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 			}
 		} else {
@@ -213,34 +218,30 @@ public class Renderer {
 
 		try {
 			for (CloudData data : cloudDataGroup) {
-				var colorModifier = getCloudColor(client.world.getTimeOfDay(), data);
+				int colorModifier = getCloudColor(client.world.getTimeOfDay(), data);
 				int normCount = data.normalList.size();
 
 				for (int i = 0; i < normCount; i++) {
-					int normIndex = data.normalList.getByte(i);		// exacting data...
+					int normIndex = data.normalList.get(i);		// exacting data...
 					float nx = normals[normIndex][0];
 					float ny = normals[normIndex][1];
 					float nz = normals[normIndex][2];
 					float[][] verCache = new float[4][3];
 					for (int j = 0; j < 4; j++) {
-						verCache[j][0] = data.vertexList.getFloat(i * 12 + j * 3);
-						verCache[j][1] = data.vertexList.getFloat(i * 12 + j * 3 + 1);
-						verCache[j][2] = data.vertexList.getFloat(i * 12 + j * 3 + 2);
+						verCache[j][0] = data.vertexList.get(i * 12 + j * 3);
+						verCache[j][1] = data.vertexList.get(i * 12 + j * 3 + 1);
+						verCache[j][2] = data.vertexList.get(i * 12 + j * 3 + 2);
 					}
 					boolean isDrawn = false;
 
-					for (int j = 0; j <= 3; j ++) {  //Culling & Draw
-						Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc culling
+					for (int j = 0; j <= 3; j ++) {
+						Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling
 								(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
 								verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - client.gameRenderer.getCamera().getPos().y,
 								(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
 						).normalize();
-						if (j == 0) {
-							if (CONFIG.isEnableNormalCull() && new Vec3d(nx, ny, nz).dotProduct(cloudVec) > 0.003805F)  //Normal Culling
-								break;
-						}
 						boolean isInRange = true;
-						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {  //Position Culling
+						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {
 							continue;
 						} else if (camProjBorder != null) {
 							for (Vec3d plane : camProjBorder) {

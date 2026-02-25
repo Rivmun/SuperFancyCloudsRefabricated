@@ -99,15 +99,6 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
 				.build()
 		);
-		//normal cull
-		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableNormalCull")
-						, CONFIG.isEnableNormalCull())
-				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableNormalCull.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableNormalCull)
-				.build()
-		);
 		//cull mode
 		EnumListEntry<CommonConfig.CullMode> cullMode = entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.cullMode")
@@ -200,7 +191,7 @@ public class ConfigScreen {
 						, CONFIG.getCloudLayerThickness()
 						,3
 						,66)
-				.setDefaultValue(32)
+				.setDefaultValue(10)
 				.setTextGetter(value -> Text.of(String.valueOf(value - 2)))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudLayerThickness)
@@ -209,13 +200,13 @@ public class ConfigScreen {
 		//cloud distance
 		clouds.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudRenderDistance")
-						, CONFIG.getCloudRenderDistance() / 2
+						, CONFIG.getCloudRenderDistance()
 						,32
-						,192)
-				.setDefaultValue(48)
+						,256)
+				.setDefaultValue(64)
 				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
-				.setSaveConsumer(value -> CONFIG.setCloudRenderDistance(value * 2))
+				.setSaveConsumer(CONFIG::setCloudRenderDistance)
 				.build()
 		);
 		//cloud distance fit to view

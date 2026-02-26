@@ -1,15 +1,14 @@
 package com.rimo.sfcr.config;
 
 import com.rimo.sfcr.Client;
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigCategory;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.api.Requirement;
+import com.rimo.sfcr.Common;
+import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 
 import java.util.List;
@@ -20,9 +19,7 @@ import static com.rimo.sfcr.Common.DATA;
 
 public class ConfigScreen {
 
-	ConfigBuilder builder = ConfigBuilder.create()
-			.setParentScreen(MinecraftClient.getInstance().currentScreen)
-			.setTitle(Text.translatable("text.sfcr.title"));
+	ConfigBuilder builder = ConfigBuilder.create();
 	ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
 	ConfigCategory general = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.general"));
@@ -34,8 +31,17 @@ public class ConfigScreen {
 	private int fogMin, fogMax;
 	private final boolean oldEnableMod = CONFIG.isEnableMod();
 	private final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
+	private String dimensionName;
 
 	public Screen buildScreen() {
+		ClientWorld world = MinecraftClient.getInstance().world;
+		dimensionName = world != null ? world.getRegistryKey().getValue().toString() : "null";
+
+		builder.setParentScreen(MinecraftClient.getInstance().currentScreen)
+				.setTitle(Client.isCustomDimensionConfig ?
+						Text.translatable("text.sfcr.title.customDimensionMode", dimensionName) :
+						Text.translatable("text.sfcr.title")
+				);
 		buildGeneralCategory();
 		buildCloudsCategory();
 		buildFogCategory();
@@ -50,7 +56,12 @@ public class ConfigScreen {
 			CONFIG.setFogDisance(fogMin, fogMax);
 
 			//Update config
-			CONFIG.save();
+			if (Client.isCustomDimensionConfig) {
+				CONFIG.save(dimensionName);
+			} else {
+				CONFIG.save();
+			}
+			Common.clearConfigCache(dimensionName);
 			DATA.setConfig(CONFIG);
 			applyConfigChange(oldEnableMod, oldEnableDHCompat);
 		});
@@ -67,11 +78,33 @@ public class ConfigScreen {
 				.setTooltip(Text.translatable("text.sfcr.option.DHCompat.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDHCompat)
 				.build();
+		//Custom Dimension
+		compat.addEntry(entryBuilder
+				.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
+						(Client.isCustomDimensionConfig ? "§a" : "§c") + dimensionName
+				))
+				.setTooltip(Text.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
+				.build()
+		);
 		if (Client.isDistantHorizonsLoaded)
 			compat.addEntry(dhCompatEntry);
 	}
 
 	private void buildGeneralCategory() {
+		//custom warning
+		if (Client.isCustomDimensionConfig)
+			general.addEntry(entryBuilder
+					.startTextDescription(Text.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
+							"§b" + dimensionName
+					))
+					.build()
+			);
+		//override warning
+		if (Client.isConfigHasBeenOverride)
+			general.addEntry(entryBuilder
+					.startTextDescription(Text.translatable("text.sfcr.option.configHasBeenOverride.@PrefixText"))
+					.build()
+			);
 		//enabled
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod")
@@ -100,12 +133,12 @@ public class ConfigScreen {
 				.build()
 		);
 		//cull mode
-		EnumListEntry<CommonConfig.CullMode> cullMode = entryBuilder
+		EnumListEntry<CullMode> cullMode = entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.cullMode")
-						, CommonConfig.CullMode.class
+						, CullMode.class
 						, CONFIG.getCullMode())
-				.setDefaultValue(CommonConfig.CullMode.RECTANGULAR)
-				.setEnumNameProvider(value -> ((CommonConfig.CullMode) value).getName())
+				.setDefaultValue(CullMode.RECTANGULAR)
+				.setEnumNameProvider(value -> ((CullMode) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.cullMode.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCullMode)
 				.build();
@@ -119,7 +152,7 @@ public class ConfigScreen {
 				.setDefaultValue(10)
 				.setTextGetter(value -> Text.of(value / 10f + "x"))
 				.setTooltip(Text.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
-				.setDisplayRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
+				.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
 				.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 				.build()
 		);
@@ -135,7 +168,7 @@ public class ConfigScreen {
 						Text.translatable("text.sfcr.frame", value)
 				)
 				.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
-				.setDisplayRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
+				.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
 				.build()
 		);
@@ -378,10 +411,10 @@ public class ConfigScreen {
 		//cloud refresh speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.cloudRefreshSpeed")
-						, CommonConfig.CloudRefreshSpeed.class
+						, CloudRefreshSpeed.class
 						, CONFIG.getNormalRefreshSpeed())
-				.setDefaultValue(CommonConfig.CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CloudRefreshSpeed.SLOW)
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setNormalRefreshSpeed)
 				.build()
@@ -389,10 +422,10 @@ public class ConfigScreen {
 		//weather refresh speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.weatherRefreshSpeed")
-						, CommonConfig.CloudRefreshSpeed.class
+						, CloudRefreshSpeed.class
 						, CONFIG.getWeatherRefreshSpeed())
-				.setDefaultValue(CommonConfig.CloudRefreshSpeed.FAST)
-				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CloudRefreshSpeed.FAST)
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.weatherRefreshSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setWeatherRefreshSpeed)
 				.build()
@@ -400,10 +433,10 @@ public class ConfigScreen {
 		//density changing speed
 		density.addEntry(entryBuilder
 				.startEnumSelector(Text.translatable("text.sfcr.option.densityChangingSpeed")
-						, CommonConfig.CloudRefreshSpeed.class
+						, CloudRefreshSpeed.class
 						, CONFIG.getDensityChangingSpeed())
-				.setDefaultValue(CommonConfig.CloudRefreshSpeed.SLOW)
-				.setEnumNameProvider(value -> ((CommonConfig.CloudRefreshSpeed) value).getName())
+				.setDefaultValue(CloudRefreshSpeed.SLOW)
+				.setEnumNameProvider(value -> ((CloudRefreshSpeed) value).getName())
 				.setTooltip(Text.translatable("text.sfcr.option.densityChangingSpeed.@Tooltip"))
 				.setSaveConsumer(CONFIG::setDensityChangingSpeed)
 				.build()
@@ -415,6 +448,7 @@ public class ConfigScreen {
 				.setDefaultValue(false)
 				.setTooltip(Text.translatable("text.sfcr.option.enableSmoothChange.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableSmoothChange)
+				.setRequirement(Requirement.isTrue(() -> false))
 				.build()
 		);
 		//precipitation info
@@ -477,7 +511,7 @@ public class ConfigScreen {
 		density.addEntry(entryBuilder
 				.startStrList(Text.translatable("text.sfcr.option.biomeFilter")
 						, CONFIG.getBiomeFilterList())
-				.setDefaultValue(CommonConfig.DEF_BIOME_FILTER_LIST)
+				.setDefaultValue(Config.DEF_BIOME_FILTER_LIST)
 				.setTooltip(Text.translatable("text.sfcr.option.biomeFilter.@Tooltip"))
 				.setSaveConsumer(CONFIG::setBiomeFilterList)
 				.build()

@@ -2,7 +2,7 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.rimo.sfcr.config.CommonConfig;
+import com.rimo.sfcr.config.CullMode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
@@ -113,7 +113,7 @@ public class Renderer {
 		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
 		 * We made a lot of small lags to replace a single big lag, it's hard to say which is better...
 		 */
-		boolean isCullingDisabled = CONFIG.getCullMode().equals(CommonConfig.CullMode.NONE);
+		boolean isCullingDisabled = CONFIG.getCullMode().equals(CullMode.NONE);
 		//if culling is disabled, no need to rebuild in every tick.
 		if (! isPause && (isCullingDisabled && rebuildTimer == 99 || ! isCullingDisabled && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
@@ -208,14 +208,14 @@ public class Renderer {
 		Vec3d[] camProjBorder = null;
 		double fovCos = 0, extraAngleSin = 0;
 
-		if (CONFIG.getCullMode().equals(CommonConfig.CullMode.CIRCULAR)) {
+		if (CONFIG.getCullMode().equals(CullMode.CIRCULAR)) {
 			camVec = new Vec3d(
 					-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw())),
 					-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch())),
 					 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()))
 			).normalize();
 			fovCos = Math.cos(Math.toRadians(client.options.getFov().getValue() * client.player.getFovMultiplier() * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
-		} else if (CONFIG.getCullMode().equals(CommonConfig.CullMode.RECTANGULAR)) {
+		} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
 			var camProj = client.gameRenderer.getCamera().getProjection();
 			camProjBorder = new Vec3d[]{
 					camProj.getTopRight().crossProduct(camProj.getTopLeft()).normalize(),			//up
@@ -258,7 +258,7 @@ public class Renderer {
 								(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
 						).normalize();
 						boolean isInRange = true;
-						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {
+						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {  //TODO: 所有顶点都在视野外，但斜边仍可能与视野存在交集
 							continue;
 						} else if (camProjBorder != null) {
 							for (Vec3d plane : camProjBorder) {

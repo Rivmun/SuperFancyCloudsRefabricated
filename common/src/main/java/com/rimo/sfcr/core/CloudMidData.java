@@ -16,7 +16,7 @@ public class CloudMidData extends CloudData {
 
 		// Get same block
 		int startWidth = Math.abs(prevData.width - nextData.width) / 2;
-		int startLength = prevData.startZ - nextData.startZ + Math.abs(prevData.width - nextData.width) / 2;
+		int startLength = prevData.gridCenterZ - nextData.gridCenterZ + Math.abs(prevData.width - nextData.width) / 2;
 		int minWidth = Math.min(prevData.width, nextData.width);
 		int minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
 		int minHeight = Math.min(prevData.height, nextData.height);

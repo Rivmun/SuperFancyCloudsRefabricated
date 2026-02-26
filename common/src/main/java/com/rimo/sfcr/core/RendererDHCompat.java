@@ -68,7 +68,7 @@ public class RendererDHCompat extends Renderer {
 							xMax++;
 						while (xMin - 1 >= 0 && grid[xMin - 1][y][z])  // X to left
 							xMin--;
-						while (yMax + 1 < w) {  // Y to down
+						while (yMax + 1 < h) {  // Y to down
 							boolean valid = true;
 							for (int i = xMin; i <= xMax; i++) {
 								if (!grid[i][yMax + 1][z]) {
@@ -90,7 +90,7 @@ public class RendererDHCompat extends Renderer {
 							if (valid) yMin--;
 							else break;
 						}
-						while (zMax + 1 < h) {  // Z to forward
+						while (zMax + 1 < w) {  // Z to forward
 							boolean valid = true;
 							for (int i = xMin; i <= xMax; i++) {
 								for (int j = yMin; j <= yMax; j++) {
@@ -164,8 +164,10 @@ public class RendererDHCompat extends Renderer {
 		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
 		double timeOffset = (ticks + tickDelta) * 0.03F;
 		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
+		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
+		int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
 		Vec3d cloudColor = world.getCloudsColor(tickDelta);
 
@@ -179,7 +181,7 @@ public class RendererDHCompat extends Renderer {
 			resamplingTimer = 0.0;
 			resamplingThread = new Thread(() -> {  //start data refresh thread
 				try {
-					collectCloudData(GridX, GridZ);
+					collectCloudData(GridX, GridY, GridZ);
 				} catch (Exception e) {
 					exceptionCatcher(e);
 				} finally {
@@ -202,13 +204,13 @@ public class RendererDHCompat extends Renderer {
 
 	//add RenderableBoxGroup build and replace.
 	@Override
-	protected void collectCloudData(int x, int z) {
+	protected void collectCloudData(int x, int y, int z) {
 		if (!DhApi.Delayed.configs.graphics().renderingEnabled().getValue())
 			return;  //save battery if DH render was disabled.
 		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
 				Common.MOD_ID + ":clouds",
 				new DhApiVec3d(0, 0, 0),
-				convertGridForm(new CloudData(x, z, DATA.densityByWeather, DATA.densityByBiome)._cloudData)
+				convertGridForm(new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome)._cloudData)
 		);
 		newGroup.setBlockLight(15);
 		newGroup.setSkyLight(15);

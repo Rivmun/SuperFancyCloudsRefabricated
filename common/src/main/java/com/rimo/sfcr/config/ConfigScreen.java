@@ -119,7 +119,7 @@ public class ConfigScreen {
 				.setDefaultValue(10)
 				.setTextGetter(value -> Text.of(value / 10f + "x"))
 				.setTooltip(Text.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
-				.setRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
+				.setDisplayRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
 				.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 				.build()
 		);
@@ -135,6 +135,7 @@ public class ConfigScreen {
 						Text.translatable("text.sfcr.frame", value)
 				)
 				.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
+				.setDisplayRequirement(Requirement.isValue(cullMode, CommonConfig.CullMode.CIRCULAR, CommonConfig.CullMode.RECTANGULAR))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
 				.build()
 		);

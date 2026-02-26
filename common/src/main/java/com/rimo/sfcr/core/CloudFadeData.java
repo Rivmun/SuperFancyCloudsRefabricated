@@ -15,8 +15,8 @@ public class CloudFadeData extends CloudData {
 
 	private void collectCloudData(CloudData prevData, CloudData nextData) {
 
-		int startWidth = prevData.startX - nextData.startX;
-		int startLength = prevData.startZ - nextData.startZ;
+		int startWidth = prevData.gridCenterX - nextData.gridCenterX;
+		int startLength = prevData.gridCenterZ - nextData.gridCenterZ;
 		int minWidth = Math.min(prevData.width, nextData.width) - Math.abs(startWidth) * 2;
 		int minLength = Math.min(prevData.width, nextData.width) - Math.abs(startLength) * 2;
 		int minHeight = Math.min(prevData.height, nextData.height);

@@ -1,6 +1,5 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.CommonConfig;
 import net.minecraft.client.MinecraftClient;
@@ -13,35 +12,40 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 
+import static com.rimo.sfcr.Client.RENDERER;
+import static com.rimo.sfcr.Common.exceptionCatcher;
+
 public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
 	protected final CommonConfig CONFIG = Common.CONFIG;
-
 	private final CloudDataType dataType;
 	private float lifeTime;
-
 	protected ArrayList<Float> vertexList = new ArrayList<>();
 	protected ArrayList<Byte> normalList = new ArrayList<>();
 	protected boolean[][][] _cloudData;
-
 	protected int width;
 	protected int height;
-	protected int startX;
-	protected int startZ;
+	protected int gridCenterX;
+	protected int gridCenterZ;
+	// We want build inner faces earlier (no through culling equation to build useless faces), so this arg place here instead of Renderer.
+	protected int gridYFromClouds;
+	private boolean isOnBuild = false;
+	private Thread buildThread;
 
 	// Normal constructor
-	public CloudData(int x, int z, float densityByWeather, float densityByBiome) {
+	public CloudData(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		dataType = CloudDataType.NORMAL;
 		width = CONFIG.getCloudRenderDistance() * 2 + 1;
 		height = CONFIG.getCloudLayerThickness();
-		startX = x;
-		startZ = z;
+		gridCenterX = x;
+		gridCenterZ = z;
+		gridYFromClouds = minusCloudGridHeight(y);
 		_cloudData = new boolean[width][height][width];
 
 		collectCloudData(x, z, densityByWeather, densityByBiome);
 	}
 
-	// Overload
+	// for child
 	public CloudData(CloudDataType type) {
 		dataType = type;
 		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
@@ -53,6 +57,10 @@ public class CloudData {
 
 	public void tick() {
 		lifeTime -= MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+	}
+
+	private int minusCloudGridHeight(int y) {
+		return y - (int)(RENDERER.getCloudHeight() / CONFIG.getCloudBlockSize() * 2);
 	}
 
 	// Access
@@ -109,7 +117,7 @@ public class CloudData {
 						// terrain dodge (detect light level)
 						_cloudData[cx][cy][cz] = world.getLightLevel(LightType.SKY, new BlockPos(
 								bx,
-								(int) (Client.RENDERER.getCloudHeight() + (cy - 2) * CONFIG.getCloudBlockSize() / 2f),
+								(int) (RENDERER.getCloudHeight() + (cy - 2) * CONFIG.getCloudBlockSize() / 2f),
 								bz
 						)) == 15 && getCloudSample(sx, sz, 0, time, cx, cy, cz) > f;
 					}
@@ -167,7 +175,48 @@ public class CloudData {
 
 	/* - - - - - Mesh Computing - - - - - */
 
-	protected void addVertex(float x, float y, float z) {
+	public CloudData buildMesh() {
+		buildMesh(vertexList, normalList);
+		return this;
+	}
+
+	public void tryRebuildMesh(int y) {
+		if (isOnBuild)
+  			return;
+		int newGridY = minusCloudGridHeight(y);
+		if (newGridY == gridYFromClouds)
+			return;
+		isOnBuild = true;
+		gridYFromClouds = newGridY;
+		buildThread = new Thread(() -> {
+			try {
+				ArrayList<Float> newVertexList = new ArrayList<>();
+				ArrayList<Byte> newNormalList = new ArrayList<>();
+				buildMesh(newVertexList, newNormalList);
+				synchronized (this) {
+					vertexList = newVertexList;
+					normalList = newNormalList;
+				}
+			} catch (Exception e) {
+				exceptionCatcher(e);
+			} finally {
+				RENDERER.markForRebuild();
+				isOnBuild = false;
+			}
+		});
+		buildThread.start();
+	}
+
+	public void stop() {
+		try {
+			if (buildThread != null)
+				buildThread.join();
+		} catch (Exception e) {
+			//
+		}
+	}
+
+	private void addVertex(ArrayList<Float> vertexList, float x, float y, float z) {
 		vertexList.add(x);
 		vertexList.add(y);
 		vertexList.add(z);
@@ -176,7 +225,45 @@ public class CloudData {
 	/*
 	 * try port 1.21.6+ vanilla mesh build function here...
 	 */
-	protected CloudData computingCloudMesh() {
+	private void buildMesh(ArrayList<Float> vertexList, ArrayList<Byte> normalList) {
+		int cy = gridYFromClouds;
+		if (cy >= 0 && cy < height) {
+			int cx = width / 2;
+			if (_cloudData[cx][cy][cx]) {  //build inner faces then return
+				addVertex(vertexList, 0, cy, 0);
+				addVertex(vertexList, 0, cy, 1);
+				addVertex(vertexList, 0, cy + 1, 1);
+				addVertex(vertexList, 0, cy + 1, 0);
+				normalList.add((byte) 0);
+				addVertex(vertexList, 1, cy, 0);
+				addVertex(vertexList, 1, cy, 1);
+				addVertex(vertexList, 1, cy + 1, 1);
+				addVertex(vertexList, 1, cy + 1, 0);
+				normalList.add((byte) 1);
+				addVertex(vertexList, 0, cy, 1);
+				addVertex(vertexList, 1, cy, 1);
+				addVertex(vertexList, 1, cy + 1, 1);
+				addVertex(vertexList, 0, cy + 1, 1);
+				normalList.add((byte) 5);
+				addVertex(vertexList, 0, cy, 0);
+				addVertex(vertexList, 1, cy, 0);
+				addVertex(vertexList, 1, cy + 1, 0);
+				addVertex(vertexList, 0, cy + 1, 0);
+				normalList.add((byte) 4);
+				addVertex(vertexList, 0, cy, 0);
+				addVertex(vertexList, 1, cy, 0);
+				addVertex(vertexList, 1, cy, 1);
+				addVertex(vertexList, 0, cy, 1);
+				normalList.add((byte) 2);
+				addVertex(vertexList, 0, cy + 1, 0);
+				addVertex(vertexList, 1, cy + 1, 0);
+				addVertex(vertexList, 1, cy + 1, 1);
+				addVertex(vertexList, 0, cy + 1, 1);
+				normalList.add((byte) 3);
+				return;
+			}
+		}
+
 		int renderDistance = (width - 1) / 2;
 		for(int l = 0; l <= 2 * renderDistance; ++l) {
 			for (int xOffset = - l; xOffset <= l; ++ xOffset) {
@@ -185,19 +272,18 @@ public class CloudData {
 				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
 					if (zOffset != 0) {
 						for (int y = 0; y < height; ++ y) {
-							tryBuildCell(xOffset, y, - zOffset, renderDistance);
+							tryBuildCell(vertexList, normalList, xOffset, y, - zOffset, renderDistance);
 						}
 					}
 					for (int y = 0; y < height; ++ y) {
-						tryBuildCell(xOffset, y, zOffset, renderDistance);
+						tryBuildCell(vertexList, normalList, xOffset, y, zOffset, renderDistance);
 					}
 				}
 			}
 		}
-		return this;
 	}
 
-	private void tryBuildCell(int xOffset, int y, int zOffset, int renderDistance) {
+	private void tryBuildCell(ArrayList<Float> vertexList, ArrayList<Byte> normalList, int xOffset, int y, int zOffset, int renderDistance) {
 		int x = xOffset + renderDistance;  //trans to list index
 		int z = zOffset + renderDistance;
 		if (!_cloudData[x][y][z])
@@ -209,51 +295,50 @@ public class CloudData {
 		boolean borderEast   = !(x + 1 <  _cloudData.length && _cloudData[x + 1][y][z]);
 		boolean borderWest   = !(x - 1 >= 0                 && _cloudData[x -1 ][y][z]);
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
-		buildExtrudedCell(xOffset, y, zOffset, cellState);
+		buildExtrudedCell(vertexList, normalList, xOffset, y, zOffset, cellState);
 	}
 
-	private void buildExtrudedCell(int x, int y, int z, int cellState) {
-		int playerGridY = (int) ((MinecraftClient.getInstance().gameRenderer.getCamera().getPos().getY() - CONFIG.getCloudHeight()) / CONFIG.getCloudBlockSize() * 2);
-		if (hasBorderTop(cellState) && y < playerGridY) {  //facing (normals) culling...
-			addVertex(x, y + 1, z);
-			addVertex(x + 1, y + 1, z);
-			addVertex(x + 1, y + 1, z + 1);
-			addVertex(x, y + 1, z + 1);
+	private void buildExtrudedCell(ArrayList<Float> vertexList, ArrayList<Byte> normalList, int x, int y, int z, int cellState) {
+		if (hasBorderTop(cellState) && y < gridYFromClouds) {  //facing (normals) culling...
+			addVertex(vertexList, x, y + 1, z);
+			addVertex(vertexList, x + 1, y + 1, z);
+			addVertex(vertexList, x + 1, y + 1, z + 1);
+			addVertex(vertexList, x, y + 1, z + 1);
 			normalList.add((byte) 2);
 		}
-		if (hasBorderBottom(cellState) && y > playerGridY) {
-			addVertex(x, y, z);
-			addVertex(x + 1, y, z);
-			addVertex(x + 1, y, z + 1);
-			addVertex(x, y, z + 1);
+		if (hasBorderBottom(cellState) && y > gridYFromClouds) {
+			addVertex(vertexList, x, y, z);
+			addVertex(vertexList, x + 1, y, z);
+			addVertex(vertexList, x + 1, y, z + 1);
+			addVertex(vertexList, x, y, z + 1);
 			normalList.add((byte) 3);
 		}
 		if (hasBorderSouth(cellState) && z < 0) {
-			addVertex(x, y, z + 1);
-			addVertex(x + 1, y, z + 1);
-			addVertex(x + 1, y + 1, z + 1);
-			addVertex(x, y + 1, z + 1);
+			addVertex(vertexList, x, y, z + 1);
+			addVertex(vertexList, x + 1, y, z + 1);
+			addVertex(vertexList, x + 1, y + 1, z + 1);
+			addVertex(vertexList, x, y + 1, z + 1);
 			normalList.add((byte) 4);
 		}
 		if (hasBorderNorth(cellState) && z > 0) {
-			addVertex(x, y, z);
-			addVertex(x + 1, y, z);
-			addVertex(x + 1, y + 1, z);
-			addVertex(x, y + 1, z);
+			addVertex(vertexList, x, y, z);
+			addVertex(vertexList, x + 1, y, z);
+			addVertex(vertexList, x + 1, y + 1, z);
+			addVertex(vertexList, x, y + 1, z);
 			normalList.add((byte) 5);
 		}
 		if (hasBorderEast(cellState) && x < 0) {
-			addVertex(x + 1, y, z);
-			addVertex(x + 1, y, z + 1);
-			addVertex(x + 1, y + 1, z + 1);
-			addVertex(x + 1, y + 1, z);
+			addVertex(vertexList, x + 1, y, z);
+			addVertex(vertexList, x + 1, y, z + 1);
+			addVertex(vertexList, x + 1, y + 1, z + 1);
+			addVertex(vertexList, x + 1, y + 1, z);
 			normalList.add((byte) 0);
 		}
 		if (hasBorderWest(cellState) && x > 0) {
-			addVertex(x, y, z);
-			addVertex(x, y, z + 1);
-			addVertex(x, y + 1, z + 1);
-			addVertex(x, y + 1, z);
+			addVertex(vertexList, x, y, z);
+			addVertex(vertexList, x, y, z + 1);
+			addVertex(vertexList, x, y + 1, z + 1);
+			addVertex(vertexList, x, y + 1, z);
 			normalList.add((byte) 1);
 		}
 	}

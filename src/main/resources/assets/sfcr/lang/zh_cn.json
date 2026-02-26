@@ -15,7 +15,7 @@
 	"text.sfcr.option.cullMode.@Tooltip": "圆形 - 剔除以屏幕中点为圆心的圆形范围外的面\n方形 - 严格按照视野范围剔除未出现在屏幕内的面",
 	"text.sfcr.option.cullRadianMultiplier": "- 视野剔除的角倍率",
 	"text.sfcr.option.cullRadianMultiplier.@Tooltip": "如果你的宽荧幕左右两边没有云，可以尝试调高该数值。\n为了获得更好的视觉效果，圆形剔除时角倍率已默认 x2，\n方形剔除时则默认 +0.1。",
-	"text.sfcr.option.rebuildInterval": "云层模型重建间隔",
+	"text.sfcr.option.rebuildInterval": "- 云层重建间隔（剔除频率）",
 	"text.sfcr.option.rebuildInterval.@Tooltip": "控制云层模型重建（刷新颜色和形状）的间隔时间。\n间隔越大，模组对游戏性能的影响就越小。\n但较大的值可能会引起渲染延迟。",
 	"text.sfcr.option.debug": "输出调试信息",
 	"text.sfcr.option.debug.@Tooltip": "除非你是测试员，否则§4请勿启用§r。",

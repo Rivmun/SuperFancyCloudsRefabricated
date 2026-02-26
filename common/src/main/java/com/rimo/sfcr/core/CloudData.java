@@ -1,7 +1,7 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.Common;
-import com.rimo.sfcr.config.CommonConfig;
+import com.rimo.sfcr.config.Config;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -17,7 +17,7 @@ import static com.rimo.sfcr.Common.exceptionCatcher;
 
 public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
-	protected final CommonConfig CONFIG = Common.CONFIG;
+	protected final Config CONFIG = Common.CONFIG;
 	private final CloudDataType dataType;
 	private float lifeTime;
 	protected ArrayList<Float> vertexList = new ArrayList<>();

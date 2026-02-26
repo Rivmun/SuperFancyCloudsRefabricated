@@ -4,7 +4,7 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.rimo.sfcr.config.CommonConfig;
+import com.rimo.sfcr.config.CloudRefreshSpeed;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -189,11 +189,11 @@ public class Server {
 							.then(literal("changingspeed")
 									.then(argument("changingspeed", IntegerArgumentType.integer(1, 5)).executes(content -> {
 										switch (content.getArgument("changingspeed", Integer.class)) {
-											case 1 -> Common.CONFIG.setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed.VERY_SLOW);
-											case 2 -> Common.CONFIG.setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed.SLOW);
-											case 3 -> Common.CONFIG.setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed.NORMAL);
-											case 4 -> Common.CONFIG.setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed.FAST);
-											case 5 -> Common.CONFIG.setDensityChangingSpeed(CommonConfig.CloudRefreshSpeed.VERY_FAST);
+											case 1 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_SLOW);
+											case 2 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.SLOW);
+											case 3 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.NORMAL);
+											case 4 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.FAST);
+											case 5 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_FAST);
 										}
 										content.getSource().sendMessage(Text.of("Changing speed changed!"));
 										return 1;

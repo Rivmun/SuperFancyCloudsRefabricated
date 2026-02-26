@@ -1,11 +1,9 @@
 package com.rimo.sfcr.config;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import dev.architectury.platform.Platform;
-import net.minecraft.text.Text;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,9 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class CommonConfig extends CoreConfig {
-	//----GENERAL----
-	private boolean enableMod = true;
+import static com.rimo.sfcr.Common.MOD_ID;
+
+public class Config extends SharedConfig {
 	private boolean enableDebug = false;
 	private boolean enableServerConfig = false;
 	private boolean enableFog = true;
@@ -37,8 +35,27 @@ public class CommonConfig extends CoreConfig {
 	//----COMPAT-----
 	private boolean isEnableDHCompat = false;
 
-	//output func.
-	public boolean isEnableMod() {return enableMod;}
+	public Config() {}
+	public void setConfig(Config config) {
+		this.enableDebug                  = config.enableDebug;
+		this.enableServerConfig           = config.enableServerConfig;
+		this.enableFog                    = config.enableFog;
+		this.cullMode                     = config.cullMode;
+		this.cullRadianMultiplier         = config.cullRadianMultiplier;
+		this.rebuildInterval              = config.rebuildInterval;
+		this.enableSmoothChange           = config.enableSmoothChange;
+		this.cloudRenderDistance          = config.cloudRenderDistance;
+		this.cloudRenderDistanceFitToView = config.cloudRenderDistanceFitToView;
+		this.normalRefreshSpeed           = config.normalRefreshSpeed;
+		this.enableTerrainDodge           = config.enableTerrainDodge;
+		this.fogAutoDistance              = config.fogAutoDistance;
+		this.fogMinDistance               = config.fogMinDistance;
+		this.fogMaxDistance               = config.fogMaxDistance;
+		this.weatherRefreshSpeed          = config.weatherRefreshSpeed;
+		this.isEnableDHCompat             = config.isEnableDHCompat;
+		setSharedConfig(config);
+	}
+
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableServerConfig() {return enableServerConfig;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
@@ -56,8 +73,6 @@ public class CommonConfig extends CoreConfig {
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 
-	//input func.
-	public void setEnableMod(boolean isEnable) {enableMod = isEnable;}
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServerConfig(boolean isEnable) {enableServerConfig = isEnable;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}
@@ -82,107 +97,75 @@ public class CommonConfig extends CoreConfig {
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 
-	public void setCommonConfig(CommonConfig config) {		//TODO: Why do I need to write this sht...
-		this.enableMod						= config.enableMod;
-		this.enableDebug					= config.enableDebug;
-		this.enableServerConfig				= config.enableServerConfig;
-		this.cloudRenderDistance			= config.cloudRenderDistance;
-		this.cloudRenderDistanceFitToView	= config.cloudRenderDistanceFitToView;
-		this.normalRefreshSpeed				= config.normalRefreshSpeed;
-		this.enableTerrainDodge				= config.enableTerrainDodge;
-		this.cullMode = config.cullMode;
-		this.cullRadianMultiplier			= config.cullRadianMultiplier;
-		this.rebuildInterval				= config.rebuildInterval;
-		this.enableFog						= config.enableFog;
-		this.fogAutoDistance				= config.fogAutoDistance;
-		this.fogMinDistance					= config.fogMinDistance;
-		this.fogMaxDistance					= config.fogMaxDistance;
-		this.enableSmoothChange				= config.enableSmoothChange;
-		this.weatherRefreshSpeed			= config.weatherRefreshSpeed;
-		this.isEnableDHCompat = config.isEnableDHCompat;
-		this.setCoreConfig(config);
-	}
-
 	//conversion
 	public int getAutoFogMaxDistance() {
-		return (int) (cloudRenderDistance / 16f * cloudRenderDistance / 16f * cloudBlockSize / 16f);
+		return (int) (cloudRenderDistance / 16f * cloudRenderDistance / 16f * getCloudBlockSize() / 16f);
 	}
 
-	//load
-	public CommonConfig load() {
-		Gson gson = new Gson();
-		Path path = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
-		if (Files.exists(path)) {
-			try {
-				BufferedReader reader = Files.newBufferedReader(path);
-				CommonConfig config = gson.fromJson(reader, CommonConfig.class);
-				reader.close();
-				this.setCommonConfig(config);
-			} catch (IOException | JsonParseException e) {
-				Common.exceptionCatcher(e);
-			}
-		} else {
-			this.save();
-		}
+	/*
+	 * -----IO-----
+	 */
+
+	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
+	public static final String OVERWORLD = "minecraft:overworld";
+
+	public Config load() {
+		load(OVERWORLD);
 		return this;
 	}
 
-	//save
+	/**
+	 * Load dimensionName specific config then setConfig to this instance.<br>
+	 * If specific config not exist, it'll load default config then setConfig.<br>
+	 * File path like sfcr_modName_dimensionName.json
+	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
+	 * @return true if success to load dimension specific config, false if not.
+	 */
+	public boolean load(String dimensionNamespace) {
+		Path path = DEFAULT_PATH;
+		if (!Files.exists(path))
+			save();  //write default file if not exist.
+		if (! dimensionNamespace.equals(OVERWORLD)) {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
+			Path path2 = Platform.getConfigFolder().resolve(Common.MOD_ID + dimensionNamespace + ".json");
+			if (Files.exists(path2)) {
+				path = path2;  //load dimension config if exists, or load default (path unmodified if not exist)
+			} else {
+				return false;
+			}
+		}
+		try (BufferedReader reader = Files.newBufferedReader(path)) {
+			setConfig(GSON.fromJson(reader, Config.class));
+		} catch (IOException | JsonParseException e) {
+			Common.LOGGER.error("{} failed to read config file: {}", MOD_ID, path.getFileName());
+			return false;
+		}
+		Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
+		return true;
+	}
+
 	public void save() {
-		Gson gson = new Gson();
-		Path path = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
+		save(OVERWORLD);
+	}
+
+	/**
+	 * Save config file to .minecraft/config/sfcr_modName_dimensionName.json
+	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
+	 */
+	public void save(String dimensionNamespace) {
+		Path path = DEFAULT_PATH;
+		if (! dimensionNamespace.equals(OVERWORLD)) {
+			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
+			path = path.getParent().resolve(Common.MOD_ID + dimensionNamespace + ".json");
+		}
 		try {
 			Files.createDirectories(path.getParent());
-			BufferedWriter writer = Files.newBufferedWriter(path);
-			gson.toJson(this, writer);
-			writer.close();
+			try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+				GSON.toJson(this, writer);
+			}
 		} catch (IOException e) {
-			Common.exceptionCatcher(e);
+			Common.LOGGER.error("{} failed to write config file: {}", MOD_ID, path.getFileName());
 		}
 	}
 
-	public enum CloudRefreshSpeed {
-		VERY_SLOW,
-		SLOW,
-		NORMAL,
-		FAST,
-		VERY_FAST;
-
-		public int getValue() {
-			switch (this) {
-				case VERY_FAST -> {return 5;}
-				case FAST -> {return 10;}
-				case NORMAL -> {return 20;}
-				case SLOW -> {return 30;}
-				case VERY_SLOW -> {return 40;}
-			}
-			return 20;
-		}
-
-		public Text getName() {
-			switch (this) {
-				case VERY_FAST -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_FAST");}
-				case FAST -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.FAST");}
-				case NORMAL -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.NORMAL");}
-				case SLOW -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.SLOW");}
-				case VERY_SLOW -> {return Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW");}
-			}
-			return Text.of("");
-		}
-	}
-
-	public enum CullMode {
-		NONE,
-		CIRCULAR,
-		RECTANGULAR;
-
-		public Text getName() {
-			switch (this) {
-				case NONE -> {return Text.translatable("text.sfcr.disabled");}
-				case CIRCULAR -> {return Text.translatable("text.sfcr.enum.cullMode.circular");}
-				case RECTANGULAR -> {return Text.translatable("text.sfcr.enum.cullMode.rectangular");}
-			}
-			return null;
-		}
-	}
 }

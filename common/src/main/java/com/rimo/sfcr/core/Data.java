@@ -1,6 +1,6 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.config.CommonConfig;
+import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -22,7 +22,7 @@ public class Data {
 	private int weatheringRefreshSpeed;  //(same as above)
 	private int densityChangingSpeed;
 
-	public Data(CommonConfig config) {
+	public Data(Config config) {
 		setConfig(config);
 	}
 
@@ -30,7 +30,7 @@ public class Data {
 		return ((isWeatherChange || isBiomeChange) ? weatheringRefreshSpeed : normalRefreshSpeed) / 5;
 	}
 
-	public void setConfig(CommonConfig config) {
+	public void setConfig(Config config) {
 		normalRefreshSpeed = config.getNormalRefreshSpeed().getValue();
 		weatheringRefreshSpeed = config.getWeatherRefreshSpeed().getValue();
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
@@ -70,8 +70,6 @@ public class Data {
 	}
 
 	public void updateDensity(ClientPlayerEntity player) {
-		if (player == null)
-			return;
 		World world = player.getWorld();
 
 		//Detect Weather Change

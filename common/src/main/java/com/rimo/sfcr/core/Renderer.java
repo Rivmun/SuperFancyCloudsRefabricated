@@ -25,7 +25,7 @@ public class Renderer {
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
-	protected int oldGridX, oldGridY, oldGridZ;
+	protected int oldGridX, oldGridZ;
 	protected Vec3d oldColor = Vec3d.ZERO;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
@@ -53,7 +53,7 @@ public class Renderer {
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
-		int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
+		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
 		float xOffsetInGrid = (float) (cloudX - Math.floor(cloudX));  //cloud offset in current grid
 		//float yOffsetInGrid = (float) ((cloudY / CLOUD_BLOCK_HEIGHT - Math.floor(cloudY / CLOUD_BLOCK_HEIGHT)) * CLOUD_BLOCK_HEIGHT);
@@ -65,31 +65,39 @@ public class Renderer {
 			xOffsetInGrid += GridX - oldGridX;
 			zOffsetInGrid += GridZ - oldGridZ;
 		}
+		int cameraGridY = (int) (cameraY / CLOUD_BLOCK_HEIGHT);
 
 		//refresh check
 		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
-		if (! isPause && ! isResampling &&
-				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4 ||
-				oldGridY != GridY && cameraY > cloudHeight && cameraY < cloudHeight + CONFIG.getCloudLayerThickness() * CLOUD_BLOCK_HEIGHT)) {
-			isResampling = true;
-			resamplingTimer = 0.0;
-			oldGridY = GridY;
-			oldColor = cloudColor;
-			resamplingThread = new Thread(() -> {  //start data refresh thread
-				try {
-					collectCloudData(GridX, GridZ);
-				} catch (Exception e) {
-					exceptionCatcher(e);
-				} finally {
-					synchronized (this) {
-						oldGridX = GridX;  //delayed update to prevent flicker
-						oldGridZ = GridZ;
+		if (! isPause && ! isResampling) {
+			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4) {
+				isResampling = true;
+				resamplingTimer = 0.0;
+				oldColor = cloudColor;
+				resamplingThread = new Thread(() -> {  //start data refresh thread
+					try {
+						collectCloudData(GridX, cameraGridY, GridZ);
+					} catch (Exception e) {
+						exceptionCatcher(e);
+					} finally {
+						synchronized (this) {
+							oldGridX = GridX;  //delayed update to prevent flicker
+							oldGridZ = GridZ;
+						}
+						markForRebuild();  //let cloudCell rebuilt instantly
+						isResampling = false;
 					}
-					rebuildTimer = 999;  //let cloudCell rebuilt instantly
-					isResampling = false;
-				}
-			});
-			resamplingThread.start();
+				});
+				resamplingThread.start();
+			}
+			/*
+			 * if only Y changed (condition in cloudData) and not in resampling, and in cloudLayer, just refresh mesh.
+			 * Normal culling already does in 1.21.6+ vanilla mesh building, we must remesh it to prevent top/bottom face disappear when Y changed.
+			 */
+			int cloudGridHeight = (int) (cloudHeight / CLOUD_BLOCK_HEIGHT);
+			if (! isResampling && cameraGridY > cloudGridHeight + 1 && cameraGridY < cloudGridHeight + CONFIG.getCloudLayerThickness() + 1) {
+ 				cloudDataGroup.forEach(cloudData -> cloudData.tryRebuildMesh(cameraGridY));
+			}
 		}
 
 		//Setup render system
@@ -105,7 +113,9 @@ public class Renderer {
 		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
 		 * We made a lot of small lags to replace a single big lag, it's hard to say which is better...
 		 */
-		if (! isPause && ++ rebuildTimer > CONFIG.getRebuildInterval()) {
+		boolean isCullingDisabled = CONFIG.getCullMode().equals(CommonConfig.CullMode.NONE);
+		//if culling is disabled, no need to rebuild in every tick.
+		if (! isPause && (isCullingDisabled && rebuildTimer == 99 || ! isCullingDisabled && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), xOffsetInGrid, cloudHeight);
 			if (cb != null) {
@@ -159,7 +169,12 @@ public class Renderer {
 		RenderSystem.defaultBlendFunc();
 	}
 
+	public void markForRebuild() {
+		this.rebuildTimer = 99;
+	}
+
 	public void stop() {
+		cloudDataGroup.forEach(CloudData::stop);
 		try {
 			if (resamplingThread != null)
 				resamplingThread.join();
@@ -188,7 +203,7 @@ public class Renderer {
 
 	// Building mesh
 	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, double offset, float cloudHeight) {
-		var client = MinecraftClient.getInstance();
+		MinecraftClient client = MinecraftClient.getInstance();
 		Vec3d camVec = null;
 		Vec3d[] camProjBorder = null;
 		double fovCos = 0, extraAngleSin = 0;
@@ -218,19 +233,21 @@ public class Renderer {
 
 		try {
 			for (CloudData data : cloudDataGroup) {
+				ArrayList<Float> vertexList = data.vertexList;  //snapshot these
+				ArrayList<Byte> normalList = data.normalList;
 				int colorModifier = getCloudColor(client.world.getTimeOfDay(), data);
-				int normCount = data.normalList.size();
+				int normCount = normalList.size();
 
 				for (int i = 0; i < normCount; i++) {
-					int normIndex = data.normalList.get(i);		// exacting data...
+					int normIndex = normalList.get(i);		// exacting data...
 					float nx = normals[normIndex][0];
 					float ny = normals[normIndex][1];
 					float nz = normals[normIndex][2];
 					float[][] verCache = new float[4][3];
 					for (int j = 0; j < 4; j++) {
-						verCache[j][0] = data.vertexList.get(i * 12 + j * 3);
-						verCache[j][1] = data.vertexList.get(i * 12 + j * 3 + 1);
-						verCache[j][2] = data.vertexList.get(i * 12 + j * 3 + 2);
+						verCache[j][0] = vertexList.get(i * 12 + j * 3);
+						verCache[j][1] = vertexList.get(i * 12 + j * 3 + 1);
+						verCache[j][2] = vertexList.get(i * 12 + j * 3 + 2);
 					}
 					boolean isDrawn = false;
 
@@ -253,7 +270,11 @@ public class Renderer {
 						}
 						if (isInRange) {
 							for (int k = 0; k < 4; k++) {
-								builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2]).texture(0.5f, 0.5f).color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier)).normal(nx, ny, nz).next();
+								builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
+										.texture(0.5f, 0.5f)
+										.color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier))
+										.normal(nx, ny, nz)
+										.next();
 							}
 							isDrawn = true;
 							break;
@@ -289,16 +310,17 @@ public class Renderer {
 		}
 	}
 
-	protected void collectCloudData(int x, int z) {
+	protected void collectCloudData(int x, int y, int z) {
 		CloudData tmp;
 		CloudData fadeIn = null, fadeOut = null, midBody = null;
 
-		tmp = new CloudData(x, z, DATA.densityByWeather, DATA.densityByBiome).computingCloudMesh();
+		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN).computingCloudMesh();
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT).computingCloudMesh();
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY).computingCloudMesh();
+			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN).buildMesh();
+			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT).buildMesh();
+			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY).buildMesh();
 		}
+		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
 			cloudDataGroup.clear();
 			if (midBody != null) {
@@ -331,13 +353,15 @@ public class Renderer {
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
 			t = t > 22500 ? t - 22500 : t + 1500;
 			r = (int) (r * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (g * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
-			b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			double v = Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 + Math.sin(t / 1000d * Math.PI) / 3;
+			g = (int) (g * (1 - v / 2.1));
+			b = (int) (b * (1 - v / 1.6));
 		} else if (t < 13500 && t > 11500) {		//Dusk, reverse order
 			t -= 11500;
 			r = (int) (r * (1 - Math.sin(t / 2000d * Math.PI) / 8));
-			g = (int) (g * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 2.1));
-			b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
+			double v = Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3;
+			g = (int) (g * (1 - v / 2.1));
+			b = (int) (b * (1 - v / 1.6));
 		}
 
 		return ColorHelper.Argb.getArgb(a, r, g, b);

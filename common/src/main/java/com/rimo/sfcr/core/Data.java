@@ -65,7 +65,7 @@ public class Data {
 
 	//Only runs when connected to a server without sync
 	public void updateWeatherClient(World world) {
-		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && CONFIG.isEnableServerConfig())
+		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && CONFIG.isEnableServer())
 			setNextWeather(world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR);
 	}
 

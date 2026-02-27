@@ -31,7 +31,7 @@ public abstract class GameOptionsMixin {
 	 */
 	@Inject(method = "getCloudRenderModeValue", at = @At("RETURN"), cancellable = true)
 	private void getCloudType(CallbackInfoReturnable<CloudRenderMode> cir) {
-		if (Common.CONFIG.isEnableMod())
+		if (Common.CONFIG.isEnableRender())
 			cir.setReturnValue(CloudRenderMode.FANCY);
 	}
 }

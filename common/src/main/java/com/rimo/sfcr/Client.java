@@ -11,9 +11,11 @@ import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.PacketByteBuf;
 
 import java.util.Random;
 
@@ -40,7 +42,7 @@ public class Client {
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
 			String dimensionName = world.getRegistryKey().getValue().toString();
-			if (! hasServer || ! CONFIG.isEnableServerConfig()) {
+			if (! hasServer || ! CONFIG.isEnableServer()) {
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))  //if not sfcr server or disabled server config, read config by client itself.
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
@@ -49,7 +51,7 @@ public class Client {
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (!CONFIG.isEnableMod())
+			if (!CONFIG.isEnableRender())
 				return;
 			if (!hasServer && client.world != null)
 				DATA.updateWeatherClient(client.world);
@@ -80,7 +82,7 @@ public class Client {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
 			String name = buf.readString();
 			String configJson = buf.readString();
-			if (! configJson.isEmpty() && CONFIG.isEnableServerConfig()) {
+			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
 					if (! MinecraftClient.getInstance().isIntegratedServerRunning())  //singleplayer override itself? ur joking...
@@ -107,6 +109,16 @@ public class Client {
 			DATA.setNextWeather(weather);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive weather: {}", MOD_ID, weather);
+		});
+
+		//upload request receiver & shared config sender
+		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
+			String configJson = CONFIG.toString();
+			NetworkManager.sendToServer(PACKET_SHARED_CONFIG, new PacketByteBuf(Unpooled.buffer())
+					.writeString(configJson)
+			);
+			if (CONFIG.isEnableDebug())
+				LOGGER.info("{} send current config to server", MOD_ID);
 		});
 	}
 

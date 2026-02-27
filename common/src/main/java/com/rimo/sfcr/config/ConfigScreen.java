@@ -29,7 +29,7 @@ public class ConfigScreen {
 	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
 
 	private int fogMin, fogMax;
-	private final boolean oldEnableMod = CONFIG.isEnableMod();
+	private final boolean oldEnableMod = CONFIG.isEnableRender();
 	private final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
 	private String dimensionName;
 
@@ -105,31 +105,22 @@ public class ConfigScreen {
 					.startTextDescription(Text.translatable("text.sfcr.option.configHasBeenOverride.@PrefixText"))
 					.build()
 			);
-		//enabled
+		//enabled render
 		general.addEntry(entryBuilder
 				.startBooleanToggle(Text.translatable("text.sfcr.option.enableMod")
-						, CONFIG.isEnableMod())
+						, CONFIG.isEnableRender())
 				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.enableMod.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableMod)
+				.setSaveConsumer(CONFIG::setEnableRender)
 				.build()
 		);
-		//fog enable
+		//enable server
 		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableFog")
-						, CONFIG.isEnableFog())
-				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableFog.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableFog)
-				.build()
-		);
-		//weather
-		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
-						, CONFIG.isEnableWeatherDensity())
-				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
+						, CONFIG.isEnableServer())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableServer)
 				.build()
 		);
 		//cull mode
@@ -170,15 +161,6 @@ public class ConfigScreen {
 				.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
 				.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
 				.setSaveConsumer(CONFIG::setRebuildInterval)
-				.build()
-		);
-		//server control
-		general.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
-						, CONFIG.isEnableServerConfig())
-				.setDefaultValue(false)
-				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableServerConfig)
 				.build()
 		);
 		//DEBUG
@@ -302,6 +284,15 @@ public class ConfigScreen {
 				.setTooltip(Text.translatable("text.sfcr.option.fogAutoDistance.@Tooltip"))
 				.setSaveConsumer(CONFIG::setFogAutoDistance)
 				.build();
+		//fog enable
+		fog.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableFog")
+						, CONFIG.isEnableFog())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableFog.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableFog)
+				.build()
+		);
 		//fog auto distance
 		fog.addEntry(autoFog);
 		//fog min dist.
@@ -333,6 +324,15 @@ public class ConfigScreen {
 	}
 
 	private void buildDensityCategory() {
+		//weather
+		density.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
+						, CONFIG.isEnableWeatherDensity())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
+				.build()
+		);
 		// threshold
 		density.addEntry(entryBuilder
 				.startFloatField(Text.translatable("text.sfcr.option.densityThreshold")

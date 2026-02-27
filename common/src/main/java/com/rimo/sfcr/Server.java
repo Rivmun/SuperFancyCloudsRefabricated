@@ -1,329 +1,107 @@
 package com.rimo.sfcr;
 
+import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.FloatArgumentType;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.rimo.sfcr.config.CloudRefreshSpeed;
+import com.rimo.sfcr.config.Config;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
+import dev.architectury.networking.NetworkManager;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
+import static com.rimo.sfcr.Common.*;
 
 @Environment(EnvType.SERVER)
 public class Server {
 	public static void init() {
-		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> {
-			dispatcher.register(literal("sfcr")
-					.executes(content -> {
-						content.getSource().sendMessage(Text.of("- - - - - SFCR Help Page - - - - -"));
-						content.getSource().sendMessage(Text.of("/sfcr - Show this page"));
-						content.getSource().sendMessage(Text.of("/sfcr sync [full] - Sync with server instantly"));
-						if (!content.getSource().hasPermissionLevel(2))
+		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
+				.register(literal("sfcr")
+						.requires(source -> source.hasPermissionLevel(2))
+						.executes(context -> {
+							context.getSource().sendMessage(Text.of("- - - - - SFCR Help Page - - - - -"));
+							context.getSource().sendMessage(Text.of("/sfcr - Show this page"));
+							context.getSource().sendMessage(Text.of("/sfcr status - Show current dimension's config"));
+							context.getSource().sendMessage(Text.of("/sfcr [enable|disable] - Toggle SFCR server activity"));
+							context.getSource().sendMessage(Text.of("/sfcr upload - upload your current config to server as current dimension specific config"));
 							return 1;
-						content.getSource().sendMessage(Text.of("/sfcr statu - Show runtime config"));
-						content.getSource().sendMessage(Text.of("/sfcr [enable|disable] - Toggle SFCR server activity"));
-						content.getSource().sendMessage(Text.of("/sfcr [cloud|density|biome] - Edit config"));
-						content.getSource().sendMessage(Text.of("/sfcr biome [list|add|remove] - Manage ignored biome"));
-						content.getSource().sendMessage(Text.of("/sfcr reload - Reload config (You needs sync it toAllPlayers manually)"));
-						content.getSource().sendMessage(Text.of("/sfcr save - Save runtime config to file"));
-						return 1;
-					})
-					.then(literal("statu").requires(source -> source.hasPermissionLevel(2)).executes(content -> {
-						content.getSource().sendMessage(Text.of("- - - - - SFCR Mod Statu - - - - -"));
-						content.getSource().sendMessage(Text.of("§eStatu: §r"				+ Common.CONFIG.isEnableMod()));
-						content.getSource().sendMessage(Text.of("§eCloud height: §r"		+ Common.CONFIG.getCloudHeight()));
-						content.getSource().sendMessage(Text.of("§eCloud Block Size: §r"	+ Common.CONFIG.getCloudBlockSize()));
-						content.getSource().sendMessage(Text.of("§eCloud Thickness: §r"	+ Common.CONFIG.getCloudLayerThickness()));
-						content.getSource().sendMessage(Text.of("§eSample Step: §r"		+ Common.CONFIG.getSampleSteps()));
-						content.getSource().sendMessage(Text.of("§eCloud color: §r"		+
-								Integer.toHexString((Common.CONFIG.getCloudColor() & 0xFF0000) >> 16) +
-								Integer.toHexString((Common.CONFIG.getCloudColor() & 0x00FF00) >> 8) +
-								Integer.toHexString(Common.CONFIG.getCloudColor() & 0x0000FF)
-						));
-						content.getSource().sendMessage(Text.of("§eCloud Brht Multi: §r"	+ Common.CONFIG.getCloudBrightMultiplier()));
-						content.getSource().sendMessage(Text.of("§eDynamic Density: §r"	+ Common.CONFIG.isEnableWeatherDensity()));
-						content.getSource().sendMessage(Text.of("§eDensity Threshld: §r"	+ Common.CONFIG.getDensityThreshold()));
-						content.getSource().sendMessage(Text.of("§eThrshld Multiplr: §r"	+ Common.CONFIG.getThresholdMultiplier()));
-						content.getSource().sendMessage(Text.of("§ePre-Detect Time: §r"	+ Common.CONFIG.getWeatherPreDetectTime() / 20));
-						content.getSource().sendMessage(Text.of("§eChanging Speed: §r"	+ Common.CONFIG.getDensityChangingSpeed().getName()));
-						content.getSource().sendMessage(Text.of("§eCommon Density: §r"	+ Common.CONFIG.getCloudDensityPercent()));
-						content.getSource().sendMessage(Text.of("§eRain Density: §r"		+ Common.CONFIG.getRainDensityPercent()));
-						content.getSource().sendMessage(Text.of("§eThunder Density: §r"	+ Common.CONFIG.getThunderDensityPercent()));
-						content.getSource().sendMessage(Text.of("§eSnow Area Dens.: §r"	+ Common.CONFIG.getSnowDensity()));
-						content.getSource().sendMessage(Text.of("§eRain Area Dens.: §r"	+ Common.CONFIG.getRainDensity()));
-						content.getSource().sendMessage(Text.of("§eOther Area Dens.: §r"	+ Common.CONFIG.getNoneDensity()));
-						content.getSource().sendMessage(Text.of("§eUsing Chunk: §r"		+ Common.CONFIG.isBiomeDensityByChunk()));
-						content.getSource().sendMessage(Text.of("§eUsing Loaded Chk: §r"	+ Common.CONFIG.isBiomeDensityUseLoadedChunk()));
-						content.getSource().sendMessage(Text.of("Type [/sfcr biome list] to check ignored biome list."));
-						return 1;
-					}))
-					.then(literal("enable").requires(source -> source.hasPermissionLevel(2))
-							.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-								Common.CONFIG.setEnableMod(content.getArgument("e", Boolean.class));
-								content.getSource().sendMessage(Text.of("SFCR statu changed!"));
-								return 1;
-							}))
-					)
-					.then(literal("debug").requires(source -> source.hasPermissionLevel(2))
-							.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-								Common.CONFIG.setEnableDebug(content.getArgument("e", Boolean.class));
-								content.getSource().sendMessage(Text.of("Debug statu changed!"));
-								return 1;
-							}))
-					)
-					.then(literal("cloud").requires(source -> source.hasPermissionLevel(2))
-							.then(literal("height")
-									.then(argument("height", IntegerArgumentType.integer(96, 384)).executes(content -> {
-										Common.CONFIG.setCloudHeight(content.getArgument("height", Integer.class));
-										content.getSource().sendMessage(Text.of("Cloud height changed!"));
+						})
+						.then(literal("status")
+								.requires(source -> source.hasPermissionLevel(2))
+								.executes(context -> {
+									String dimensionName = context.getSource().getWorld().getRegistryKey().getValue().toString();
+									String configJson = Common.getDimensionConfigJson(dimensionName);
+									if (configJson.isEmpty()) {
+										context.getSource().sendMessage(Text.of("[SFCRe] This dimension '" + dimensionName + "' has no config."));
+										context.getSource().sendMessage(Text.of("[SFCRe] Use '/sfcr upload' to upload your current config to server."));
 										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Cloud height is " + Common.CONFIG.getCloudHeight()));
+									}
+									context.getSource().sendMessage(Text.of("[SFCRe] Dimension config of '" + dimensionName + "' are:"));
+									context.getSource().sendMessage(Text.of(configJson));
+									return 1;
+								})
+						)
+						.then(literal("enable")
+								.requires(source -> source.hasPermissionLevel(2))
+								.then(argument("e", BoolArgumentType.bool())
+										.executes(context -> {
+											Common.CONFIG.setEnableRender(context.getArgument("e", Boolean.class));
+											context.getSource().sendMessage(Text.of("[SFCRe] server status changed!"));
+											return 1;
+										})
+								)
+						)
+						.then(literal("debug")
+								.requires(source -> source.hasPermissionLevel(2))
+								.then(argument("e", BoolArgumentType.bool())
+										.executes(context -> {
+											Common.CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
+											context.getSource().sendMessage(Text.of("[SFCRe] Debug status changed!"));
+											return 1;
+										})
+								)
+						)
+						.then(literal("upload")
+								.requires(source -> source.hasPermissionLevel(4))
+								.executes(context -> {
+									ServerPlayerEntity player = context.getSource().getPlayer();
+									if (player == null) {
+										context.getSource().sendMessage(Text.of("[SFCRe] Please cast it from client!"));
 										return 1;
-									})
-							)
-							.then(literal("size")
-									.then(argument("size", IntegerArgumentType.integer(1, 4)).executes(content -> {
-										switch (content.getArgument("size", Integer.class)) {
-											case 1 -> Common.CONFIG.setCloudBlockSize(2);
-											case 2 -> Common.CONFIG.setCloudBlockSize(4);
-											case 3 -> Common.CONFIG.setCloudBlockSize(8);
-											case 4 -> Common.CONFIG.setCloudBlockSize(16);
-										}
-										content.getSource().sendMessage(Text.of("Cloud size changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Cloud size is " + Common.CONFIG.getCloudBlockSize()));
-										return 1;
-									})
-							)
-							.then(literal("thickness")
-									.then(argument("thickness", IntegerArgumentType.integer(8, 64)).executes(content -> {
-										Common.CONFIG.setCloudLayerThickness(content.getArgument("thickness", Integer.class));
-										content.getSource().sendMessage(Text.of("Cloud thickness changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Cloud thickness is " + Common.CONFIG.getCloudLayerThickness()));
-										return 1;
-									})
-							)
-							.then(literal("sample")
-									.then(argument("sample", IntegerArgumentType.integer(1, 3)).executes(content -> {
-										Common.CONFIG.setSampleSteps(content.getArgument("sample", Integer.class));
-										content.getSource().sendMessage(Text.of("Sample step changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Sample steps is " + Common.CONFIG.getSampleSteps()));
-										return 1;
-									})
-							)
-							.then(literal("color")
-									.then(argument("color", StringArgumentType.string()).executes(content -> {
-										int color = Integer.parseUnsignedInt(content.getArgument("color", String.class), 16);
-										if (color < 0 || color > 0xFFFFFF) {
-											content.getSource().sendMessage(Text.of("Illegal color value, please check."));
-										} else {
-											Common.CONFIG.setCloudColor(color);
-											content.getSource().sendMessage(Text.of("Cloud color changed!"));
-										}
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Cloud color is " + Integer.toHexString(Common.CONFIG.getCloudColor())));
-										return 1;
-									})
-							)
-							.then(literal("bright")
-									.then(argument("bright", FloatArgumentType.floatArg(0, 1)).executes(content -> {
-										Common.CONFIG.setCloudBrightMultiplier(content.getArgument("bright", Float.class));
-										content.getSource().sendMessage(Text.of("Cloud bright changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Cloud bright is " + Common.CONFIG.getCloudBrightMultiplier()));
-										return 1;
-									})
-							)
-					)
-					.then(literal("density").requires(source -> source.hasPermissionLevel(2))
-							.then(literal("enable")
-									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-										Common.CONFIG.setEnableWeatherDensity(content.getArgument("e", Boolean.class));
-										content.getSource().sendMessage(Text.of("Density statu changed!"));
-										return 1;
-									}))
-							)
-							.then(literal("threshold")
-									.then(argument("num", FloatArgumentType.floatArg(-1, 2)).executes(content -> {
-										Common.CONFIG.setDensityThreshold(content.getArgument("num", Float.class));
-										content.getSource().sendMessage(Text.of("Density threshold changed!"));
-										return 1;
-									}))
-							)
-							.then(literal("thresholdMultiplier")
-									.then(argument("num", FloatArgumentType.floatArg(-1, 2)).executes(content -> {
-										Common.CONFIG.setThresholdMultiplier(content.getArgument("num", Float.class));
-										content.getSource().sendMessage(Text.of("Threshold multiplier changed!"));
-										return 1;
-									}))
-							)
-							.then(literal("predetect")
-									.then(argument("predetect", IntegerArgumentType.integer(0, 30)).executes(content -> {
-										Common.CONFIG.setWeatherPreDetectTime(content.getArgument("predetect", Integer.class));
-										content.getSource().sendMessage(Text.of("Pre-detect time changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Pre-detect time is " + Common.CONFIG.getWeatherPreDetectTime()));
-										return 1;
-									})
-							)
-							.then(literal("changingspeed")
-									.then(argument("changingspeed", IntegerArgumentType.integer(1, 5)).executes(content -> {
-										switch (content.getArgument("changingspeed", Integer.class)) {
-											case 1 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_SLOW);
-											case 2 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.SLOW);
-											case 3 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.NORMAL);
-											case 4 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.FAST);
-											case 5 -> Common.CONFIG.setDensityChangingSpeed(CloudRefreshSpeed.VERY_FAST);
-										}
-										content.getSource().sendMessage(Text.of("Changing speed changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Density changing speed is " + Common.CONFIG.getDensityChangingSpeed().toString()));
-										return 1;
-									})
-							)
-							.then(literal("common")
-									.then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setCloudDensityPercent(content.getArgument("percent", Integer.class));
-										content.getSource().sendMessage(Text.of("Common density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Common density is " + Common.CONFIG.getCloudDensityPercent()));
-										return 1;
-									})
-							)
-							.then(literal("rain")
-									.then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setRainDensityPercent(content.getArgument("percent", Integer.class));
-										content.getSource().sendMessage(Text.of("Rain density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Rain density is " + Common.CONFIG.getRainDensityPercent()));
-										return 1;
-									})
-							)
-							.then(literal("thunder")
-									.then(argument("percent", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setThunderDensityPercent(content.getArgument("percent", Integer.class));
-										content.getSource().sendMessage(Text.of("Thunder density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Thunder density is " + Common.CONFIG.getThunderDensityPercent()));
-										return 1;
-									})
-							)
-					)
-					.then(literal("biome").requires(source -> source.hasPermissionLevel(2))
-							.then(literal("snow")
-									.then(argument("snow", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setSnowDensity(content.getArgument("snow", Integer.class));
-										content.getSource().sendMessage(Text.of("Snow area density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Snow area density is " + Common.CONFIG.getSnowDensity()));
-										return 1;
-									})
-							)
-							.then(literal("rain")
-									.then(argument("rain", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setRainDensity(content.getArgument("rain", Integer.class));
-										content.getSource().sendMessage(Text.of("Rain area density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Rain area density is " + Common.CONFIG.getRainDensity()));
-										return 1;
-									})
-							)
-							.then(literal("none")
-									.then(argument("none", IntegerArgumentType.integer(0, 100)).executes(content -> {
-										Common.CONFIG.setNoneDensity(content.getArgument("none", Integer.class));
-										content.getSource().sendMessage(Text.of("Nothing area density changed!"));
-										return 1;
-									}))
-									.executes(content -> {
-										content.getSource().sendMessage(Text.of("Nothing area density is " + Common.CONFIG.getNoneDensity()));
-										return 1;
-									})
-							)
-							.then(literal("byChunk")
-									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-										Common.CONFIG.setBiomeDensityByChunk(content.getArgument("e", Boolean.class));
-										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
-										return 1;
-									}))
-							)
-							.then(literal("byLoadedChunk")
-									.then(argument("e", BoolArgumentType.bool()).executes(content -> {
-										Common.CONFIG.setBiomeDensityUseLoadedChunk(content.getArgument("e", Boolean.class));
-										content.getSource().sendMessage(Text.of("Biome detect function changed!"));
-										return 1;
-									}))
-							)
-							.then(literal("list").executes(content -> {
-								content.getSource().sendMessage(Text.of("Server Biome Filter List: "));
-								for (String biome : Common.CONFIG.getBiomeFilterList()) {
-									content.getSource().sendMessage(Text.of("- " + biome));
-								}
-								return 1;
-							}))
-							.then(literal("add")
-									.then(argument("id", StringArgumentType.string()).executes(content -> {
-										var list = Common.CONFIG.getBiomeFilterList();
-										list.add(content.getArgument("id", String.class));
-										Common.CONFIG.setBiomeFilterList(list);
-										content.getSource().sendMessage(Text.of("Biome added!"));
-										return 1;
-									}))
-							)
-							.then(literal("remove")
-									.then(argument("id", StringArgumentType.string()).executes(content -> {
-										var list = Common.CONFIG.getBiomeFilterList();
-										list.remove(content.getArgument("id", String.class));
-										Common.CONFIG.setBiomeFilterList(list);
-										content.getSource().sendMessage(Text.of("Biome removed!"));
-										return 1;
-									}))
-							)
-					)
-					.then(literal("reload").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
-						Common.CONFIG.load();
-						Common.LOGGER.info("[SFCRe] cb: Reload config by " + content.getSource().getDisplayName().getString());
-						content.getSource().sendMessage(Text.of("Reloading complete!"));
-						return 1;
-					}))
-					.then(literal("save").requires(source -> source.hasPermissionLevel(4)).executes(content -> {
-						Common.CONFIG.save();
-						Common.LOGGER.info("[SFCRe] cb: Save config by " + content.getSource().getDisplayName().getString());
-						content.getSource().sendMessage(Text.of("Config saving complete!"));
-						return 1;
-					}))
-			);
-		});
+									}
+									NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new PacketByteBuf(Unpooled.buffer()));
+									return 1;
+								})
+						)
+				)
+		);
+
+		// Shared Config Receiver
+		// allows server can get a new dimension config uploaded by player
+		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_SHARED_CONFIG, ((buf, context) -> {
+			String configJson = buf.readString();
+			PlayerEntity player = context.getPlayer();
+			if (! player.getCommandSource().hasPermissionLevel(4))  //check permission again
+				return;
+			String dimensionName = player.getWorld().getRegistryKey().getValue().toString();
+			Config config = new Config();
+			try {
+				config.fromString(configJson);
+			} catch (JsonSyntaxException e) {
+				player.sendMessage(Text.of("§4[SFCRe] You upload a config that server cannot read, please check your mod version!"));
+				if (CONFIG.isEnableDebug())
+					LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
+				return;
+			}
+			config.save(dimensionName);
+			setDimensionConfigJson(dimensionName, configJson);
+			if (CONFIG.isEnableDebug())
+				LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
+		}));
 	}
 }

@@ -37,8 +37,13 @@
 	"text.sfcr.option.enableTerrainDodge": "地形回避",
 	"text.sfcr.option.enableTerrainDodge.@Tooltip": "启用后，云块将不会出现在较高的山体和建筑物内部。\n降低云块大小并提升常规刷新速度可提升检测精度。",
 	"text.sfcr.option.cloudColor": "云层颜色",
+	"text.sfcr.option.cloudColor.@ToolTip": "格式：Hex ARGB",
 	"text.sfcr.option.cloudBright": "云层亮度倍增",
 	"text.sfcr.option.cloudBright.@Tooltip": "提高夜间和雷暴时的云层亮度。",
+	"text.sfcr.option.enableBottomDim": "云底变暗",
+	"text.sfcr.option.enableBottomDim.@Tooltip": "云层底部会因云层过厚而变暗",
+	"text.sfcr.option.enableDuskBlush": "黎明/黄昏红霞",
+	"text.sfcr.option.enableDuskBlush.@Tooltip": "云层颜色会在黎明和黄昏时变红",
 
 	"text.sfcr.category.fog": "迷雾",
 	"text.sfcr.option.fogAutoDistance": "自动调整迷雾距离",
@@ -82,7 +87,7 @@
 	"text.sfcr.option.DHCompat": "Distant Horizons",
 	"text.sfcr.option.DHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 因为DH的渲染特性，云层将不再透明。\n- 启用该兼容后某些功能将失效。\n- 云层将无法渲染在原版区块前方。",
 	"text.sfcr.option.dimensionCompat.@PrefixText": "自定义维度: %s",
-	"text.sfcr.option.dimensionCompat.@Tooltip": "每当你切换维度时，SFCR会尝试从配置文件夹中\n加载§b§osfcr_modName_dimensionName.json§r作为当前维度的设置。\n若不存在，则使用原始配置。\n你可将原始配置文件§b§osfcr.json§r复制并重命名后\n为任意维度配置独立的SFCR行为。\n§4注意：§r\n- 除了§ominecraft:overworld§r，作为主世界，它使用原始配置。\n- 此功能§l不能§r被禁用。\n- 此选项用于显示你正在阅读的提示\n  和当前维度的支持情况。 §a绿色§r表示已加载配置，§c红色§r为否。",
+	"text.sfcr.option.dimensionCompat.@Tooltip": "每当你切换维度时，SFCR会尝试从配置文件夹中\n加载§b§osfcr_modName_dimensionName.json§r作为当前维度的设置。\n若不存在，则使用原始配置。\n你可将原始配置文件§b§osfcr.json§r复制并重命名后\n为任意维度配置独立的SFCR行为。\n或者，直接在你想要配置的维度中打开本页面。\n§4注意：§r\n- 除了§ominecraft:overworld§r，作为主世界，它使用原始配置。\n- 此功能§l不能§r被禁用。\n- 此选项用于显示你正在阅读的提示和当前维度的支持情况。 §a绿色§r表示已加载配置，§c红色§r为否。",
 	"text.sfcr.option.customDimensionMode.@PrefixText": "§4警告：§r你正位于自定义维度%s，任何更改都将保存在该维度的独立配置文件中。\n若想更改默认配置，你需要返回主世界§ominecraft:overworld§r或移除该维度的独立配置文件。",
 	"text.sfcr.option.configHasBeenOverride.@PrefixText": "§4警告：§r你正在浏览被服务器覆盖的设置，若在退出该页面时选择保存，你的原始设置将丢失。\n若不想被服务器覆盖、或使用本地的设置，请在断开连接后关闭“启用服务”选项。",
 

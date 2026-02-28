@@ -9,8 +9,9 @@ import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
@@ -111,13 +112,13 @@ public class Renderer {
 		/* NOTE:
 		 * When cloudData is too HUGE, .upload() will get big lag, so we made a soft culling in rebuild to decrease upload size.
 		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
-		 * We made a lot of small lags to replace a single big lag, it's hard to say which is better...
+		 * We made a lot of small lags of culling equation to replace a single big lag of upload, it's hard to say which is better...
 		 */
 		boolean isCullingDisabled = CONFIG.getCullMode().equals(CullMode.NONE);
 		//if culling is disabled, no need to rebuild in every tick.
 		if (! isPause && (isCullingDisabled && rebuildTimer == 99 || ! isCullingDisabled && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
-			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), xOffsetInGrid, cloudHeight);
+			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), cloudColor, xOffsetInGrid, cloudHeight);
 			if (cb != null) {
 				if (cloudsBuffer != null)
 					cloudsBuffer.close();
@@ -183,48 +184,67 @@ public class Renderer {
 		}
 	}
 
-	private final float[][] normals = {
-			{1, 0, 0},		//r
-			{-1, 0, 0},		//l
-			{0, 1, 0},		//u
-			{0, -1, 0},		//d
-			{0, 0, 1},		//f
-			{0, 0, -1},		//b
-	};
+	enum FACING {
+		EAST(1, 0, 0),
+		WEST(-1, 0, 0),
+		TOP(0, 1, 0),
+		BOTTOM(0, -1, 0),
+		SOUTH(0, 0, 1),
+		NORTH(0, 0, -1);
 
-	private final int[] colors = {
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.95f), (int) (255 * 0.9f), (int) (255 * 0.9f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.75f), (int) (255 * 0.75f), (int) (255 * 0.75f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), 255, 255, 255),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.6f), (int) (255 * 0.6f), (int) (255 * 0.6f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.92f), (int) (255 * 0.85f), (int) (255 * 0.85f)),
-			ColorHelper.Argb.getArgb((int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f), (int) (255 * 0.8f)),
+		final Vec3i normal;
+
+		FACING(int x, int y, int z) {
+			this.normal = new Vec3i(x, y, z);
+		}
+
+		static FACING get(int i) {
+			return FACING.values()[i];
+		}
+	}
+
+	private final Vec3d[] colors = {
+			new Vec3d(0.95f, 0.9f,  0.9f),
+			new Vec3d(0.75f, 0.75f, 0.75f),
+			new Vec3d(1f,    1f,    1f),
+			new Vec3d(0.6f,  0.6f,  0.6f),
+			new Vec3d(0.92f, 0.85f, 0.85f),
+			new Vec3d(0.8f,  0.8f,  0.8f),
 	};
 
 	// Building mesh
-	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, double offset, float cloudHeight) {
+	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, Vec3d cloudColor, double offset, float cloudHeight) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		Vec3d camVec = null;
 		Vec3d[] camProjBorder = null;
 		double fovCos = 0, extraAngleSin = 0;
 
+		Camera camera = client.gameRenderer.getCamera();
+		int fov = client.options.getFov().getValue();
+		float fovMultiplier = client.player.getFovMultiplier();
 		if (CONFIG.getCullMode().equals(CullMode.CIRCULAR)) {
 			camVec = new Vec3d(
-					-Math.sin(Math.toRadians(client.gameRenderer.getCamera().getYaw())),
-					-Math.tan(Math.toRadians(client.gameRenderer.getCamera().getPitch())),
-					 Math.cos(Math.toRadians(client.gameRenderer.getCamera().getYaw()))
+					-Math.sin(Math.toRadians(camera.getYaw())),
+					-Math.tan(Math.toRadians(camera.getPitch())),
+					 Math.cos(Math.toRadians(camera.getYaw()))
 			).normalize();
-			fovCos = Math.cos(Math.toRadians(client.options.getFov().getValue() * client.player.getFovMultiplier() * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
+			fovCos = Math.cos(Math.toRadians(fov * fovMultiplier * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
 		} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
-			var camProj = client.gameRenderer.getCamera().getProjection();
+			Camera.Projection camProj = camera.getProjection();
 			camProjBorder = new Vec3d[]{
 					camProj.getTopRight().crossProduct(camProj.getTopLeft()).normalize(),			//up
 					camProj.getBottomLeft().crossProduct(camProj.getBottomRight()).normalize(),		//down
 					camProj.getTopLeft().crossProduct(camProj.getBottomLeft()).normalize(),			//left
 					camProj.getBottomRight().crossProduct(camProj.getTopRight()).normalize()		//right
 			};
-			extraAngleSin = Math.sin(Math.toRadians(client.options.getFov().getValue() * (1.9f - client.player.getFovMultiplier() - CONFIG.getCullRadianMultiplier())));		//increase 0.1 for better visual.
+			extraAngleSin = Math.sin(Math.toRadians(fov * (1.9f - fovMultiplier - CONFIG.getCullRadianMultiplier())));		//increase 0.1 for better visual.
 		}
+
+		int customColor = CONFIG.getCloudColor();  //apply custom color
+		cloudColor = cloudColor.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
+		float cloudAlpha = ((customColor & 0xFF000000) >>> 24) / 255F;
+		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
+			cloudColor = cloudColor.multiply(getBlushColorByTime(client.world.getTimeOfDay()));
 
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
@@ -233,34 +253,37 @@ public class Renderer {
 
 		try {
 			for (CloudData data : cloudDataGroup) {
-				ArrayList<Float> vertexList = data.vertexList;  //snapshot these
-				ArrayList<Byte> normalList = data.normalList;
-				int colorModifier = getCloudColor(client.world.getTimeOfDay(), data);
-				int normCount = normalList.size();
+				cloudAlpha *= switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
+					case NORMAL, TRANS_MID_BODY -> 1F;
+					case TRANS_IN -> 1F - data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
+					case TRANS_OUT -> data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
+				};
+
+				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
+				int normCount = vertexList.size() / 4;
 
 				for (int i = 0; i < normCount; i++) {
-					int normIndex = normalList.get(i);		// exacting data...
-					float nx = normals[normIndex][0];
-					float ny = normals[normIndex][1];
-					float nz = normals[normIndex][2];
-					float[][] verCache = new float[4][3];
-					for (int j = 0; j < 4; j++) {
-						verCache[j][0] = vertexList.get(i * 12 + j * 3);
-						verCache[j][1] = vertexList.get(i * 12 + j * 3 + 1);
-						verCache[j][2] = vertexList.get(i * 12 + j * 3 + 2);
-					}
+					int[][] verCache = new int[][]{		// exacting data...
+							CloudData.depressVertex(vertexList.get(i * 4)),
+							CloudData.depressVertex(vertexList.get(i * 4 + 1)),
+							CloudData.depressVertex(vertexList.get(i * 4 + 2)),
+							CloudData.depressVertex(vertexList.get(i * 4 + 3))
+					};
 					boolean isDrawn = false;
 
 					for (int j = 0; j <= 3; j ++) {
 						Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling
 								(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
-								verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - client.gameRenderer.getCamera().getPos().y,
+								verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().y,
 								(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
 						).normalize();
 						boolean isInRange = true;
-						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {  //TODO: 所有顶点都在视野外，但斜边仍可能与视野存在交集
+						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {
 							continue;
 						} else if (camProjBorder != null) {
+							//TODO: 所有顶点都在视野外，但斜边仍可能与视野存在交集。
+							// 或许应该反向计算，构建顶点四边与相机的 projBorder 拿去和相机的投影顶点算点乘（你看 camProj 对象本身就是由相机投影四个顶点构成的）
+							// 不过因为需要给每个面都构建四个投影平面，而非每 tick 仅为相机构建四次，计算量估计要翻好几番…
 							for (Vec3d plane : camProjBorder) {
 								if (plane.dotProduct(cloudVec) < extraAngleSin) {
 									isInRange = false;
@@ -269,10 +292,18 @@ public class Renderer {
 							}
 						}
 						if (isInRange) {
+							FACING facing = FACING.get(CloudData.depressFromHead(vertexList.get(i * 4)));
+							Vec3d faceColor = cloudColor.multiply(colors[facing.ordinal()]);
+							if (CONFIG.isEnableBottomDim()) {
+								faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
+							}
+							int nx = facing.normal.getX();
+							int ny = facing.normal.getY();
+							int nz = facing.normal.getZ();
 							for (int k = 0; k < 4; k++) {
 								builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
 										.texture(0.5f, 0.5f)
-										.color(ColorHelper.Argb.mixColor(colors[normIndex], colorModifier))
+										.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
 										.normal(nx, ny, nz)
 										.next();
 							}
@@ -332,22 +363,9 @@ public class Renderer {
 		}
 	}
 
-	protected int getCloudColor(long worldTime, @Nullable CloudData data) {
-		int a = 255;
-		int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
-		int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
-		int b = (CONFIG.getCloudColor() & 0x0000FF);
+	protected Vec3d getBlushColorByTime(long worldTime) {
+		int r = 255, g = 255, b = 255;
 		int t = (int) (worldTime % 24000);
-
-		// Alpha changed by cloud type and lifetime
-		if (data != null) {
-			a = switch (data.getDataType()) {
-				case NORMAL -> a;
-				case TRANS_IN -> (int) (a - a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f);
-				case TRANS_MID_BODY -> a;
-				case TRANS_OUT -> (int) (a * data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f);
-			};
-		}
 
 		// Color changed by time...
 		if (t > 22500 || t < 500) {		//Dawn, scale value in [0, 2000]
@@ -363,8 +381,7 @@ public class Renderer {
 			g = (int) (g * (1 - v / 2.1));
 			b = (int) (b * (1 - v / 1.6));
 		}
-
-		return ColorHelper.Argb.getArgb(a, r, g, b);
+		return new Vec3d(r / 255F, g / 255F, b / 255F);
 	}
 
 	protected Vec3d getBrightMultiplier(Vec3d cloudColor) {

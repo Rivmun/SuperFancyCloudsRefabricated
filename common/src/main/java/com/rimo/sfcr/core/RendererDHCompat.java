@@ -11,7 +11,6 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShad
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 
@@ -196,10 +195,8 @@ public class RendererDHCompat extends Renderer {
 		this.cloudBlockHeight = CLOUD_BLOCK_HEIGHT;
 		this.cloudBlockWidth = CLOUD_BLOCK_WIDTH;
 		this.timeOffset = timeOffset;
-		this.cloudColor = ColorHelper.Argb.mixColor(
-				getCloudColor(world.getTimeOfDay(), null),
-				new Color((int) (cloudColor.x * 255), (int) (cloudColor.y * 255), (int) (cloudColor.z * 255)).getRGB()
-		);
+		cloudColor.multiply(getBlushColorByTime(world.getTimeOfDay()));
+		this.cloudColor = new Color((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z).getRGB();
 	}
 
 	//add RenderableBoxGroup build and replace.

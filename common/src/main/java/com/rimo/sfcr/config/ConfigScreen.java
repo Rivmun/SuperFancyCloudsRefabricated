@@ -257,9 +257,9 @@ public class ConfigScreen {
 		);
 		//cloud color
 		clouds.addEntry(entryBuilder
-				.startColorField(Text.translatable("text.sfcr.option.cloudColor")
+				.startAlphaColorField(Text.translatable("text.sfcr.option.cloudColor")
 						, CONFIG.getCloudColor())
-				.setDefaultValue(0xFFFFFF)
+				.setDefaultValue(0xFFFFFFFF)
 				.setSaveConsumer(CONFIG::setCloudColor)
 				.build()
 		);
@@ -272,6 +272,24 @@ public class ConfigScreen {
 				.setDefaultValue(1)
 				.setTextGetter(value -> Text.of(value * 10 + "%"))
 				.setSaveConsumer(value -> CONFIG.setCloudBrightMultiplier(value / 10f))
+				.build()
+		);
+		//dusk blush
+		clouds.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableDuskBlush")
+						, CONFIG.isEnableDuskBlush())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableDuskBlush.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDuskBlush)
+				.build()
+		);
+		//bottomDim
+		clouds.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableBottomDim")
+						, CONFIG.isEnableBottomDim())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableBottomDim.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableBottomDim)
 				.build()
 		);
 	}

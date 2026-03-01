@@ -45,13 +45,15 @@
 	"text.sfcr.option.enableDuskBlush": "Dawn/Dusk Blush",
 	"text.sfcr.option.enableDuskBlush.@Tooltip": "Cloud will get blush when Dawn/Dusk",
 
-	"text.sfcr.category.fog": "Fog",
+	"text.sfcr.category.fog": "Fog & Rain",
 	"text.sfcr.option.fogAutoDistance": "Auto Adjust Fog Distance",
 	"text.sfcr.option.fogAutoDistance.@Tooltip": "Fog distance will auto adjust depends on view distance and cloud block size.",
 	"text.sfcr.option.fogMinDistance": "Fog Start Distance",
 	"text.sfcr.option.fogMinDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if bigger than END.",
 	"text.sfcr.option.fogMaxDistance": "Fog End Distance",
 	"text.sfcr.option.fogMaxDistance.@Tooltip": "The distance from fog to player. Higher and farther.\nWill swap each other if smaller than START.",
+	"text.sfcr.option.isCloudRain": "No Cloud No Rain",
+	"text.sfcr.option.isCloudRain.@Tooltip": "Let rain particle only appear which cloud is above",
 
 	"text.sfcr.category.density": "Dynamic & Density",
 	"text.sfcr.option.densityThreshold": "Density Threshold",

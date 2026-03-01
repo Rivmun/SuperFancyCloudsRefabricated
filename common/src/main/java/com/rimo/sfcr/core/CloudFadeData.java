@@ -3,7 +3,7 @@ package com.rimo.sfcr.core;
 public class CloudFadeData extends CloudData {
 
 	// Reverse input to get between fade-in and fade-out data
-	public CloudFadeData(CloudData prevData, CloudData nextData, CloudDataType type) {
+	public CloudFadeData(CloudData prevData, CloudData nextData, Type type) {
 		super(type);
 
 		width = nextData.width;

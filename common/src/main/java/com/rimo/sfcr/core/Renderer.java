@@ -21,13 +21,14 @@ import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
 	private final Identifier whiteTexture = new Identifier(MOD_ID, "white.png");
-	protected final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
+	private final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
 	protected int oldGridX, oldGridZ;
-	protected Vec3d oldColor = Vec3d.ZERO;
+	private Vec3d oldColor = Vec3d.ZERO;
+	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
 	public int cullStateSkipped, cullStateShown;  //debug counter
@@ -67,6 +68,8 @@ public class Renderer {
 			xOffsetInGrid += GridX - oldGridX;
 			zOffsetInGrid += GridZ - oldGridZ;
 		}
+		this.xOffset = (xOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
+		this.zOffset = (zOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
 		int cameraGridY = (int) (cameraY / CLOUD_BLOCK_HEIGHT);
 
 		//refresh check
@@ -97,7 +100,7 @@ public class Renderer {
 			 * Normal culling already does in 1.21.6+ vanilla mesh building, we must remesh it to prevent top/bottom face disappear when Y changed.
 			 */
 			int cloudGridHeight = (int) (cloudHeight / CLOUD_BLOCK_HEIGHT);
-			if (! isResampling && cameraGridY > cloudGridHeight + 1 && cameraGridY < cloudGridHeight + CONFIG.getCloudLayerThickness() + 1) {
+			if (! isResampling && cameraGridY > cloudGridHeight && cameraGridY < cloudGridHeight + CONFIG.getCloudLayerThickness() + 1) {
  				cloudDataGroup.forEach(cloudData -> cloudData.tryRebuildMesh(cameraGridY));
 			}
 		}
@@ -324,12 +327,12 @@ public class Renderer {
 					}
 				}
 
-				if (data.getDataType().equals(CloudData.CloudDataType.NORMAL)) {
+				if (data.getDataType().equals(CloudData.Type.NORMAL)) {
 					break;
-				} else if (data.getDataType().equals(CloudData.CloudDataType.TRANS_MID_BODY)) {
+				} else if (data.getDataType().equals(CloudData.Type.TRANS_MID_BODY)) {
 					data.tick();
 					if (data.getLifeTime() <= 0) {		// Clear if lifetime reach end
-						while (!cloudDataGroup.get(0).getDataType().equals(CloudData.CloudDataType.NORMAL)) {
+						while (!cloudDataGroup.get(0).getDataType().equals(CloudData.Type.NORMAL)) {
 							cloudDataGroup.remove(0);
 						}
 					}
@@ -352,9 +355,9 @@ public class Renderer {
 
 		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_IN).buildMesh();
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.CloudDataType.TRANS_OUT).buildMesh();
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.CloudDataType.TRANS_MID_BODY).buildMesh();
+			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
@@ -399,5 +402,13 @@ public class Renderer {
 
 	public float getCloudHeight() {
 		return cloudHeight;
+	}
+
+	public boolean isHasCloud(double x, double y, double z) {
+		for(CloudData data : cloudDataGroup) {
+			if (data.isHasCloud(x + xOffset, y, z + zOffset))
+				return true;
+		}
+		return false;
 	}
 }

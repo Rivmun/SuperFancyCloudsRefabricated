@@ -45,13 +45,15 @@
 	"text.sfcr.option.enableDuskBlush": "黎明/黄昏红霞",
 	"text.sfcr.option.enableDuskBlush.@Tooltip": "云层颜色会在黎明和黄昏时变红",
 
-	"text.sfcr.category.fog": "迷雾",
+	"text.sfcr.category.fog": "迷雾 & 雨",
 	"text.sfcr.option.fogAutoDistance": "自动调整迷雾距离",
 	"text.sfcr.option.fogAutoDistance.@Tooltip": "迷雾距离将根据云层显示距离和云块大小自动调整。",
 	"text.sfcr.option.fogMinDistance": "迷雾起始距离",
 	"text.sfcr.option.fogMinDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若大于结束距离，则会自动进行交换。",
 	"text.sfcr.option.fogMaxDistance": "迷雾结束距离",
 	"text.sfcr.option.fogMaxDistance.@Tooltip": "迷雾离玩家的距离。越高越远。\n若小于起始距离，则会自动进行交换。",
+	"text.sfcr.option.isCloudRain": "无云则无雨",
+	"text.sfcr.option.isCloudRain.@Tooltip": "使雨粒子仅出现在有云层遮挡的地方",
 
 	"text.sfcr.category.density": "动态 & 密度",
 	"text.sfcr.option.densityThreshold": "密度阈值",

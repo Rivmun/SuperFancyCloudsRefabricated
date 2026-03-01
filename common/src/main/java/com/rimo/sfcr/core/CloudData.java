@@ -2,12 +2,16 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.core.Renderer.FACING;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 
 import java.util.ArrayList;
 
@@ -16,7 +20,7 @@ import static com.rimo.sfcr.Common.*;
 
 public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
-	private final CloudDataType dataType;
+	private final Type dataType;
 	private float lifeTime;
 	protected ArrayList<Integer> meshData = new ArrayList<>();
 	protected boolean[][][] _cloudData;
@@ -31,7 +35,7 @@ public class CloudData {
 
 	// Normal constructor
 	public CloudData(int x, int y, int z, float densityByWeather, float densityByBiome) {
-		dataType = CloudDataType.NORMAL;
+		dataType = Type.NORMAL;
 		width = CONFIG.getCloudRenderDistance() * 2 + 1;
 		height = CONFIG.getCloudLayerThickness();
 		gridCenterX = x;
@@ -43,7 +47,7 @@ public class CloudData {
 	}
 
 	// for child
-	public CloudData(CloudDataType type) {
+	public CloudData(Type type) {
 		dataType = type;
 		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
 	}
@@ -61,8 +65,22 @@ public class CloudData {
 	}
 
 	// Access
-	public CloudDataType getDataType() {return dataType;}
+	public Type getDataType() {return dataType;}
 	public float getLifeTime() {return lifeTime;}
+
+	boolean isHasCloud(double x, double y, double z) {
+		Vec3d camPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+		int cbSize = CONFIG.getCloudBlockSize();
+		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
+		int gy = (int) (y / cbSize * 2);
+		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
+		for (int i = 0; i < height; i ++) {
+			if (_cloudData[gx][i][gz]) {
+				return gridYFromClouds <= i;
+			}
+		}
+		return false;
+	}
 
 	private float getCloudDensityThreshold(float densityByWeather, float densityByBiome) {
 		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
@@ -75,7 +93,6 @@ public class CloudData {
 
 		float f = 0.5f;		// origin threshold
 		final double time = world.getTime() / 20.0;
-		final int h = 80;  //height sampling use to get biome
 		final float sx = x - width / 2f;  //sampling start pos
 		final float sz = z - width / 2f;
 
@@ -83,35 +100,36 @@ public class CloudData {
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 		boolean isBiomeUseLoadedChunk = CONFIG.isBiomeDensityUseLoadedChunk();
 		boolean isEnableTerrainDodge = CONFIG.isEnableTerrainDodge();
-		float densityMultiplier = getDensityMultiplier(world.getTimeOfDay());
+		float densityMultiplier = isEnableDynamic ? getDensityMultiplier(world.getTimeOfDay()) : 1;
 		int steps = CONFIG.getSampleSteps();
+
 		for (int cx = 0; cx < width; cx++) {
 			for (int cz = 0; cz < width; cz++) {
 
 				int bx = (int) (sx + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
 				int bz = (int) (sz + cz + 0.5f) * CONFIG.getCloudBlockSize();
+				final int h = world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz);  //height sampling use to get biome
 
 				// calculating density...
-				if (isEnableDynamic) {
-					if (isBiomeByChunk) {
-						if (isBiomeUseLoadedChunk) {
-							Vec2f cellPos = new Vec2f(bx, bz);
-							Vec2f unit = cellPos.normalize().multiply(16);  //measure as chunk
-							while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
-									&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
-								cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
+				if (isEnableDynamic && isBiomeByChunk) {
+					BlockPos pos;
+					if (isBiomeUseLoadedChunk) {
+						Vec2f cellPos = new Vec2f(bx, bz);
+						Vec2f unit = cellPos.normalize().multiply(16);  //measure as chunk
+						while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
+								&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
+							cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
 
-							f = ! CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos((int) cellPos.x, h, (int) cellPos.y)))
-									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos((int) cellPos.x, h, (int) cellPos.y)).value().getPrecipitation(new BlockPos((int) cellPos.x, h, (int) cellPos.y))))
-									: getCloudDensityThreshold(densityByWeather, densityByBiome);
-						} else {
-							f = ! CONFIG.isFilterListHasBiome(world.getBiome(new BlockPos(bx, h, bz)))
-									? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(world.getBiome(new BlockPos(bx, h, bz)).value().getPrecipitation(new BlockPos(bx, h, bz))))
-									: getCloudDensityThreshold(densityByWeather, densityByBiome);
-						}
+						pos = new BlockPos((int) cellPos.x, h, (int) cellPos.y);
 					} else {
-						f = getCloudDensityThreshold(densityByWeather, densityByBiome);
+						pos = new BlockPos(bx, h, bz);
 					}
+					RegistryEntry<Biome> biome = world.getBiome(pos);
+					f = ! CONFIG.isFilterListHasBiome(biome)
+							? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitation(pos)))
+							: getCloudDensityThreshold(densityByWeather, densityByBiome);
+				} else {
+					f = getCloudDensityThreshold(densityByWeather, densityByBiome);
 				}
 
 				// sampling...
@@ -142,7 +160,7 @@ public class CloudData {
 
 	private double getCloudSampleProxy(World world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
 		double sample = getCloudSample(startX, startZ, zOffset, timeOffset, steps, cx, cy, cz);
-		if (world.isRaining()) {  //make cloud top more continuous when rain
+		if (world.isRaining() && CONFIG.isEnableWeatherDensity()) {  //make cloud top more continuous when rain
 			float clearDensity = CONFIG.getCloudDensityPercent() / 100f + 1;
 			float currentDensity = DATA.densityByWeather + 1;
 			float cyMax = CONFIG.getCloudLayerThickness();
@@ -416,7 +434,7 @@ public class CloudData {
 		return (packed >> 0 & 1) != 0;
 	}
 
-	public enum CloudDataType {
+	public enum Type {
 		NORMAL,
 		TRANS_IN,
 		TRANS_MID_BODY,

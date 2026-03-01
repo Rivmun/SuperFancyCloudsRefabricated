@@ -19,7 +19,7 @@ public abstract class GameOptionsMixin {
 
 	//Update cloudRenderDistance when view distance is changed.
 	@Inject(method = "write", at = @At("RETURN"))
-	private void updateCloudRenderDistance(CallbackInfo ci) {
+	private void sfcr$updateCloudRenderDistance(CallbackInfo ci) {
 		if (Common.CONFIG.isCloudRenderDistanceFitToView()) {
 			Common.CONFIG.setCloudRenderDistance(viewDistance.getValue() * 12);
 			Common.CONFIG.save();
@@ -30,7 +30,7 @@ public abstract class GameOptionsMixin {
 		always fancy, to prevent DH disabled vanilla cloudRenderer
 	 */
 	@Inject(method = "getCloudRenderModeValue", at = @At("RETURN"), cancellable = true)
-	private void getCloudType(CallbackInfoReturnable<CloudRenderMode> cir) {
+	private void sfcr$getCloudType(CallbackInfoReturnable<CloudRenderMode> cir) {
 		if (Common.CONFIG.isEnableRender())
 			cir.setReturnValue(CloudRenderMode.FANCY);
 	}

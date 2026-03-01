@@ -12,7 +12,7 @@ public abstract class GameRendererMixin {
 
 	//Prevent cloud be culled
 	@Inject(method = "getFarPlaneDistance", at = @At("RETURN"), cancellable = true)
-	private void extend_distance(CallbackInfoReturnable<Float> cir) {
+	private void sfcr$extend_distance(CallbackInfoReturnable<Float> cir) {
 		cir.setReturnValue(cir.getReturnValue() * (Common.CONFIG.getAutoFogMaxDistance() + 2));
 	}
 }

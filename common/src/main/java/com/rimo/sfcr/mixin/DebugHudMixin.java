@@ -15,7 +15,7 @@ import static com.rimo.sfcr.Client.RENDERER;
 public abstract class DebugHudMixin {
 	// Add Debug Strings
 	@Inject(method = "getLeftText", at = @At("RETURN"), cancellable = true)
-	public void getLeftText(CallbackInfoReturnable<List<String>> callback) {
+	public void sfcr$getLeftText(CallbackInfoReturnable<List<String>> callback) {
 		List<String> list = callback.getReturnValue();
 		if (Common.CONFIG.isEnableRender())
 			list.add("[SFCR] build " + RENDERER.cullStateShown + "/" +

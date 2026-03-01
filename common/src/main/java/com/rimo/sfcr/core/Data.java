@@ -2,9 +2,9 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.world.World;
 import net.minecraft.world.level.ServerWorldProperties;
 
@@ -41,32 +41,33 @@ public class Data {
 		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
 		if (worldProperties.isRaining()) {
 			if (worldProperties.isThundering()) {
-				setNextWeather(worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.THUNDER);
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.THUNDER;
 			} else {
-				setNextWeather(worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
-						? Weather.THUNDER
-						: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.CLEAR : Weather.RAIN);
+				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
+								? Weather.THUNDER
+								: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.CLEAR : Weather.RAIN;
 			}
 		} else {
 			if (worldProperties.getClearWeatherTime() != 0) {
-				setNextWeather(worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.CLEAR);
+				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.CLEAR;
 			} else {
-				setNextWeather(Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
-						? worldProperties.getRainTime() < worldProperties.getThunderTime() ? Weather.RAIN : Weather.THUNDER
-						: Weather.CLEAR);
+				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
+								? worldProperties.getRainTime() < worldProperties.getThunderTime() ? Weather.RAIN : Weather.THUNDER
+								: Weather.CLEAR;
 			}
 		}
-		if (getNextWeather() != currentWeather) {
-			currentWeather = getNextWeather();
+		if (nextWeather != currentWeather) {
+			currentWeather = nextWeather;
 			return true;
 		}
 		return false;
 	}
 
-	//Only runs when connected to a server without sync
+	/**
+	 * Should run when connected to a server but without sync
+	 */
 	public void updateWeatherClient(World world) {
-		if (!MinecraftClient.getInstance().isIntegratedServerRunning() && CONFIG.isEnableServer())
-			setNextWeather(world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR);
+		nextWeather = world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR;
 	}
 
 	public void updateDensity(ClientPlayerEntity player) {
@@ -75,13 +76,13 @@ public class Data {
 		//Detect Weather Change
 		if (CONFIG.isEnableWeatherDensity()) {
 			if (world.isThundering()) {
-				isWeatherChange = getNextWeather() != Weather.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
+				isWeatherChange = nextWeather != Weather.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
 						|| densityByWeather < CONFIG.getThunderDensityPercent() / 100f;
 			} else if (world.isRaining()) {
-				isWeatherChange = getNextWeather() != Weather.RAIN && CONFIG.getWeatherPreDetectTime() != 0
+				isWeatherChange = nextWeather != Weather.RAIN && CONFIG.getWeatherPreDetectTime() != 0
 						|| densityByWeather != CONFIG.getRainDensityPercent() / 100f;
 			} else {		//Clear...
-				isWeatherChange = getNextWeather() != Weather.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
+				isWeatherChange = nextWeather != Weather.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
 						|| densityByWeather > CONFIG.getCloudDensityPercent() / 100f;
 			}
 			//Detect Biome Change
@@ -98,13 +99,13 @@ public class Data {
 		//Density Change by Weather
 		if (CONFIG.isEnableWeatherDensity()) {
 			if (isWeatherChange) {
-				switch (getNextWeather()) {
+				switch (nextWeather) {
 					case THUNDER -> densityByWeather = stepDensity(CONFIG.getThunderDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
 					case RAIN -> densityByWeather = stepDensity(CONFIG.getRainDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
 					case CLEAR -> densityByWeather = stepDensity(CONFIG.getCloudDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
 				}
 			} else {
-				switch (getNextWeather()) {
+				switch (nextWeather) {
 					case THUNDER -> densityByWeather = CONFIG.getThunderDensityPercent() / 100f;
 					case RAIN -> densityByWeather = CONFIG.getRainDensityPercent() / 100f;
 					case CLEAR -> densityByWeather = CONFIG.getCloudDensityPercent() / 100f;
@@ -120,6 +121,9 @@ public class Data {
 			densityByWeather = CONFIG.getCloudDensityPercent() / 100f;
 			densityByBiome = 0f;
 		}
+
+		if (CONFIG.isEnableDebug() && (isWeatherChange || isBiomeChange))
+			player.sendMessage(Text.of("[SFCRe Debug] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome), true);
 	}
 
 	private float stepDensity(float target, float current, float speed) {

@@ -12,8 +12,7 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 
 import static com.rimo.sfcr.Client.RENDERER;
-import static com.rimo.sfcr.Common.CONFIG;
-import static com.rimo.sfcr.Common.exceptionCatcher;
+import static com.rimo.sfcr.Common.*;
 
 public class CloudData {
 	private static SimplexNoiseSampler cloudNoise;
@@ -84,6 +83,7 @@ public class CloudData {
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 		boolean isBiomeUseLoadedChunk = CONFIG.isBiomeDensityUseLoadedChunk();
 		boolean isEnableTerrainDodge = CONFIG.isEnableTerrainDodge();
+		float densityMultiplier = getDensityMultiplier(world.getTimeOfDay());
 		int steps = CONFIG.getSampleSteps();
 		for (int cx = 0; cx < width; cx++) {
 			for (int cz = 0; cz < width; cz++) {
@@ -116,7 +116,7 @@ public class CloudData {
 
 				// sampling...
 				for (int cy = 0; cy < height; cy++) {
-					_cloudData[cx][cy][cz] = getCloudSample(sx, sz, 0, time, steps, cx, cy, cz) > f && (
+					_cloudData[cx][cy][cz] = getCloudSampleProxy(world, sx, sz, 0, time, steps, cx, cy, cz) * densityMultiplier > f && (
 							// terrain dodge (detect light level)
 							! isEnableTerrainDodge || world.getLightLevel(LightType.SKY, new BlockPos(
 									bx,
@@ -127,6 +127,29 @@ public class CloudData {
 				}
 			}
 		}
+	}
+
+	private float getDensityMultiplier(long worldTime) {
+		float m = 1F;
+		float time = (worldTime % 24000L);
+		if (time > 13000F || time < 1000F) {  // decreased density at night
+			float remapTime = (time < 1000F ? time + 11000F : time - 13000F) / 12000F;
+			float curveFactor = (float) Math.pow(4 * remapTime * (1 - remapTime), 0.5);  //smooth it...
+			m = 1 - curveFactor * (1 - CONFIG.getDensityAtNight());
+		}
+		return m;
+	}
+
+	private double getCloudSampleProxy(World world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
+		double sample = getCloudSample(startX, startZ, zOffset, timeOffset, steps, cx, cy, cz);
+		if (world.isRaining()) {  //make cloud top more continuous when rain
+			float clearDensity = CONFIG.getCloudDensityPercent() / 100f + 1;
+			float currentDensity = DATA.densityByWeather + 1;
+			float cyMax = CONFIG.getCloudLayerThickness();
+			final float MAX_ADD = 3F;
+			sample += Math.pow(cy / cyMax, 2) * Math.max((1 - clearDensity / Math.max(clearDensity, currentDensity)) * MAX_ADD, 0);
+		}
+		return sample;
 	}
 
 	/* - - - - - Sampler Core - - - - - */

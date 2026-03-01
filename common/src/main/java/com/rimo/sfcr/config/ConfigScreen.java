@@ -216,7 +216,7 @@ public class ConfigScreen {
 				.startIntSlider(Text.translatable("text.sfcr.option.cloudRenderDistance")
 						, CONFIG.getCloudRenderDistance()
 						,32
-						,256)
+						,192)
 				.setDefaultValue(64)
 				.setTextGetter(value -> Text.of(value.toString()))
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))

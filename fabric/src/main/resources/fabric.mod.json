@@ -41,8 +41,8 @@
     "architectury": ">=9.0.8"
   },
   "suggests": {
-    "cloth-config2":"*",
-    "modmenu": "*"
+    "cloth-config2":">=11.1.106",
+    "modmenu": ">=7.0.0"
   },
   "custom": {
     "modmenu": {

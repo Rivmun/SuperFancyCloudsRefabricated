@@ -1,6 +1,6 @@
 package com.rimo.sfcr.mixin;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.render.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -9,10 +9,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
-	
+
 	//Prevent cloud be culled
-	@Inject(method = "method_32796", at = @At("RETURN"), cancellable = true)
-	private void extend_distance(CallbackInfoReturnable<Float> cir) {
-		cir.setReturnValue(cir.getReturnValue() * (SFCReMod.COMMON_CONFIG.getAutoFogMaxDistance() + 2));
+	@Inject(method = "getFarPlaneDistance", at = @At("RETURN"), cancellable = true)
+	private void sfcr$extend_distance(CallbackInfoReturnable<Float> cir) {
+		cir.setReturnValue(cir.getReturnValue() * (Common.CONFIG.getAutoFogMaxDistance() + 2));
 	}
 }

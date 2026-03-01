@@ -337,18 +337,18 @@ public class ConfigScreen {
 				.setDisplayRequirement(Requirement.isFalse(autoFog))
 				.build()
 		);
+		//cloud rain
+		fog.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.isCloudRain")
+						, CONFIG.isEnableCloudRain())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.isCloudRain.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableCloudRain)
+				.build()
+		);
 	}
 
 	private void buildDensityCategory() {
-		//weather
-		density.addEntry(entryBuilder
-				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
-						, CONFIG.isEnableWeatherDensity())
-				.setDefaultValue(true)
-				.setTooltip(Text.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
-				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
-				.build()
-		);
 		// threshold
 		density.addEntry(entryBuilder
 				.startFloatField(Text.translatable("text.sfcr.option.densityThreshold")
@@ -369,6 +369,15 @@ public class ConfigScreen {
 				.setMin(0f)
 				.setTooltip(Text.translatable("text.sfcr.option.thresholdMultiplier.@Tooltip"))
 				.setSaveConsumer(CONFIG::setThresholdMultiplier)
+				.build()
+		);
+		//weather
+		density.addEntry(entryBuilder
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableWeatherDensity")
+						, CONFIG.isEnableWeatherDensity())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableWeatherDensity)
 				.build()
 		);
 		//density

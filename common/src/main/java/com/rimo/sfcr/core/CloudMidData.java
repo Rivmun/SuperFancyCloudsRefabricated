@@ -2,7 +2,7 @@ package com.rimo.sfcr.core;
 
 public class CloudMidData extends CloudData {
 
-	public CloudMidData(CloudData prevData, CloudData nextData, CloudDataType type) {
+	public CloudMidData(CloudData prevData, CloudData nextData, Type type) {
 		super(type);
 
 		width = Math.max(prevData.width, nextData.width);

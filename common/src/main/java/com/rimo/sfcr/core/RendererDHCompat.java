@@ -28,6 +28,7 @@ import static com.rimo.sfcr.Common.*;
  */
 public class RendererDHCompat extends Renderer {
 	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
+	private CloudData data;
 	private IDhApiRenderableBoxGroup group;
 
 	private float cloudBlockWidth, cloudBlockHeight;
@@ -202,12 +203,13 @@ public class RendererDHCompat extends Renderer {
 	//add RenderableBoxGroup build and replace.
 	@Override
 	protected void collectCloudData(int x, int y, int z) {
+		CloudData newData = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome);
 		if (!DhApi.Delayed.configs.graphics().renderingEnabled().getValue())
 			return;  //save battery if DH render was disabled.
 		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
 				Common.MOD_ID + ":clouds",
 				new DhApiVec3d(0, 0, 0),
-				convertGridForm(new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome)._cloudData)
+				convertGridForm(newData._cloudData)
 		);
 		newGroup.setBlockLight(15);
 		newGroup.setSkyLight(15);
@@ -220,6 +222,7 @@ public class RendererDHCompat extends Renderer {
 				renderRegister.remove(group.getId());  //clear old group
 			renderRegister.add(newGroup);
 			group = newGroup;
+			data = newData;
 			cullStateShown = group.size();
 		}
 	}
@@ -231,6 +234,11 @@ public class RendererDHCompat extends Renderer {
 			DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister().remove(group.getId());
 			group = null;
 		}
+	}
+
+	@Override
+	public boolean isHasCloud(double x, double y, double z) {
+		return data != null && data.isHasCloud(x + xOffset, y, z + zOffset);
 	}
 
 	// Below we rewrite 2 method from
@@ -248,9 +256,9 @@ public class RendererDHCompat extends Renderer {
 		 */
 
 		//color
-		if (!group.isEmpty()) {
+		if (! group.isEmpty()) {
 			Color color = new Color(cloudColor);
-			if (!group.get(0).color.equals(color)) {
+			if (! group.get(0).color.equals(color)) {
 				for (DhApiRenderableBox box : group)
 					box.color = color;
 				group.triggerBoxChange();
@@ -263,7 +271,9 @@ public class RendererDHCompat extends Renderer {
 		double zOffsetInGrid = cameraPos.getZ() / cloudBlockWidth + 0.33F - oldGridZ;
 		xOffsetInGrid *= cloudBlockWidth;  //turns to blocks
 		zOffsetInGrid *= cloudBlockWidth;
-		/* I'm fk realized there should be simply "cameraPos - offset" ...
+		xOffset = xOffsetInGrid - 0.33F * cloudBlockWidth;
+		zOffset = zOffsetInGrid - 0.33F * cloudBlockWidth;
+		/* Suddenly I realized that there should be simply "cameraPos - offset" ...
 		 * W T F to my brain (╯‵□′)╯︵┻━┻ */
 		double cloudX = cameraPos.getX() - xOffsetInGrid;
 		double cloudZ = cameraPos.getZ() - zOffsetInGrid;

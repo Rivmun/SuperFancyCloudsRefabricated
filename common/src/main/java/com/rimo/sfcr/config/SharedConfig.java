@@ -22,6 +22,7 @@ public class SharedConfig {
 	private boolean fogAutoDistance = true;
 	private int fogMinDistance = 2;
 	private int fogMaxDistance = 4;
+	private boolean isEnableCloudRain = false;
 	private int cloudRenderDistance = 64;
 	private boolean cloudRenderDistanceFitToView = false;
 	private int cloudHeight = 192;
@@ -58,6 +59,7 @@ public class SharedConfig {
 		this.fogAutoDistance              = config.fogAutoDistance;
 		this.fogMinDistance               = config.fogMinDistance;
 		this.fogMaxDistance               = config.fogMaxDistance;
+		this.isEnableCloudRain            = config.isEnableCloudRain;
 		this.cloudRenderDistance          = config.cloudRenderDistance;
 		this.cloudRenderDistanceFitToView = config.cloudRenderDistanceFitToView;
 		this.cloudHeight                  = config.cloudHeight;
@@ -121,6 +123,7 @@ public class SharedConfig {
 	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
+	public boolean isEnableCloudRain() {return isEnableCloudRain;}
 
 	public void setEnableRender(boolean isEnable) {
 		isEnableRender = isEnable;}
@@ -163,6 +166,7 @@ public class SharedConfig {
 	}
 	public void setEnableBottomDim(boolean enableBottomDim) {this.enableBottomDim = enableBottomDim;}
 	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
+	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
 
 	//conversion
 	public int getAutoFogMaxDistance() {

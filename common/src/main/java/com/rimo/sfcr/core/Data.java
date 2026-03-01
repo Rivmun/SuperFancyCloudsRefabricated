@@ -5,6 +5,7 @@ import com.rimo.sfcr.mixin.ServerWorldAccessor;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.level.ServerWorldProperties;
 
@@ -39,21 +40,25 @@ public class Data {
 	public boolean updateWeather(ServerWorld world) {
 		// Weather Pre-detect
 		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
+		int rainTime = worldProperties.getRainTime();
+		int thunderTime = worldProperties.getThunderTime();
+		int preDetectTime = CONFIG.getWeatherPreDetectTime();
 		if (worldProperties.isRaining()) {
 			if (worldProperties.isThundering()) {
-				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.THUNDER;
+				nextWeather = thunderTime / 20 < preDetectTime ? Weather.RAIN : Weather.THUNDER;
 			} else {
-				nextWeather = worldProperties.getThunderTime() / 20 < CONFIG.getWeatherPreDetectTime() && worldProperties.getThunderTime() != worldProperties.getRainTime()
-								? Weather.THUNDER
-								: worldProperties.getRainTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.CLEAR : Weather.RAIN;
+				nextWeather = thunderTime / 20 < preDetectTime && thunderTime != rainTime ?
+						Weather.THUNDER :
+						rainTime / 20 < preDetectTime ? Weather.CLEAR : Weather.RAIN;
 			}
 		} else {
-			if (worldProperties.getClearWeatherTime() != 0) {
-				nextWeather = worldProperties.getClearWeatherTime() / 20 < CONFIG.getWeatherPreDetectTime() ? Weather.RAIN : Weather.CLEAR;
+			int clearWeatherTime = worldProperties.getClearWeatherTime();
+			if (clearWeatherTime != 0) {
+				nextWeather = clearWeatherTime / 20 < preDetectTime ? Weather.RAIN : Weather.CLEAR;
 			} else {
-				nextWeather = Math.min(worldProperties.getRainTime(), worldProperties.getThunderTime()) / 20 < CONFIG.getWeatherPreDetectTime()
-								? worldProperties.getRainTime() < worldProperties.getThunderTime() ? Weather.RAIN : Weather.THUNDER
-								: Weather.CLEAR;
+				nextWeather = Math.min(rainTime, thunderTime) / 20 < preDetectTime ?
+						rainTime < thunderTime ? Weather.RAIN : Weather.THUNDER :
+						Weather.CLEAR;
 			}
 		}
 		if (nextWeather != currentWeather) {
@@ -74,21 +79,25 @@ public class Data {
 		World world = player.getWorld();
 
 		//Detect Weather Change
-		if (CONFIG.isEnableWeatherDensity()) {
+		float thunderDensity = CONFIG.getThunderDensityPercent() / 100f;
+		float rainDensity = CONFIG.getRainDensityPercent() / 100f;
+		float clearDensity = CONFIG.getCloudDensityPercent() / 100f;
+		boolean enableDynamic = CONFIG.isEnableWeatherDensity();
+		boolean biomeDensityByChunk = CONFIG.isBiomeDensityByChunk();
+		if (enableDynamic) {
+			boolean isPreDetectOn = CONFIG.getWeatherPreDetectTime() != 0;
 			if (world.isThundering()) {
-				isWeatherChange = nextWeather != Weather.THUNDER && CONFIG.getWeatherPreDetectTime() != 0
-						|| densityByWeather < CONFIG.getThunderDensityPercent() / 100f;
+				isWeatherChange = nextWeather != Weather.THUNDER && isPreDetectOn || densityByWeather < thunderDensity;
 			} else if (world.isRaining()) {
-				isWeatherChange = nextWeather != Weather.RAIN && CONFIG.getWeatherPreDetectTime() != 0
-						|| densityByWeather != CONFIG.getRainDensityPercent() / 100f;
+				isWeatherChange = nextWeather != Weather.RAIN && isPreDetectOn || densityByWeather != rainDensity;
 			} else {		//Clear...
-				isWeatherChange = nextWeather != Weather.CLEAR && CONFIG.getWeatherPreDetectTime() != 0
-						|| densityByWeather > CONFIG.getCloudDensityPercent() / 100f;
+				isWeatherChange = nextWeather != Weather.CLEAR && isPreDetectOn || densityByWeather > clearDensity;
 			}
 			//Detect Biome Change
-			if (!CONFIG.isBiomeDensityByChunk()) {		//Hasn't effected if use chunk data.
-				if (CONFIG.isFilterListHasBiome(world.getBiome(player.getBlockPos())))
-					targetDownFall = CONFIG.getDownfall(world.getBiome(player.getBlockPos()).value().getPrecipitation(player.getBlockPos()));
+			if (! biomeDensityByChunk) {		//Hasn't effected if use chunk data.
+				BlockPos pos = player.getBlockPos();
+				if (CONFIG.isFilterListHasBiome(world.getBiome(pos)))
+					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitation(pos));
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {
@@ -97,28 +106,28 @@ public class Data {
 		}
 
 		//Density Change by Weather
-		if (CONFIG.isEnableWeatherDensity()) {
+		if (enableDynamic) {
 			if (isWeatherChange) {
 				switch (nextWeather) {
-					case THUNDER -> densityByWeather = stepDensity(CONFIG.getThunderDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
-					case RAIN -> densityByWeather = stepDensity(CONFIG.getRainDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
-					case CLEAR -> densityByWeather = stepDensity(CONFIG.getCloudDensityPercent() / 100f, densityByWeather, densityChangingSpeed);
+					case THUNDER -> densityByWeather = stepDensity(thunderDensity, densityByWeather, densityChangingSpeed);
+					case RAIN -> densityByWeather = stepDensity(rainDensity, densityByWeather, densityChangingSpeed);
+					case CLEAR -> densityByWeather = stepDensity(clearDensity, densityByWeather, densityChangingSpeed);
 				}
 			} else {
 				switch (nextWeather) {
-					case THUNDER -> densityByWeather = CONFIG.getThunderDensityPercent() / 100f;
-					case RAIN -> densityByWeather = CONFIG.getRainDensityPercent() / 100f;
-					case CLEAR -> densityByWeather = CONFIG.getCloudDensityPercent() / 100f;
+					case THUNDER -> densityByWeather = thunderDensity;
+					case RAIN -> densityByWeather = rainDensity;
+					case CLEAR -> densityByWeather = clearDensity;
 				}
 			}
 			//Density Change by Biome
-			if (!CONFIG.isBiomeDensityByChunk()) {
+			if (! biomeDensityByChunk) {
 				densityByBiome = isBiomeChange ? stepDensity(targetDownFall, densityByBiome, densityChangingSpeed) : targetDownFall;
 			} else {
 				densityByBiome = 0.5f;		//Output common value if use chunk.
 			}
 		} else {		//Initialize if disabled detect in rain/thunder.
-			densityByWeather = CONFIG.getCloudDensityPercent() / 100f;
+			densityByWeather = clearDensity;
 			densityByBiome = 0f;
 		}
 

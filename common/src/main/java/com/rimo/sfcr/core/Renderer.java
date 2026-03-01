@@ -31,6 +31,7 @@ public class Renderer {
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
 	public int cullStateSkipped, cullStateShown;  //debug counter
+	public double debugRebuildTime, debugUploadTime;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
@@ -118,13 +119,17 @@ public class Renderer {
 		//if culling is disabled, no need to rebuild in every tick.
 		if (! isPause && (isCullingDisabled && rebuildTimer == 99 || ! isCullingDisabled && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
+			debugRebuildTime = System.nanoTime();
 			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), cloudColor, xOffsetInGrid, cloudHeight);
+			debugRebuildTime = (System.nanoTime() - debugRebuildTime) / 1000000;
 			if (cb != null) {
 				if (cloudsBuffer != null)
 					cloudsBuffer.close();
 				cloudsBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
 				cloudsBuffer.bind();
+				debugUploadTime = System.nanoTime();
 				cloudsBuffer.upload(cb);
+				debugUploadTime = (System.nanoTime() - debugUploadTime) / 1000000;
 				VertexBuffer.unbind();
 			}
 		}

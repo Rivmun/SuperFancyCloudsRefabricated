@@ -42,8 +42,8 @@ public class Client {
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
 			String dimensionName = world.getRegistryKey().getValue().toString();
-			if (! hasServer || ! CONFIG.isEnableServer()) {
-				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))  //if not sfcr server or disabled server config, read config by client itself.
+			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
+				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
 			}
@@ -51,9 +51,9 @@ public class Client {
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (!CONFIG.isEnableRender())
+			if (! CONFIG.isEnableRender() || client.world == null || client.world.getTime() % 20 != 0)
 				return;
-			if (!hasServer && client.world != null)
+			if (! hasServer && ! client.isIntegratedServerRunning())
 				DATA.updateWeatherClient(client.world);
 			if (client.player != null)
 				DATA.updateDensity(client.player);
@@ -123,7 +123,7 @@ public class Client {
 	}
 
 	@Environment(EnvType.CLIENT)
-	public static void applyConfigChange(boolean oldEnableMod, boolean oldEnableDHCompat) {
+	public static void applyConfigChange(boolean oldEnableDHCompat) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
 	}

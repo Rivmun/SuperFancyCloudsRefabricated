@@ -71,7 +71,7 @@ public class Server {
 								.executes(context -> {
 									ServerPlayerEntity player = context.getSource().getPlayer();
 									if (player == null) {
-										context.getSource().sendMessage(Text.of("[SFCRe] Please cast it from client!"));
+										context.getSource().sendMessage(Text.of("§4[SFCRe] Please cast it from client!"));
 										return 1;
 									}
 									NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new PacketByteBuf(Unpooled.buffer()));
@@ -86,22 +86,24 @@ public class Server {
 		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_SHARED_CONFIG, ((buf, context) -> {
 			String configJson = buf.readString();
 			PlayerEntity player = context.getPlayer();
-			if (! player.getCommandSource().hasPermissionLevel(4))  //check permission again
+			if (! player.getCommandSource().hasPermissionLevel(4)) {  //check permission again
+				player.sendMessage(Text.of("§4[SFCRe] Your permission is not enough to upload config!"));
+				LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?", MOD_ID, player.getName().getString());
 				return;
+			}
 			String dimensionName = player.getWorld().getRegistryKey().getValue().toString();
 			Config config = new Config();
 			try {
 				config.fromString(configJson);
 			} catch (JsonSyntaxException e) {
 				player.sendMessage(Text.of("§4[SFCRe] You upload a config that server cannot read, please check your mod version!"));
-				if (CONFIG.isEnableDebug())
-					LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
+				LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
 				return;
 			}
 			config.save(dimensionName);
 			setDimensionConfigJson(dimensionName, configJson);
-			if (CONFIG.isEnableDebug())
-				LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
+			player.sendMessage(Text.of("[SFCRe] Config was success to upload!"));
+			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
 		}));
 	}
 }

@@ -13,7 +13,6 @@ import net.minecraft.text.Text;
 
 import java.util.List;
 
-import static com.rimo.sfcr.Client.applyConfigChange;
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
@@ -29,7 +28,6 @@ public class ConfigScreen {
 	ConfigCategory compat = builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"));
 
 	private int fogMin, fogMax;
-	private final boolean oldEnableMod = CONFIG.isEnableRender();
 	private final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
 	private String dimensionName;
 
@@ -63,7 +61,7 @@ public class ConfigScreen {
 			}
 			Common.clearConfigCache(dimensionName);
 			DATA.setConfig(CONFIG);
-			applyConfigChange(oldEnableMod, oldEnableDHCompat);
+			Client.applyConfigChange(oldEnableDHCompat);
 		});
 
 		return builder.build();
@@ -411,13 +409,24 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setThunderDensityPercent)
 				.build()
 		);
+		//night density
+		density.addEntry(entryBuilder
+				.startIntSlider(Text.translatable("text.sfcr.option.densityAtNight"),
+						(int) (CONFIG.getDensityAtNight() * 10),
+						0,
+						10)
+				.setDefaultValue(7)
+				.setTextGetter(value -> Text.of(value * 10 + "%"))
+				.setSaveConsumer(value -> CONFIG.setDensityAtNight(value / 10f))
+				.build()
+		);
 		//weather pre-detect time
 		density.addEntry(entryBuilder
 				.startIntSlider(Text.translatable("text.sfcr.option.weatherPreDetectTime")
 						, CONFIG.getWeatherPreDetectTime()
 						,0
 						,30)
-				.setDefaultValue(10)
+				.setDefaultValue(5)
 				.setTextGetter(value -> value == 0 ?
 						Text.translatable("text.sfcr.disabled") :
 						Text.translatable("text.sfcr.second", value)

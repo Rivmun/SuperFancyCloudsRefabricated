@@ -62,6 +62,8 @@
 	"text.sfcr.option.cloudDensity": "- 常规密度",
 	"text.sfcr.option.rainDensity": "- 降雨时密度",
 	"text.sfcr.option.thunderDensity": "- 雷暴时密度",
+	"text.sfcr.option.densityAtNight": "夜间密度倍率",
+	"text.sfcr.option.densityAtNight.@Tooltip": "夜间时采样数值会乘以该项",
 	"text.sfcr.option.weatherPreDetectTime": "天气预检测时间",
 	"text.sfcr.option.weatherPreDetectTime.@Tooltip": "天气即将改变时，提前多少秒进行云层变化。",
 	"text.sfcr.option.cloudRefreshSpeed": "云层刷新速度",

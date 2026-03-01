@@ -62,6 +62,8 @@
 	"text.sfcr.option.cloudDensity": "- Common Density",
 	"text.sfcr.option.rainDensity": "- Rainy Density",
 	"text.sfcr.option.thunderDensity": "- Thundering Density",
+	"text.sfcr.option.densityAtNight": "Density Multiplier At Night",
+	"text.sfcr.option.densityAtNight.@Tooltip": "sample will multiply it at Night",
 	"text.sfcr.option.weatherPreDetectTime": "Weather Pre-Detect Time",
 	"text.sfcr.option.weatherPreDetectTime.@Tooltip": "When the weather is about to change,\nhow many seconds in advance to change the cloud.",
 	"text.sfcr.option.cloudRefreshSpeed": "Cloud Refresh Rate",

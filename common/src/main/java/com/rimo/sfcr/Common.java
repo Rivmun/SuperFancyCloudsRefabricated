@@ -53,7 +53,8 @@ public class Common {
 	public static void init() {
 		// Seed Sender
 		PlayerEvent.PLAYER_JOIN.register(player -> {
-			if (! CONFIG.isEnableServer())
+			MinecraftServer server = player.getServer();
+			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
 				return;
 			long seed = player.getServerWorld().getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
 			NetworkManager.sendToPlayer(player, PACKET_SEED, new PacketByteBuf(Unpooled.buffer())
@@ -76,9 +77,9 @@ public class Common {
 
 		// Weather Sender
 		TickEvent.SERVER_LEVEL_POST.register(world -> {
-			if (!CONFIG.isEnableServer())
-				return;
-			if (world.getTime() % 20 == 0 && DATA.updateWeather(world)) {
+			if (world.getTime() % 20 == 0 && DATA.updateWeather(world)) {  // always update
+				if (!CONFIG.isEnableServer())
+					return;
 				Data.Weather nextWeather = DATA.getNextWeather();
 				NetworkManager.sendToPlayers(world.getPlayers(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
 						.writeEnumConstant(nextWeather)

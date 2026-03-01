@@ -36,10 +36,11 @@ public class SharedConfig {
 	private float densityThreshold = 1.3f;
 	private float thresholdMultiplier = 1.5f;
 	private boolean enableWeatherDensity = true;
-	private int weatherPreDetectTime = 10;
+	private int weatherPreDetectTime = 5;
 	private int cloudDensityPercent = 25;
 	private int rainDensityPercent = 60;
 	private int thunderDensityPercent = 90;
+	private float densityAtNight = 0.7F;
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
@@ -75,6 +76,7 @@ public class SharedConfig {
 		this.cloudDensityPercent          = config.cloudDensityPercent;
 		this.rainDensityPercent           = config.rainDensityPercent;
 		this.thunderDensityPercent        = config.thunderDensityPercent;
+		this.densityAtNight               = config.densityAtNight;
 		this.normalRefreshSpeed           = config.normalRefreshSpeed;
 		this.weatherRefreshSpeed          = config.weatherRefreshSpeed;
 		this.densityChangingSpeed         = config.densityChangingSpeed;
@@ -100,6 +102,7 @@ public class SharedConfig {
 	public int getCloudDensityPercent() {return cloudDensityPercent;}
 	public int getRainDensityPercent() {return rainDensityPercent;}
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
+	public float getDensityAtNight() {return densityAtNight;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public int getSnowDensity() {return snowDensity;}
 	public int getRainDensity() {return rainDensity;}
@@ -134,6 +137,7 @@ public class SharedConfig {
 	public void setCloudDensityPercent(int density) {cloudDensityPercent = density;}
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
+	public void setDensityAtNight(float density) {this.densityAtNight = density;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setSnowDensity(int density) {snowDensity = density;}
 	public void setRainDensity(int density) {rainDensity = density;}

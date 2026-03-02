@@ -23,7 +23,8 @@ import static com.rimo.sfcr.Common.*;
 
 @Environment(EnvType.CLIENT)
 public class Client {
-	public static boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
+	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
+	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;
@@ -122,9 +123,16 @@ public class Client {
 		});
 	}
 
-	@Environment(EnvType.CLIENT)
 	public static void applyConfigChange(boolean oldEnableDHCompat) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
+	}
+
+	/**
+	 * @return true if this point is covered by SFC clouds, false if not.<br>
+	 * Note that if this point is above cloud, it always returns false.
+	 */
+	public static boolean isNoCloudCovered(double x, double y, double z) {
+		return RENDERER == null || ! RENDERER.isCloudCovered(x, y, z);
 	}
 }

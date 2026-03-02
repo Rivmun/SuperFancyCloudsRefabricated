@@ -237,8 +237,8 @@ public class RendererDHCompat extends Renderer {
 	}
 
 	@Override
-	public boolean isHasCloud(double x, double y, double z) {
-		return data != null && data.isHasCloud(x + xOffset, y, z + zOffset);
+	public boolean isCloudCovered(double x, double y, double z) {
+		return data != null && data.isCloudCovered(x + xOffset, y, z + zOffset);
 	}
 
 	// Below we rewrite 2 method from

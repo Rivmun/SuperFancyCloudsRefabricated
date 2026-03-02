@@ -39,7 +39,7 @@ dependencies {
     }
 
     //Distant Horizons
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${rootProject.distant_horizon_version}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${rootProject.distant_horizon_version}")
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }

@@ -15,12 +15,13 @@ import static com.rimo.sfcr.Common.MOD_ID;
 
 public class Config extends SharedConfig {
 	private boolean enableDebug = false;
-	private boolean enableServer = false;
+	private boolean enableServer = true;
 	private CullMode cullMode = CullMode.RECTANGULAR;
 	private float cullRadianMultiplier = 1.0f;
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
+	private boolean isEnableParticleRainCompat = false;
 
 	/**
 	 * Do you want to call .load() to read a local config?
@@ -34,6 +35,7 @@ public class Config extends SharedConfig {
 		this.rebuildInterval              = config.rebuildInterval;
 		this.enableSmoothChange           = config.enableSmoothChange;
 		this.isEnableDHCompat             = config.isEnableDHCompat;
+		this.isEnableParticleRainCompat   = config.isEnableParticleRainCompat;
 		setSharedConfig(config);
 	}
 
@@ -44,6 +46,7 @@ public class Config extends SharedConfig {
 	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
+	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat;}
 
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {
@@ -53,6 +56,7 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable;}
 
 	/*
 	 * -----IO-----

@@ -31,6 +31,13 @@ side = "BOTH"
 [[dependencies.sfcr]]
 modId = "architectury"
 mandatory = true
-versionRange = "[6.5.77,)"
+versionRange = "[6.6.92,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "distanthorizons"
+mandatory = false
+versionRange = "[2.4.5,)"
+ordering = "NONE"
+side = "CLIENT"

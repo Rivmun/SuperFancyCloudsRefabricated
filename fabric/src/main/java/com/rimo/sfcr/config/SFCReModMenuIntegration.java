@@ -8,7 +8,7 @@ public class SFCReModMenuIntegration implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
 		if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
-			return parent -> new ConfigScreen().buildScreen();
+			return parent -> new ConfigScreen().build();
 		} else {
 			return parent -> null;
 		}

@@ -68,7 +68,7 @@ public class CloudData {
 	public Type getDataType() {return dataType;}
 	public float getLifeTime() {return lifeTime;}
 
-	boolean isHasCloud(double x, double y, double z) {
+	boolean isCloudCovered(double x, double y, double z) {
 		Vec3d camPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
 		int cbSize = CONFIG.getCloudBlockSize();
 		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
@@ -76,7 +76,7 @@ public class CloudData {
 		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
 		for (int i = 0; i < height; i ++) {
 			if (_cloudData[gx][i][gz]) {
-				return gridYFromClouds <= i;
+				return minusCloudGridHeight(gy) <= i;
 			}
 		}
 		return false;

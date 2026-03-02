@@ -404,9 +404,9 @@ public class Renderer {
 		return cloudHeight;
 	}
 
-	public boolean isHasCloud(double x, double y, double z) {
+	public boolean isCloudCovered(double x, double y, double z) {
 		for(CloudData data : cloudDataGroup) {
-			if (data.isHasCloud(x + xOffset, y, z + zOffset))
+			if (data != null && data.isCloudCovered(x + xOffset, y, z + zOffset))
 				return true;
 		}
 		return false;

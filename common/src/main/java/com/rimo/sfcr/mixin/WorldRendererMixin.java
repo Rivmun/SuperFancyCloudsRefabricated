@@ -1,5 +1,6 @@
 package com.rimo.sfcr.mixin;
 
+import com.rimo.sfcr.Client;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -53,7 +54,7 @@ public abstract class WorldRendererMixin {
 			target = "Lnet/minecraft/world/biome/Biome;hasPrecipitation()Z"
 	))
 	private boolean sfcr$redirectHasPrecipitation(Biome biome) {
-		if (! CONFIG.isEnableCloudRain() && ! RENDERER.isHasCloud(sfcr$x, sfcr$y, sfcr$z))
+		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
 			return false;
 		return biome.hasPrecipitation();
 	}
@@ -62,7 +63,7 @@ public abstract class WorldRendererMixin {
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
 	private Biome.Precipitation sfcr$redirectGetPrecipitation(Biome instance, BlockPos pos) {
-		if (! CONFIG.isEnableCloudRain() && ! RENDERER.isHasCloud(pos.getX(), pos.getY(), pos.getZ()))
+		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return instance.getPrecipitation(pos);
 	}

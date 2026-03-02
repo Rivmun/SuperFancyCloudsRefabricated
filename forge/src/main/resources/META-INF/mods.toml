@@ -34,3 +34,24 @@ mandatory = true
 versionRange = "[9.0.8,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "cloth_config"
+mandatory = false
+versionRange = "[11.1.136,)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[denpendencies.sfcr]]
+modId = "distanthorizons"
+mandatory = false
+versionRange = "[2.4.5,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[denpendencies.sfcr]]
+modId = "particlerain"
+mandatory = false
+versionRange = "[4.0.0-beta.5,)"
+ordering = "NONE"
+side = "CLIENT"

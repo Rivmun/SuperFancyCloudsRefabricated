@@ -1,7 +1,5 @@
 package com.rimo.sfcr.mixin;
 
-import com.rimo.sfcr.Client;
-import com.rimo.sfcr.Common;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
@@ -17,6 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static com.rimo.sfcr.Common.CONFIG;
+import static com.rimo.sfcr.Client.RENDERER;
+
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin {
 
@@ -27,8 +28,8 @@ public abstract class WorldRendererMixin {
 	// Do not use wildcard here that will make mixin inject failure when test without dev env!!
 	@Inject(method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FDDD)V", at = @At("HEAD"), cancellable = true)
 	public void sfcr$render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-		if (world != null && Common.CONFIG.isEnableRender() && world.getDimension().hasSkyLight()) {
-			Client.RENDERER.render(matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, world, ticks);
+		if (world != null && CONFIG.isEnableRender() && world.getDimension().hasSkyLight()) {
+			RENDERER.render(matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, world, ticks);
 			ci.cancel();
 		}
 	}
@@ -52,7 +53,7 @@ public abstract class WorldRendererMixin {
 			target = "Lnet/minecraft/world/biome/Biome;hasPrecipitation()Z"
 	))
 	private boolean sfcr$redirectHasPrecipitation(Biome biome) {
-		if (! Client.RENDERER.isHasCloud(sfcr$x, sfcr$y, sfcr$z))
+		if (! CONFIG.isEnableCloudRain() && ! RENDERER.isHasCloud(sfcr$x, sfcr$y, sfcr$z))
 			return false;
 		return biome.hasPrecipitation();
 	}
@@ -61,7 +62,7 @@ public abstract class WorldRendererMixin {
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
 	private Biome.Precipitation sfcr$redirectGetPrecipitation(Biome instance, BlockPos pos) {
-		if (! Client.RENDERER.isHasCloud(pos.getX(), pos.getY(), pos.getZ()))
+		if (! CONFIG.isEnableCloudRain() && ! RENDERER.isHasCloud(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return instance.getPrecipitation(pos);
 	}

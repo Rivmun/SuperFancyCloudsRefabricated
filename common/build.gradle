@@ -6,6 +6,10 @@ loom {
     accessWidenerPath = file("src/main/resources/sfcr.accesswidener")
 }
 
+repositories {
+    maven { url "https://api.modrinth.com/maven"}
+}
+
 dependencies {
     // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
     // Do NOT use other classes from fabric loader
@@ -17,6 +21,8 @@ dependencies {
     modCompileOnly("me.shedaniel.cloth:cloth-config:${rootProject.cloth_config_version}") {
         exclude(group: "net.fabricmc.fabric-api")
 	}
+    // Distant Horizons
+    modApi("maven.modrinth:DistantHorizonsApi:${rootProject.distant_horizon_api_version}")
 }
 
 publishing {

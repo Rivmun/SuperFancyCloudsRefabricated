@@ -49,7 +49,7 @@ public abstract class WeatherParticleManagerMixin {
 			target = "Lpigcart/particlerain/config/ConfigData$SpawnPos;equals(Ljava/lang/Object;)Z"
 	))
 	private static boolean sfcr$shouldCancelSkyFX(ConfigData.SpawnPos instance, Object o) {
-		if (sfcr$shouldCancel && CONFIG.isEnableRender() && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
+		if (sfcr$shouldCancel && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
 			return false;
 		return instance.equals(o);
 	}
@@ -72,7 +72,7 @@ public abstract class WeatherParticleManagerMixin {
 	}
 	@ModifyVariable(method = "tickBlockFX", at = @At("STORE"), name = "direction")
 	private static Direction sfcr$shouldCancelBlockFX(Direction d) {
-		if (sfcr$shouldCancel && CONFIG.isEnableRender() && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
+		if (sfcr$shouldCancel && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
 			return null;
 		return d;
 	}

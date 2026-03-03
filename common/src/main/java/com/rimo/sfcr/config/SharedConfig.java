@@ -123,7 +123,7 @@ public class SharedConfig {
 	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
-	public boolean isEnableCloudRain() {return isEnableCloudRain;}
+	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
 
 	public void setEnableRender(boolean isEnable) {
 		isEnableRender = isEnable;}

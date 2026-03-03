@@ -256,6 +256,10 @@ public class Renderer {
 
 		builder.clear();
 		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
+
+		for (int i = 0; i < 4; i ++)  // empty builder will lead game crash... we draw a holder face to prevent that.
+			builder.vertex(i, -99, i).texture(0.5f, 0.5f).color(0, 0, 0, 0).normal(0, -1, 0).next();
+
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 

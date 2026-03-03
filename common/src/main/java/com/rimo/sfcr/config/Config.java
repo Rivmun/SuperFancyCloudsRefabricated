@@ -56,7 +56,11 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
-	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable;}
+	public void setEnableParticleRainCompat(boolean enable) {
+		isEnableParticleRainCompat = enable;
+		if (enable)
+			setEnableCloudRain(true);
+	}
 
 	/*
 	 * -----IO-----

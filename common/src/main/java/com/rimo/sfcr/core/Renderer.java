@@ -2,7 +2,6 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.rimo.sfcr.config.CullMode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
@@ -118,9 +117,9 @@ public class Renderer {
 		 * But precisely because of culling, mesh rebuild must run in every tick instead of concurrent, to prevent bad visual.
 		 * We made a lot of small lags of culling equation to replace a single big lag of upload, it's hard to say which is better...
 		 */
-		boolean isCullingDisabled = CONFIG.getCullMode().equals(CullMode.NONE);
+		boolean enableCulling = CONFIG.getEnableViewCulling();
 		//if culling is disabled, no need to rebuild in every tick.
-		if (! isPause && (isCullingDisabled && rebuildTimer == 99 || ! isCullingDisabled && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
+		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
 			BufferBuilder cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), cloudColor, xOffsetInGrid, cloudHeight);
@@ -223,29 +222,17 @@ public class Renderer {
 	// Building mesh
 	private @Nullable BufferBuilder rebuildCloudMesh(BufferBuilder builder, Vec3d cloudColor, double offset, float cloudHeight) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		Vec3d camVec = null;
-		Vec3d[] camProjBorder = null;
-		double fovCos = 0, extraAngleSin = 0;
-
 		Camera camera = client.gameRenderer.getCamera();
-		int fov = (int) client.options.fov;
-		float fovMultiplier = client.player.getFovMultiplier();
-		if (CONFIG.getCullMode().equals(CullMode.CIRCULAR)) {
-			camVec = new Vec3d(
-					-Math.sin(Math.toRadians(camera.getYaw())),
-					-Math.tan(Math.toRadians(camera.getPitch())),
-					Math.cos(Math.toRadians(camera.getYaw()))
-			).normalize();
-			fovCos = Math.cos(Math.toRadians(fov * fovMultiplier * CONFIG.getCullRadianMultiplier()));		//multiplier 2 for better visual.
-		} else if (CONFIG.getCullMode().equals(CullMode.RECTANGULAR)) {
-			Camera.Projection camProj = camera.getProjection();
-			camProjBorder = new Vec3d[]{
-					camProj.getTopRight().crossProduct(camProj.getTopLeft()).normalize(),			//up
-					camProj.getBottomLeft().crossProduct(camProj.getBottomRight()).normalize(),		//down
-					camProj.getTopLeft().crossProduct(camProj.getBottomLeft()).normalize(),			//left
-					camProj.getBottomRight().crossProduct(camProj.getTopRight()).normalize()		//right
-			};
-			extraAngleSin = Math.sin(Math.toRadians(fov * (1.9f - fovMultiplier - CONFIG.getCullRadianMultiplier())));		//increase 0.1 for better visual.
+
+		Vec3d look = null, up = null, right = null;
+		double tanHalfFov = 0, tanHalfFovHorizontal = 0;
+		boolean enableCulling = CONFIG.getEnableViewCulling();
+		if (enableCulling) {
+			look = new Vec3d(camera.getHorizontalPlane());
+			up = new Vec3d(camera.getVerticalPlane());
+			right = new Vec3d(camera.getDiagonalPlane());
+			tanHalfFov = Math.tan(Math.toRadians(CONFIG.getCullRadianMultiplier() * client.options.fov * client.player.getFovMultiplier()) / 2F);
+			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
 		}
 
 		int customColor = CONFIG.getCloudColor();  //apply custom color
@@ -284,44 +271,36 @@ public class Renderer {
 					boolean isDrawn = false;
 
 					for (int j = 0; j <= 3; j ++) {
-						Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling
-								(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
-								verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().y,
-								(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
-						).normalize();
-						boolean isInRange = true;
-						if (camVec != null && camVec.dotProduct(cloudVec) < fovCos) {
-							continue;
-						} else if (camProjBorder != null) {
-							//TODO: 所有顶点都在视野外，但斜边仍可能与视野存在交集。
-							// 或许应该反向计算，构建顶点四边与相机的 projBorder 拿去和相机的投影顶点算点乘（你看 camProj 对象本身就是由相机投影四个顶点构成的）
-							// 不过因为需要给每个面都构建四个投影平面，而非每 tick 仅为相机构建四次，计算量估计要翻好几番…
-							for (Vec3d plane : camProjBorder) {
-								if (plane.dotProduct(cloudVec) < extraAngleSin) {
-									isInRange = false;
-									break;  //skipped if this vertex out of any projection plane
-								}
-							}
+						if (enableCulling) {
+							Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling (camera relative)
+									(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
+									verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
+									(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
+							);
+							double depth = look.dotProduct(cloudVec);
+							if (depth < 0.05F ||
+									Math.abs(up.dotProduct(cloudVec)) / depth > tanHalfFov ||
+									Math.abs(right.dotProduct(cloudVec)) / depth > tanHalfFovHorizontal)
+								continue;
 						}
-						if (isInRange) {
-							FACING facing = FACING.get(CloudData.depressFromHead(vertexList.get(i * 4)));
-							Vec3d faceColor = cloudColor.multiply(colors[facing.ordinal()]);
-							if (CONFIG.isEnableBottomDim()) {
-								faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
-							}
-							int nx = facing.normal.getX();
-							int ny = facing.normal.getY();
-							int nz = facing.normal.getZ();
-							for (int k = 0; k < 4; k++) {
-								builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
-										.texture(0.5f, 0.5f)
-										.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
-										.normal(nx, ny, nz)
-										.next();
-							}
-							isDrawn = true;
-							break;
+
+						FACING facing = FACING.get(CloudData.depressFromHead(vertexList.get(i * 4)));
+						Vec3d faceColor = cloudColor.multiply(colors[facing.ordinal()]);
+						if (CONFIG.isEnableBottomDim()) {
+							faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
 						}
+						int nx = facing.normal.getX();
+						int ny = facing.normal.getY();
+						int nz = facing.normal.getZ();
+						for (int k = 0; k < 4; k++) {
+							builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
+									.texture(0.5f, 0.5f)
+									.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+									.normal(nx, ny, nz)
+									.next();
+						}
+						isDrawn = true;
+						break;
 					}
 
 					if (isDrawn) {

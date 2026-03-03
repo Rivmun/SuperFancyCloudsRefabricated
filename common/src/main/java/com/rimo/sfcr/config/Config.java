@@ -16,8 +16,8 @@ import static com.rimo.sfcr.Common.MOD_ID;
 public class Config extends SharedConfig {
 	private boolean enableDebug = false;
 	private boolean enableServer = true;
-	private CullMode cullMode = CullMode.RECTANGULAR;
-	private float cullRadianMultiplier = 1.0f;
+	private boolean isEnableViewCulling = true;
+	private float cullRadianMultiplier = 1.1f;
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
@@ -27,19 +27,19 @@ public class Config extends SharedConfig {
 	 */
 	public Config() {}
 	public void setConfig(Config config) {
-		this.enableDebug                  = config.enableDebug;
-		this.enableServer                 = config.enableServer;
-		this.cullMode                     = config.cullMode;
-		this.cullRadianMultiplier         = config.cullRadianMultiplier;
-		this.rebuildInterval              = config.rebuildInterval;
-		this.enableSmoothChange           = config.enableSmoothChange;
-		this.isEnableDHCompat             = config.isEnableDHCompat;
+		this.enableDebug          = config.enableDebug;
+		this.enableServer         = config.enableServer;
+		this.isEnableViewCulling  = config.isEnableViewCulling;
+		this.cullRadianMultiplier = config.cullRadianMultiplier;
+		this.rebuildInterval      = config.rebuildInterval;
+		this.enableSmoothChange   = config.enableSmoothChange;
+		this.isEnableDHCompat     = config.isEnableDHCompat;
 		setSharedConfig(config);
 	}
 
 	public boolean isEnableDebug() {return enableDebug;}
 	public boolean isEnableServer() {return enableServer;}
-	public CullMode getCullMode() {return cullMode;}
+	public boolean getEnableViewCulling() {return isEnableViewCulling;}
 	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
 	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
@@ -48,7 +48,7 @@ public class Config extends SharedConfig {
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {
 		enableServer = isEnable;}
-	public void setCullMode(CullMode cullMode) {this.cullMode = cullMode;}
+	public void setEnableViewCulling(boolean enableViewCulling) {this.isEnableViewCulling = enableViewCulling;}
 	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}

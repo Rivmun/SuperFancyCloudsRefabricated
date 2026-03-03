@@ -37,7 +37,7 @@ public abstract class RainDropParticleMixin extends WeatherParticle {
 	// To play it correctly, we made a proxy that invoked by particle itself when it's dropped instead of vanilla tick.
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void sfcr$playRainSound(CallbackInfo ci) {
-		if (! CONFIG.isEnableRender() || ! CONFIG.isEnableParticleRainCompat())
+		if (! CONFIG.isEnableParticleRainCompat())
 			return;
 		if (this.onGround && sfcr$random.nextInt(3) < sfcr$counter ++) {
 			sfcr$counter = 0;

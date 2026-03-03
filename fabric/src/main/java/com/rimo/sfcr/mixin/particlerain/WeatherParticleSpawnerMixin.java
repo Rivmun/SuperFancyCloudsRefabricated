@@ -18,7 +18,7 @@ import static com.rimo.sfcr.Common.CONFIG;
 public abstract class WeatherParticleSpawnerMixin {
 	@Inject(method = "spawnParticle", at = @At("HEAD"), cancellable = true)
 	private static void sfcr$shouldRainSpawn(ClientWorld level, RegistryEntry<Biome> biome, double x, double y, double z, CallbackInfo ci) {
-		if (CONFIG.isEnableRender() && CONFIG.isEnableParticleRainCompat() && biome.value().getPrecipitation() != Biome.Precipitation.NONE && Client.isNoCloudCovered(x, y, z))
+		if (CONFIG.isEnableParticleRainCompat() && biome.value().getPrecipitation() != Biome.Precipitation.NONE && Client.isNoCloudCovered(x, y, z))
 			ci.cancel();
 	}
 
@@ -26,7 +26,7 @@ public abstract class WeatherParticleSpawnerMixin {
 	// But fortunately the sound it getting by itself, we try to disable it.
 	@Inject(method = "getBiomeSound", at = @At("HEAD"), cancellable = true)
 	private static void sfcr$disableSound(RegistryEntry<Biome> biome, boolean above, CallbackInfoReturnable<SoundEvent> cir) {
-		if (CONFIG.isEnableRender() && CONFIG.isEnableParticleRainCompat() && biome.value().getPrecipitation() != Biome.Precipitation.NONE)
+		if (CONFIG.isEnableParticleRainCompat() && biome.value().getPrecipitation() != Biome.Precipitation.NONE)
 			cir.setReturnValue(null);
 	}
 }

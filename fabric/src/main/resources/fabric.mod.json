@@ -33,7 +33,8 @@
     ]
   },
   "mixins": [
-    "sfcr-common.mixins.json"
+    "sfcr-common.mixins.json",
+    "sfcr-fabric.particlerain.mixins.json"
   ],
   "depends": {
     "fabric": "*",
@@ -41,9 +42,10 @@
     "architectury": ">=1.32.68"
   },
   "suggests": {
-    "cloth-config2": ">=4.17.132",
+    "cloth-config2": ">=4.17.101",
     "modmenu": "*",
-    "distanthorizons": ">=2.4.5"
+    "distanthorizons": ">=2.4.5",
+    "particlerain": ">=1.4.0"
   },
   "custom": {
     "modmenu": {

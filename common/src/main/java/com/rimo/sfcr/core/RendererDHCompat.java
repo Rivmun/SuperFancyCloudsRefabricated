@@ -11,7 +11,6 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShad
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 
 import java.awt.*;
@@ -152,9 +151,9 @@ public class RendererDHCompat extends Renderer {
 
 	//update cloud invoked by mixin (instead of manual call in 2.0)
 	@Override
-	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	public void render(MatrixStack matrices, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	                   ClientWorld world, int ticks) {
-		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getSkyProperties().getCloudsHeight() : CONFIG.getCloudHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;

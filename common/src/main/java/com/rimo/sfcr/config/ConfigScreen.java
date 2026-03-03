@@ -4,7 +4,6 @@ import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
-import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -13,7 +12,6 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
@@ -28,14 +26,12 @@ public class ConfigScreen {
 		ClientWorld world = MinecraftClient.getInstance().world;
 		dimensionName = world != null ? world.getRegistryKey().getValue().toString() : "null";
 		//cull mode
-		EnumListEntry<CullMode> cullMode = builder.entryBuilder()
-				.startEnumSelector(new TranslatableText("text.sfcr.option.cullMode")
-						, CullMode.class
-						, CONFIG.getCullMode())
-				.setDefaultValue(CullMode.RECTANGULAR)
-				.setEnumNameProvider(value -> ((CullMode) value).getName())
+		BooleanListEntry cullMode = builder.entryBuilder()
+				.startBooleanToggle(new TranslatableText("text.sfcr.option.cullMode"),
+						CONFIG.getEnableViewCulling())
+				.setDefaultValue(true)
 				.setTooltip(new TranslatableText("text.sfcr.option.cullMode.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCullMode)
+				.setSaveConsumer(CONFIG::setEnableViewCulling)
 				.build();
 		//auto fog
 		BooleanListEntry autoFog = builder.entryBuilder()
@@ -93,6 +89,7 @@ public class ConfigScreen {
 								.setTooltip(new TranslatableText("text.sfcr.option.enableServer.@Tooltip"))
 								.setSaveConsumer(CONFIG::setEnableServer)
 								.build())
+						//enable culling
 						.addEntry(cullMode)
 						//cull radian multiplier
 						.addEntry(builder.entryBuilder()
@@ -100,10 +97,10 @@ public class ConfigScreen {
 										,(int) (CONFIG.getCullRadianMultiplier() * 10)
 										,5
 										,15)
-								.setDefaultValue(10)
+								.setDefaultValue(11)
 								.setTextGetter(value -> Text.of(value / 10f + "x"))
 								.setTooltip(new TranslatableText("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
-								.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
+								.setDisplayRequirement(Requirement.isTrue(cullMode))
 								.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 								.build())
 						//remesh interval
@@ -118,7 +115,7 @@ public class ConfigScreen {
 										new TranslatableText("text.sfcr.frame", value)
 								)
 								.setTooltip(new TranslatableText("text.sfcr.option.rebuildInterval.@Tooltip"))
-								.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
+								.setDisplayRequirement(Requirement.isTrue(cullMode))
 								.setSaveConsumer(CONFIG::setRebuildInterval)
 								.build())
 						//DEBUG
@@ -483,6 +480,15 @@ public class ConfigScreen {
 								.setTooltip(new TranslatableText("text.sfcr.option.dHCompat.@Tooltip"))
 								.setSaveConsumer(CONFIG::setEnableDHCompat)
 								.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
+								.build())
+						//particle rain
+						.addEntry(builder.entryBuilder()
+								.startBooleanToggle(new TranslatableText("text.sfcr.option.particleRainCompat"),
+										CONFIG.isEnableParticleRainCompat())
+								.setDefaultValue(false)
+								.setTooltip(new TranslatableText("text.sfcr.option.particleRainCompat.@Tooltip"))
+								.setSaveConsumer(CONFIG::setEnableParticleRainCompat)
+								.setRequirement(Requirement.isTrue(() -> Client.isParticleRainLoaded))
 								.build())
 				)
 				.build();

@@ -24,6 +24,7 @@ import static com.rimo.sfcr.Common.*;
 @Environment(EnvType.CLIENT)
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
+	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;

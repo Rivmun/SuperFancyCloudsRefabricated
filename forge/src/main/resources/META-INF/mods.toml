@@ -38,7 +38,7 @@ side = "BOTH"
 [[dependencies.sfcr]]
 modId = "cloth-config"
 mandatory = false
-versionRange = "[4.17.132,)"
+versionRange = "[4.17.101,)"
 ordering = "NONE"
 side = "CLIENT"
 

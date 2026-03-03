@@ -3,18 +3,16 @@ package com.rimo.sfcr.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import me.shedaniel.architectury.core.RegistryEntry;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SharedConfig {
 	protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	public static final List<String> DEF_BIOME_FILTER_LIST = new ArrayList<>(List.of(
+	public static final List<String> DEF_BIOME_FILTER_LIST = Arrays.asList(
 			"#minecraft:is_river"
-	));
+	);
 
 	private boolean isEnableRender = true;
 	private boolean enableFog = true;
@@ -122,7 +120,7 @@ public class SharedConfig {
 	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
-	public boolean isEnableCloudRain() {return isEnableCloudRain;}
+	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
 
 	public void setEnableRender(boolean isEnable) {
 		isEnableRender = isEnable;}

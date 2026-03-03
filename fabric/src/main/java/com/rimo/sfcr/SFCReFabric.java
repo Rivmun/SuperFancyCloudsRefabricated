@@ -7,16 +7,16 @@ import net.fabricmc.api.ModInitializer;
 public class SFCReFabric implements ModInitializer, ClientModInitializer, DedicatedServerModInitializer {
 	@Override
 	public void onInitialize() {
-		SFCReMod.init();
+		Common.init();
 	}
 
 	@Override
 	public void onInitializeClient() {
-		SFCReMod.initClient();
+		Client.init();
 	}
 
 	@Override
 	public void onInitializeServer() {
-		SFCReMod.initServer();
+		Server.init();
 	}
 }

@@ -9,6 +9,7 @@ architectury {
 
 repositories {
 	maven { url "https://maven.terraformersmc.com/releases/" }
+    maven { url "https://cursemaven.com"}
 }
 
 loom {
@@ -36,6 +37,8 @@ dependencies {
     modImplementation("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}") {
         exclude(group: "net.fabricmc.fabric-api")
     }
+    //particle rain
+    modCompileOnly "curse.maven:particle-rain-421897:3420025"
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }

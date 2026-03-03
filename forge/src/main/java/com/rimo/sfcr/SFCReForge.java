@@ -12,15 +12,15 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.network.FMLNetworkConstants;
 import org.apache.commons.lang3.tuple.Pair;
 
-@Mod(SFCReMod.MOD_ID)
+@Mod(Common.MOD_ID)
 public class SFCReForge {
 	public SFCReForge() {
 		// Submit our event bus to let architectury register our content on the right time
-		EventBuses.registerModEventBus(SFCReMod.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
+		EventBuses.registerModEventBus(Common.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
 
-		SFCReMod.init();
-		DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SFCReMod::initClient);
-		DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> SFCReMod::initServer);
+		Common.init();
+		DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Client::init);
+		DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> Server::init);
 
 		if (ModList.get().isLoaded("cloth-config")) {
 			ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST, () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (a, b) -> true));
@@ -30,7 +30,7 @@ public class SFCReForge {
 
 	public static void registerModsPage() {
 		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (client, parent) -> {
-			return new ConfigScreen().buildScreen();
+			return new ConfigScreen().build();
 		});
 	}
 }

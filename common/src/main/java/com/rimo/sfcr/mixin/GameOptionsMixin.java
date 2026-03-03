@@ -1,26 +1,35 @@
 package com.rimo.sfcr.mixin;
 
-import com.rimo.sfcr.SFCReMod;
+import com.rimo.sfcr.Common;
+import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.option.GameOptions;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(GameOptions.class)
 public abstract class GameOptionsMixin {
 
-	@Shadow
-	public int viewDistance;
+	@Shadow public int viewDistance;
 
 	//Update cloudRenderDistance when view distance is changed.
-	@Inject(method = "write", at = @At("RETURN"), cancellable = true)
-	private void updateCloudRenderDistance(CallbackInfo ci) {
-		if (SFCReMod.COMMON_CONFIG.isCloudRenderDistanceFitToView()) {
-			SFCReMod.COMMON_CONFIG.setCloudRenderDistance(viewDistance * 12);
-			SFCReMod.COMMON_CONFIG.save();
+	@Inject(method = "write", at = @At("RETURN"))
+	private void sfcr$updateCloudRenderDistance(CallbackInfo ci) {
+		if (Common.CONFIG.isCloudRenderDistanceFitToView()) {
+			Common.CONFIG.setCloudRenderDistance(viewDistance * 12);
+			Common.CONFIG.save();
 		}
-		ci.cancel();
+	}
+
+	/*
+		always fancy, to prevent DH disabled vanilla cloudRenderer
+	 */
+	@Inject(method = "getCloudRenderMode", at = @At("RETURN"), cancellable = true)
+	private void sfcr$getCloudType(CallbackInfoReturnable<CloudRenderMode> cir) {
+		if (Common.CONFIG.isEnableRender())
+			cir.setReturnValue(CloudRenderMode.FANCY);
 	}
 }

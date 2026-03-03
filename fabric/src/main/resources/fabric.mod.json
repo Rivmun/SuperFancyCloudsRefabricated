@@ -37,12 +37,13 @@
   ],
   "depends": {
     "fabric": "*",
-    "minecraft": ">=1.16.5",
-    "architectury": ">=1.32.67"
+    "minecraft": "~1.16.5",
+    "architectury": ">=1.32.68"
   },
   "suggests": {
-    "cloth-config2":"*",
-    "modmenu": "*"
+    "cloth-config2": ">=4.17.132",
+    "modmenu": "*",
+    "distanthorizons": ">=2.4.5"
   },
   "custom": {
     "modmenu": {

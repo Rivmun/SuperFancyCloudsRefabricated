@@ -4,7 +4,6 @@ import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
-import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder.TopCellElementBuilder;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -26,14 +25,12 @@ public class ConfigScreen {
 		ClientWorld world = MinecraftClient.getInstance().world;
 		dimensionName = world != null ? world.getRegistryKey().getValue().toString() : "null";
 		//cull mode
-		EnumListEntry<CullMode> cullMode = builder.entryBuilder()
-				.startEnumSelector(Text.translatable("text.sfcr.option.cullMode")
-						, CullMode.class
-						, CONFIG.getCullMode())
-				.setDefaultValue(CullMode.RECTANGULAR)
-				.setEnumNameProvider(value -> ((CullMode) value).getName())
+		BooleanListEntry cullMode = builder.entryBuilder()
+				.startBooleanToggle(Text.translatable("text.sfcr.option.cullMode"),
+						CONFIG.getEnableViewCulling())
+				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.cullMode.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCullMode)
+				.setSaveConsumer(CONFIG::setEnableViewCulling)
 				.build();
 		//auto fog
 		BooleanListEntry autoFog = builder.entryBuilder()
@@ -42,6 +39,14 @@ public class ConfigScreen {
 				.setDefaultValue(true)
 				.setTooltip(Text.translatable("text.sfcr.option.fogAutoDistance.@Tooltip"))
 				.setSaveConsumer(CONFIG::setFogAutoDistance)
+				.build();
+		//debug
+		BooleanListEntry debug = builder.entryBuilder()
+				.startBooleanToggle(Text.translatable("text.sfcr.option.debug")
+						, CONFIG.isEnableDebug())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.debug.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDebug)
 				.build();
 		// (i love it...
 		return builder.setParentScreen(MinecraftClient.getInstance().currentScreen)
@@ -98,10 +103,10 @@ public class ConfigScreen {
 										,(int) (CONFIG.getCullRadianMultiplier() * 10)
 										,5
 										,15)
-								.setDefaultValue(10)
+								.setDefaultValue(11)
 								.setTextGetter(value -> Text.of(value / 10f + "x"))
 								.setTooltip(Text.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
-								.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
+								.setDisplayRequirement(Requirement.isTrue(cullMode))
 								.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 								.build())
 						//remesh interval
@@ -116,17 +121,11 @@ public class ConfigScreen {
 										Text.translatable("text.sfcr.frame", value)
 								)
 								.setTooltip(Text.translatable("text.sfcr.option.rebuildInterval.@Tooltip"))
-								.setDisplayRequirement(Requirement.isValue(cullMode, CullMode.CIRCULAR, CullMode.RECTANGULAR))
+								.setDisplayRequirement(Requirement.isTrue(cullMode))
 								.setSaveConsumer(CONFIG::setRebuildInterval)
 								.build())
 						//DEBUG
-						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Text.translatable("text.sfcr.option.debug")
-										, CONFIG.isEnableDebug())
-								.setDefaultValue(false)
-								.setTooltip(Text.translatable("text.sfcr.option.debug.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableDebug)
-								.build())
+						.addEntry(debug)
 				)
 				.setFallbackCategory(builder.getOrCreateCategory(Text.translatable("text.sfcr.category.clouds"))
 						//cloud height
@@ -360,7 +359,7 @@ public class ConfigScreen {
 								.setDefaultValue(false)
 								.setTooltip(Text.translatable("text.sfcr.option.enableSmoothChange.@Tooltip"))
 								.setSaveConsumer(CONFIG::setEnableSmoothChange)
-								.setRequirement(Requirement.isTrue(() -> false))
+								.setRequirement(Requirement.isTrue(debug))
 								.build())
 						//precipitation info
 						.addEntry(builder.entryBuilder()

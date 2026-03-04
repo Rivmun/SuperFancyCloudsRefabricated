@@ -1,0 +1,57 @@
+modLoader="javafml"
+loaderVersion="[3.0,)"
+license="${mod_license}"
+issueTrackerURL="${mod_issue_tracker}"
+
+[[mixins]]
+config="sfcr.mixins.json"
+#[[mixins]]
+#config="example-neoforge.mixins.json"
+
+[[mods]]
+modId="sfcr"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="${mod_link}"
+logoFile="icon.png"
+credits="${mod_credits}"
+authors="${mod_author}"
+
+description='''
+${mod_description}
+'''
+
+[[dependencies.sfcr]]
+modId="neoforge"
+type="required"
+versionRange="%{neoforge_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.sfcr]]
+modId="minecraft"
+type="required"
+versionRange="[${minecraft_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.sfcr]]
+modId = "architectury"
+type = "optional"
+versionRange = "[${architectury_version},)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.sfcr]]
+modId = "cloth_config"
+type = "optional"
+versionRange = "[${cloth_config_version},)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[dependencies.sfcr]]
+modId="distanthorizons"
+type="optional"
+versionRange="[${distant_horizon_min_version},)"
+ordering="NONE"
+side="CLIENT"

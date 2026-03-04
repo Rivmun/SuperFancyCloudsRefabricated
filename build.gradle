@@ -1,7 +1,7 @@
 plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
-    id "io.github.pacifistmc.forgix" version "1.3.4"
+    id "io.github.pacifistmc.forgix" version "1.2.9"
 }
 
 architectury {
@@ -15,15 +15,8 @@ subprojects {
         silentMojangMappingsLicense()
     }
 
-    base {
-        archivesName = rootProject.archives_base_name
-    }
-
     dependencies {
         minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-        // The following line declares the mojmap mappings, you may use other mappings as well
-        // mappings loom.officialMojangMappings()
-        // The following line declares the yarn mappings you may select this one as well.
         mappings loom.officialMojangMappings()
         implementation 'com.google.code.gson:gson:2.10.1'
     }
@@ -34,6 +27,9 @@ allprojects {
     apply plugin: "architectury-plugin"
     apply plugin: "maven-publish"
 
+    base {
+        archivesName = rootProject.archives_base_name
+    }
     version = rootProject.mod_version
     group = rootProject.maven_group
 
@@ -58,9 +54,28 @@ allprojects {
 }
 
 forgix {
-    destinationDirectory = layout.projectDirectory.dir("build/lib/Merged")
-    archiveClassifier = "neobric"
-    archiveVersion = project.mod_version
+    // 2.0.0-SNAPSHOT scripts
+//    destinationDirectory = layout.projectDirectory.dir("build/libs/Merged")
+//    archiveClassifier = "neoric"
+//    archiveVersion = project.mod_version
+//
+//    fabric {
+//        inputJar = project(":fabric").tasks.remapJar.archiveFile
+//    }
+//    neoforge {
+//        inputJar = project(":neoforge").tasks.remapJar.archiveFile
+//    }
+    group = rootProject.maven_group
+    mergedJarName = rootProject.archives_base_name + "-" + project.mod_version + "-neoric.jar"
+    outputDir = "build/libs/Merged"
+
+    forge {
+        jarLocation = "build/libs/" + rootProject.archives_base_name + "-" + project.mod_version + "-forge.jar"
+    }
+
+    fabric {
+        jarLocation = "build/libs/" + rootProject.archives_base_name + "-" + project.mod_version + "-fabric.jar"
+    }
 }
 
 tasks.register("buildMod") {

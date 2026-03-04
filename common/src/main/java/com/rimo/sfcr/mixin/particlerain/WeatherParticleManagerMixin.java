@@ -1,10 +1,10 @@
 package com.rimo.sfcr.mixin.particlerain;
 
 import com.rimo.sfcr.Client;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,9 +27,9 @@ public abstract class WeatherParticleManagerMixin {
 	// rain
 	@Redirect(method = "tickSkyFX", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/util/math/BlockPos$Mutable;set(DDD)Lnet/minecraft/util/math/BlockPos$Mutable;"
+			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;"
 	))
-	private static BlockPos.Mutable sfcr$catchRenderPos(BlockPos.Mutable instance, double x, double y, double z) {
+	private static BlockPos.MutableBlockPos sfcr$catchRenderPos(BlockPos.MutableBlockPos instance, double x, double y, double z) {
 		sfcr$x = x;
 		sfcr$y = y;
 		sfcr$z = z;
@@ -56,7 +56,7 @@ public abstract class WeatherParticleManagerMixin {
 
 	// still splash? do it again!
 	@Inject(method = "tickBlockFX", at = @At("HEAD"))
-	private static void sfcr$catchBlockPos(BlockPos.Mutable sourcePos, BlockState state, CallbackInfo ci) {
+	private static void sfcr$catchBlockPos(BlockPos.MutableBlockPos sourcePos, BlockState state, CallbackInfo ci) {
 		sfcr$x = sourcePos.getX();
 		sfcr$y = sourcePos.getY();
 		sfcr$z = sourcePos.getZ();

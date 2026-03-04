@@ -13,7 +13,7 @@ repositories {
 }
 
 loom {
-    accessWidenerPath = project(":common").loom.accessWidenerPath
+    accessWidenerPath = file("../common/src/main/resources/sfcr.accesswidener")
 }
 
 configurations {
@@ -46,10 +46,27 @@ dependencies {
 }
 
 processResources {
-    inputs.property "version", project.version
+    def replaceProperties = [
+            "mod_version": project.mod_version,
+            "mod_name": project.mod_name,
+            "mod_link": project.mod_link,
+            "mod_credits": project.mod_credits,
+            "mod_author": project.mod_author,
+            "mod_license": project.mod_license,
+            "mod_issue_tracker": project.mod_issue_tracker,
+            "mod_description": project.mod_description,
+            "minecraft_version": project.minecraft_version,
+            "architectury_version": project.architectury_version,
+            "cloth_config_version": project.cloth_config_version,
+            "distant_horizon_min_version": project.distant_horizon_min_version,
+            "particle_rain_version": project.particle_rain_version,
+            "mod_source": project.mod_source,
+            "modmenu_version": project.modmenu_version
+    ]
+    inputs.properties(replaceProperties)
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand(replaceProperties)
     }
 }
 

@@ -11,11 +11,9 @@ import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.client.Minecraft;
 
 import java.util.Random;
 
@@ -32,6 +30,7 @@ public class Client {
 
 	public static void init() {
 		// Game boot
+		// TODO: Issue that this event (include CLIENT_SETUP) cannot invoke correctly on neoforge, it's causing NPE when quit...
 		ClientLifecycleEvent.CLIENT_STARTED.register(client -> {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 		});
@@ -42,7 +41,7 @@ public class Client {
 				CloudData.initSampler(new Random().nextLong());  //get a random seed before server send
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
-			String dimensionName = world.getRegistryKey().getValue().toString();
+			String dimensionName = world.dimension().location().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
@@ -52,10 +51,10 @@ public class Client {
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (! CONFIG.isEnableRender() || client.world == null || client.world.getTime() % 20 != 0)
+			if (! CONFIG.isEnableRender() || client.level == null || client.level.getGameTime() % 20 != 0)
 				return;
-			if (! hasServer && ! client.isIntegratedServerRunning())
-				DATA.updateWeatherClient(client.world);
+			if (! hasServer && ! client.isLocalServer())
+				DATA.updateWeatherClient(client.level);
 			if (client.player != null)
 				DATA.updateDensity(client.player);
 		});
@@ -65,28 +64,29 @@ public class Client {
 			hasServer = false;
 			isCustomDimensionConfig = false;
 			isConfigHasBeenOverride = false;
-			RENDERER.stop();
+			if (RENDERER != null)
+				RENDERER.stop();
 			CONFIG.load();
 			Common.clearConfigCache(null);
 		});
 
 		//seed receiver
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_SEED, (buf, context) -> {
+		NetworkManager.registerReceiver(NetworkManager.Side.S2C, SeedPayload.TYPE, SeedPayload.CODEC, (payload, context) -> {
 			hasServer = true;
-			long seed = buf.readVarLong();
+			long seed = payload.seed();
 			CloudData.initSampler(seed);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive seed {}", MOD_ID, seed);
 		});
 
 		//dimension packet receiver
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
-			String name = buf.readString();
-			String configJson = buf.readString();
+		NetworkManager.registerReceiver(NetworkManager.Side.S2C, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
+			String name = payload.name();
+			String configJson = payload.sharedConfigJson();
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
-					if (! MinecraftClient.getInstance().isIntegratedServerRunning())  //singleplayer override itself? ur joking...
+					if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
 						isConfigHasBeenOverride = true;
 					if (! name.equals(Config.OVERWORLD))
 						isCustomDimensionConfig = true;
@@ -105,19 +105,18 @@ public class Client {
 		});
 
 		//weather receiver
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_WEATHER, (buf, context) -> {
-			Data.Weather weather = buf.readEnumConstant(Data.Weather.class);
+		NetworkManager.registerReceiver(NetworkManager.Side.S2C, WeatherPayload.TYPE, WeatherPayload.CODEC, (payload, context) -> {
+			Data.Weather weather = payload.weather();
 			DATA.setNextWeather(weather);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive weather: {}", MOD_ID, weather);
 		});
 
 		//upload request receiver & shared config sender
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
+		NetworkManager.registerReceiver(NetworkManager.Side.S2C, UploadRequestPayload.TYPE, UploadRequestPayload.CODEC, (buf, context) -> {
+			String name = context.getPlayer().level().dimension().location().toString();
 			String configJson = CONFIG.toString();
-			NetworkManager.sendToServer(PACKET_SHARED_CONFIG, new PacketByteBuf(Unpooled.buffer())
-					.writeString(configJson)
-			);
+			NetworkManager.sendToServer(new DimensionPayload(name, configJson));
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);
 		});

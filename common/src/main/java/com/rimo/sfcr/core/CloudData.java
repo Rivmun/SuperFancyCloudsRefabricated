@@ -1,17 +1,17 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.core.Renderer.FACING;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import com.rimo.sfcr.core.Renderer.Facing;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 
@@ -19,7 +19,7 @@ import static com.rimo.sfcr.Client.RENDERER;
 import static com.rimo.sfcr.Common.*;
 
 public class CloudData {
-	private static SimplexNoiseSampler cloudNoise;
+	private static SimplexNoise cloudNoise;
 	private final Type dataType;
 	private float lifeTime;
 	protected ArrayList<Integer> meshData = new ArrayList<>();
@@ -53,11 +53,11 @@ public class CloudData {
 	}
 
 	public static void initSampler(long seed) {
-		cloudNoise = new SimplexNoiseSampler(Random.create(seed));
+		cloudNoise = new SimplexNoise(RandomSource.create(seed));
 	}
 
 	public void tick() {
-		lifeTime -= MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+		lifeTime -= Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false) * 0.25f * 0.25f;
 	}
 
 	private int minusCloudGridHeight(int y) {
@@ -69,11 +69,11 @@ public class CloudData {
 	public float getLifeTime() {return lifeTime;}
 
 	boolean isCloudCovered(double x, double y, double z) {
-		Vec3d camPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		int cbSize = CONFIG.getCloudBlockSize();
-		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
+		int gx = (int) (width / 2F - (camPos.x() - x) / cbSize);
 		int gy = (int) (y / cbSize * 2);
-		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
+		int gz = (int) (width / 2F - (camPos.z() - z) / cbSize);
 		for (int i = 0; i < height; i ++) {
 			if (_cloudData[gx][i][gz]) {
 				return minusCloudGridHeight(gy) <= i;
@@ -87,12 +87,12 @@ public class CloudData {
 	}
 
 	private void collectCloudData(int x, int z, float densityByWeather, float densityByBiome) {
-		World world = MinecraftClient.getInstance().world;
+		Level world = Minecraft.getInstance().level;
 		if (world == null)
 			return;
 
 		float f = 0.5f;		// origin threshold
-		final double time = world.getTime() / 20.0;
+		final double time = world.getGameTime() / 20.0;
 		final float sx = x - width / 2f;  //sampling start pos
 		final float sz = z - width / 2f;
 
@@ -100,7 +100,7 @@ public class CloudData {
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 		boolean isBiomeUseLoadedChunk = CONFIG.isBiomeDensityUseLoadedChunk();
 		boolean isEnableTerrainDodge = CONFIG.isEnableTerrainDodge();
-		float densityMultiplier = isEnableDynamic ? getDensityMultiplier(world.getTimeOfDay()) : 1;
+		float densityMultiplier = isEnableDynamic ? getDensityMultiplier(world.getDayTime()) : 1;
 		int steps = CONFIG.getSampleSteps();
 
 		for (int cx = 0; cx < width; cx++) {
@@ -108,25 +108,25 @@ public class CloudData {
 
 				int bx = (int) (sx + cx + 0.5f) * CONFIG.getCloudBlockSize();		// transform cloudpos to blockpos
 				int bz = (int) (sz + cz + 0.5f) * CONFIG.getCloudBlockSize();
-				final int h = world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz);  //height sampling use to get biome
+				final int h = world.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);  //height sampling use to get biome
 
 				// calculating density...
 				if (isEnableDynamic && isBiomeByChunk) {
 					BlockPos pos;
 					if (isBiomeUseLoadedChunk) {
-						Vec2f cellPos = new Vec2f(bx, bz);
-						Vec2f unit = cellPos.normalize().multiply(16);  //measure as chunk
-						while (!world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
+						Vec2 cellPos = new Vec2(bx, bz);
+						Vec2 unit = cellPos.normalized().scale(16);  //measure as chunk
+						while (!world.hasChunk((int) cellPos.x / 16, (int) cellPos.y / 16)
 								&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
-							cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
+							cellPos = cellPos.add(unit.negated());  // stepping pos near towards to player
 
 						pos = new BlockPos((int) cellPos.x, h, (int) cellPos.y);
 					} else {
 						pos = new BlockPos(bx, h, bz);
 					}
-					RegistryEntry<Biome> biome = world.getBiome(pos);
+					Holder<Biome> biome = world.getBiome(pos);
 					f = ! CONFIG.isFilterListHasBiome(biome)
-							? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitation(pos)))
+							? getCloudDensityThreshold(densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)))
 							: getCloudDensityThreshold(densityByWeather, densityByBiome);
 				} else {
 					f = getCloudDensityThreshold(densityByWeather, densityByBiome);
@@ -136,7 +136,7 @@ public class CloudData {
 				for (int cy = 0; cy < height; cy++) {
 					_cloudData[cx][cy][cz] = getCloudSampleProxy(world, sx, sz, 0, time, steps, cx, cy, cz) * densityMultiplier > f && (
 							// terrain dodge (detect light level)
-							! isEnableTerrainDodge || world.getLightLevel(LightType.SKY, new BlockPos(
+							! isEnableTerrainDodge || world.getBrightness(LightLayer.SKY, new BlockPos(
 									bx,
 									(int) (RENDERER.getCloudHeight() + (cy - 2) * CONFIG.getCloudBlockSize() / 2f),
 									bz
@@ -158,7 +158,7 @@ public class CloudData {
 		return m;
 	}
 
-	private double getCloudSampleProxy(World world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
+	private double getCloudSampleProxy(Level world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
 		double sample = getCloudSample(startX, startZ, zOffset, timeOffset, steps, cx, cy, cz);
 		if (world.isRaining() && CONFIG.isEnableWeatherDensity()) {  //make cloud top more continuous when rain
 			float clearDensity = CONFIG.getCloudDensityPercent() / 100f + 1;
@@ -186,20 +186,20 @@ public class CloudData {
 	}
 
 	private double getCloudSample(double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
-		double cloudVal = cloudNoise.sample(
+		double cloudVal = cloudNoise.getValue(
 				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				(startZ + cz + zOffset) * baseFreq
 		);
 		if (steps > 1) {
-			double cloudVal1 = cloudNoise.sample(
+			double cloudVal1 = cloudNoise.getValue(
 					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					(startZ + cz + zOffset) * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (steps > 2) {
-				cloudVal2 = cloudNoise.sample(
+				cloudVal2 = cloudNoise.getValue(
 						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
 						(startZ + cz + zOffset) * l2Freq
@@ -262,12 +262,12 @@ public class CloudData {
 		if (cy >= 0 && cy < height) {
 			int cx = width / 2;
 			if (_cloudData[cx][cy][cx]) {  //build inner faces then return
-				encodeFace(meshData, -1, cy, 0, FACING.EAST, 0);
-				encodeFace(meshData, 1, cy, 0, FACING.WEST, 0);
-				encodeFace(meshData, 0, cy - 1, 0, FACING.TOP, 0);
-				encodeFace(meshData, 0, cy + 1, 0, FACING.BOTTOM, 0);
-				encodeFace(meshData, 0, cy, 1, FACING.NORTH, 0);
-				encodeFace(meshData, 0, cy, -1, FACING.SOUTH, 0);
+				encodeFace(meshData, -1, cy, 0, Facing.EAST, 0);
+				encodeFace(meshData, 1, cy, 0, Facing.WEST, 0);
+				encodeFace(meshData, 0, cy - 1, 0, Facing.TOP, 0);
+				encodeFace(meshData, 0, cy + 1, 0, Facing.BOTTOM, 0);
+				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
+				encodeFace(meshData, 0, cy, -1, Facing.SOUTH, 0);
 				return;
 			}
 		}
@@ -313,7 +313,7 @@ public class CloudData {
 	   FACING information needs 3 bit (max ordinal 5 = bit 00000101), we compress at 1st vertex.
 	   Thickness max base to y, we compress it in 2nd vertex int head.
 	 */
-	private void encodeFace(ArrayList<Integer> meshData, int x, int y, int z, FACING facing, int thickness) {
+	private void encodeFace(ArrayList<Integer> meshData, int x, int y, int z, Facing facing, int thickness) {
 		switch (facing) {
 			case EAST -> {
 				meshData.add(compressToHead(compressVertex(x + 1, y, z), facing.ordinal()));
@@ -403,17 +403,17 @@ public class CloudData {
 	private void buildExtrudedCell(ArrayList<Integer> meshData, int x, int y, int z, int cellState) {
 		int thickness = cellState >> 6;
 		if (hasBorderTop(cellState) && y < gridYFromClouds)  //facing (normals) culling...
-			encodeFace(meshData, x, y, z, FACING.TOP, thickness);
+			encodeFace(meshData, x, y, z, Facing.TOP, thickness);
 		if (hasBorderBottom(cellState) && y > gridYFromClouds)
-			encodeFace(meshData, x, y, z, FACING.BOTTOM, thickness);
+			encodeFace(meshData, x, y, z, Facing.BOTTOM, thickness);
 		if (hasBorderSouth(cellState) && z < 0)
-			encodeFace(meshData, x, y, z, FACING.SOUTH, thickness);
+			encodeFace(meshData, x, y, z, Facing.SOUTH, thickness);
 		if (hasBorderNorth(cellState) && z > 0)
-			encodeFace(meshData, x, y, z, FACING.NORTH, thickness);
+			encodeFace(meshData, x, y, z, Facing.NORTH, thickness);
 		if (hasBorderEast(cellState) && x < 0)
-			encodeFace(meshData, x, y, z, FACING.EAST, thickness);
+			encodeFace(meshData, x, y, z, Facing.EAST, thickness);
 		if (hasBorderWest(cellState) && x > 0)
-			encodeFace(meshData, x, y, z, FACING.WEST, thickness);
+			encodeFace(meshData, x, y, z, Facing.WEST, thickness);
 	}
 	private static boolean hasBorderTop(int packed) {
 		return (packed >> 5 & 1) != 0;

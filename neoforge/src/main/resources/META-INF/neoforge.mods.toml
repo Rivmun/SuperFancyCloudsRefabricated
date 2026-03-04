@@ -5,8 +5,8 @@ issueTrackerURL="${mod_issue_tracker}"
 
 [[mixins]]
 config="sfcr.mixins.json"
-#[[mixins]]
-#config="example-neoforge.mixins.json"
+[[mixins]]
+config="sfcr.particlerain.mixins.json"
 
 [[mods]]
 modId="sfcr"
@@ -24,7 +24,7 @@ ${mod_description}
 [[dependencies.sfcr]]
 modId="neoforge"
 type="required"
-versionRange="%{neoforge_version_range}"
+versionRange="${neoforge_version_range}"
 ordering="NONE"
 side="BOTH"
 
@@ -36,22 +36,29 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.sfcr]]
-modId = "architectury"
-type = "optional"
-versionRange = "[${architectury_version},)"
-ordering = "AFTER"
-side = "BOTH"
+modId="architectury"
+type="optional"
+versionRange="[${architectury_version},)"
+ordering="AFTER"
+side="BOTH"
 
 [[dependencies.sfcr]]
-modId = "cloth_config"
-type = "optional"
-versionRange = "[${cloth_config_version},)"
-ordering = "AFTER"
-side = "CLIENT"
+modId="cloth_config"
+type="optional"
+versionRange="[${cloth_config_version},)"
+ordering="AFTER"
+side="CLIENT"
 
 [[dependencies.sfcr]]
 modId="distanthorizons"
 type="optional"
 versionRange="[${distant_horizon_min_version},)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.sfcr]]
+modId="particlerain"
+type="optional"
+versionRange="[${particle_rain_version},)"
 ordering="NONE"
 side="CLIENT"

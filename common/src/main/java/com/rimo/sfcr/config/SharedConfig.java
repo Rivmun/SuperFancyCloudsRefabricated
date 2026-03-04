@@ -3,10 +3,10 @@ package com.rimo.sfcr.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,13 +173,13 @@ public class SharedConfig {
 		return (int) (cloudRenderDistance / 24f * cloudRenderDistance / 24f * getCloudBlockSize() / 16f);
 	}
 
-	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
+	public boolean isFilterListHasBiome(Holder<Biome> biome) {
 		var isHas = false;
-		if (this.getBiomeFilterList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
+		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).location().toString())) {
 			isHas = true;
 		} else {
-			for (TagKey<Biome> tag : biome.streamTags().toList()) {
-				if (this.getBiomeFilterList().contains("#" + tag.id().toString())) {
+			for (TagKey<Biome> tag : biome.tags().toList()) {
+				if (this.getBiomeFilterList().contains("#" + tag.location().toString())) {
 					isHas = true;
 					break;
 				}

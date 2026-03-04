@@ -1,18 +1,18 @@
 package com.rimo.sfcr.config;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public enum CloudRefreshSpeed {
-	VERY_SLOW(40, Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW")),
-	SLOW(30, Text.translatable("text.sfcr.enum.cloudRefreshSpeed.SLOW")),
-	NORMAL(20, Text.translatable("text.sfcr.enum.cloudRefreshSpeed.NORMAL")),
-	FAST(10, Text.translatable("text.sfcr.enum.cloudRefreshSpeed.FAST")),
-	VERY_FAST(5, Text.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_FAST"));
+	VERY_SLOW(40, Component.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_SLOW")),
+	SLOW(30, Component.translatable("text.sfcr.enum.cloudRefreshSpeed.SLOW")),
+	NORMAL(20, Component.translatable("text.sfcr.enum.cloudRefreshSpeed.NORMAL")),
+	FAST(10, Component.translatable("text.sfcr.enum.cloudRefreshSpeed.FAST")),
+	VERY_FAST(5, Component.translatable("text.sfcr.enum.cloudRefreshSpeed.VERY_FAST"));
 
 	private final int value;
-	private final Text name;
+	private final Component name;
 
-	CloudRefreshSpeed(int value, Text name) {
+	CloudRefreshSpeed(int value, Component name) {
 		this.value = value;
 		this.name = name;
 	}
@@ -21,7 +21,7 @@ public enum CloudRefreshSpeed {
 		return value;
 	}
 
-	public Text getName() {
+	public Component getName() {
 		return name;
 	}
 }

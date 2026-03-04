@@ -1,13 +1,13 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.level.ServerWorldProperties;
+import com.rimo.sfcr.mixin.ServerLevelAccessor;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ServerLevelData;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -37,9 +37,9 @@ public class Data {
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
 	}
 
-	public boolean updateWeather(ServerWorld world) {
+	public boolean updateWeather(ServerLevel world) {
 		// Weather Pre-detect
-		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
+		ServerLevelData worldProperties = ((ServerLevelAccessor) world).getServerLevelData();
 		int rainTime = worldProperties.getRainTime();
 		int thunderTime = worldProperties.getThunderTime();
 		int preDetectTime = CONFIG.getWeatherPreDetectTime();
@@ -71,12 +71,12 @@ public class Data {
 	/**
 	 * Should run when connected to a server but without sync
 	 */
-	public void updateWeatherClient(World world) {
+	public void updateWeatherClient(Level world) {
 		nextWeather = world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR;
 	}
 
-	public void updateDensity(ClientPlayerEntity player) {
-		World world = player.getWorld();
+	public void updateDensity(LocalPlayer player) {
+		Level world = player.level();
 
 		//Detect Weather Change
 		float thunderDensity = CONFIG.getThunderDensityPercent() / 100f;
@@ -95,9 +95,9 @@ public class Data {
 			}
 			//Detect Biome Change
 			if (! biomeDensityByChunk) {		//Hasn't effected if use chunk data.
-				BlockPos pos = player.getBlockPos();
+				BlockPos pos = player.getOnPos();
 				if (CONFIG.isFilterListHasBiome(world.getBiome(pos)))
-					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitation(pos));
+					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitationAt(pos));
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {
@@ -132,7 +132,7 @@ public class Data {
 		}
 
 		if (CONFIG.isEnableDebug() && (isWeatherChange || isBiomeChange))
-			player.sendMessage(Text.of("[SFCRe Debug] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome), true);
+			player.displayClientMessage(Component.nullToEmpty("[SFCRe Debug] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome), true);
 	}
 
 	private float stepDensity(float target, float current, float speed) {

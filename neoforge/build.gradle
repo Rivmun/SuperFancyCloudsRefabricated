@@ -13,7 +13,7 @@ repositories {
 }
 
 loom {
-    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
+    accessWidenerPath = file("../common/src/main/resources/sfcr.accesswidener")
 }
 
 configurations {
@@ -29,14 +29,30 @@ dependencies {
     modApi "dev.architectury:architectury-neoforge:${rootProject.architectury_version}"
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive = false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive = false }
 }
 
 processResources {
-    inputs.property "version", project.version
+    def replaceProperties = [
+            "mod_version": project.mod_version,
+            "mod_name": project.mod_name,
+            "mod_link": project.mod_link,
+            "mod_credits": project.mod_credits,
+            "mod_author": project.mod_author,
+            "mod_license": project.mod_license,
+            "mod_issue_tracker": project.mod_issue_tracker,
+            "mod_description": project.mod_description,
+            "minecraft_version": project.minecraft_version,
+            "architectury_version": project.architectury_version,
+            "cloth_config_version": project.cloth_config_version,
+            "distant_horizon_min_version": project.distant_horizon_min_version,
+            "particle_rain_version": project.particle_rain_version,
+            "neoforge_version_range": project.neoforge_version_range
+    ]
+    inputs.properties(replaceProperties)
 
-    filesMatching("META-INF/mods.toml") {
-        expand "version": project.version
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(replaceProperties)
     }
 }
 

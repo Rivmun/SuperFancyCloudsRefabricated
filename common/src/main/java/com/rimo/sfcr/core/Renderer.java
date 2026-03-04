@@ -1,32 +1,34 @@
 package com.rimo.sfcr.core;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.*;
+import net.minecraft.core.Vec3i;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 
 import static com.rimo.sfcr.Common.*;
+import static net.minecraft.client.renderer.RenderStateShard.*;
 
 public class Renderer {
-	private final Identifier whiteTexture = new Identifier(MOD_ID, "white.png");
+	private static final ResourceLocation whiteTexture = ResourceLocation.fromNamespaceAndPath(MOD_ID, "white.png");
+	private static final RenderType SFCR = createCustomCloudRenderType(false);
+	private static final RenderType SFCR_DEPTH_ONLY = createCustomCloudRenderType(true);
+
 	private final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
 	protected int oldGridX, oldGridZ;
-	private Vec3d oldColor = Vec3d.ZERO;
+	private Vec3 oldColor = Vec3.ZERO;
 	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
@@ -38,14 +40,37 @@ public class Renderer {
 		renderer.stop();
 	}
 
+	/*
+	 * vanilla RenderType is blinding with vanilla texture that let our uv always pointing to an empty pixel.
+	 * it's causing our clouds cannot render. we must modify it to our whiteTexture.
+	 */
+	private static RenderType createCustomCloudRenderType(boolean bl) {
+		return RenderType.create(
+				"clouds",
+				DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL,
+				VertexFormat.Mode.QUADS,
+				786432,
+				false,
+				false,
+				RenderType.CompositeState.builder()
+						.setShaderState(RENDERTYPE_CLOUDS_SHADER)
+						.setTextureState(new RenderStateShard.TextureStateShard(whiteTexture, false, false))  //modify it
+						.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+						.setCullState(NO_CULL)
+						.setWriteMaskState(bl ? DEPTH_WRITE : COLOR_DEPTH_WRITE)
+						.setOutputState(CLOUDS_TARGET)
+						.createCompositeState(true)
+		);
+	}
+
 	//Rewrite of vanilla renderClouds invoke by mixin
-	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	                   ClientWorld world, int ticks) {
-		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+	public void render(PoseStack poseStack, Matrix4f matrix4f, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	                   ClientLevel world, int ticks) {
+		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.effects().getCloudHeight() : CONFIG.getCloudHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;
-		boolean isPause = MinecraftClient.getInstance().isPaused();
+		boolean isPause = Minecraft.getInstance().isPaused();
 
 		//vanilla cloud pos calculation
 		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
@@ -60,7 +85,7 @@ public class Renderer {
 		float xOffsetInGrid = (float) (cloudX - Math.floor(cloudX));  //cloud offset in current grid
 		//float yOffsetInGrid = (float) ((cloudY / CLOUD_BLOCK_HEIGHT - Math.floor(cloudY / CLOUD_BLOCK_HEIGHT)) * CLOUD_BLOCK_HEIGHT);
 		float zOffsetInGrid = (float) (cloudZ - Math.floor(cloudZ));
-		Vec3d cloudColor = world.getCloudsColor(tickDelta);
+		Vec3 cloudColor = world.getCloudColor(tickDelta);
 
 		cloudColor = getBrightMultiplier(cloudColor);
 		synchronized (this) {
@@ -72,9 +97,9 @@ public class Renderer {
 		int cameraGridY = (int) (cameraY / CLOUD_BLOCK_HEIGHT);
 
 		//refresh check
-		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
+		resamplingTimer += Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false) * 0.25 * 0.25;
 		if (! isPause && ! isResampling) {
-			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.squaredDistanceTo(cloudColor) > 2.0E-4) {
+			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.distanceToSqr(cloudColor) > 2.0E-4) {
 				isResampling = true;
 				resamplingTimer = 0.0;
 				oldColor = cloudColor;
@@ -104,13 +129,6 @@ public class Renderer {
 			}
 		}
 
-		//Setup render system
-		RenderSystem.disableCull();
-		RenderSystem.enableBlend();
-		RenderSystem.enableDepthTest();
-		RenderSystem.blendFuncSeparate(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SrcFactor.ONE, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA);
-		RenderSystem.depthMask(true);
-
 		//cloud mesh rebuilt
 		/* NOTE:
 		 * When cloudData is too HUGE, .upload() will get big lag, so we made a soft culling in rebuild to decrease upload size.
@@ -122,7 +140,7 @@ public class Renderer {
 		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
-			BufferBuilder.BuiltBuffer cb = rebuildCloudMesh(Tessellator.getInstance().getBuffer(), cloudColor, xOffsetInGrid, cloudHeight);
+			MeshData cb = rebuildCloudMesh(Tesselator.getInstance(), cloudColor, xOffsetInGrid, cloudHeight);
 			debugRebuildTime = (System.nanoTime() - debugRebuildTime) / 1000000;
 			if (cb != null) {
 				if (cloudsBuffer != null)
@@ -136,11 +154,8 @@ public class Renderer {
 			}
 		}
 
-		//Setup shader
-		RenderSystem.setShader(GameRenderer::getPositionTexColorNormalProgram);
-		RenderSystem.setShaderTexture(0, whiteTexture);
 		if (CONFIG.isEnableFog()) {
-			BackgroundRenderer.setFogBlack();
+			FogRenderer.levelFogColor();
 			if (!CONFIG.isFogAutoDistance()) {
 				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
@@ -149,32 +164,27 @@ public class Renderer {
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 			}
 		} else {
-			BackgroundRenderer.clearFog();
+			FogRenderer.setupNoFog();
 		}
-		matrices.push();
-		matrices.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
-		matrices.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
+		poseStack.pushPose();
+		poseStack.mulPose(matrix4f);
+		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
+		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 
 		if (cloudsBuffer != null) {
 			cloudsBuffer.bind();
-			for (int s = 0; s < 2; ++s) {
-				if (s == 0) {
-					RenderSystem.colorMask(false, false, false, false);
-				} else {
-					RenderSystem.colorMask(true, true, true, true);
-				}
-				cloudsBuffer.draw(matrices.peek().getPositionMatrix(), projectionMatrix, RenderSystem.getShader());
+			for(int w = 0; w < 2; ++w) {
+				RenderType renderType = w == 0 ? SFCR_DEPTH_ONLY : SFCR;
+				renderType.setupRenderState();
+				ShaderInstance shaderInstance = RenderSystem.getShader();
+				cloudsBuffer.drawWithShader(poseStack.last().pose(), matrix4f2, shaderInstance);
+				renderType.clearRenderState();
 			}
 			VertexBuffer.unbind();
 		}
-
-		//Restore render system
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-		matrices.pop();
-		RenderSystem.enableCull();
-		RenderSystem.disableBlend();
-		RenderSystem.defaultBlendFunc();
+		poseStack.popPose();
 	}
 
 	public void markForRebuild() {
@@ -191,7 +201,7 @@ public class Renderer {
 		}
 	}
 
-	enum FACING {
+	enum Facing {
 		EAST(1, 0, 0),
 		WEST(-1, 0, 0),
 		TOP(0, 1, 0),
@@ -201,48 +211,51 @@ public class Renderer {
 
 		final Vec3i normal;
 
-		FACING(int x, int y, int z) {
+		Facing(int x, int y, int z) {
 			this.normal = new Vec3i(x, y, z);
 		}
 
-		static FACING get(int i) {
-			return FACING.values()[i];
+		static Facing get(int i) {
+			return Facing.values()[i];
 		}
 	}
 
-	private final Vec3d[] colors = {
-			new Vec3d(0.95f, 0.9f,  0.9f),
-			new Vec3d(0.75f, 0.75f, 0.75f),
-			new Vec3d(1f,    1f,    1f),
-			new Vec3d(0.6f,  0.6f,  0.6f),
-			new Vec3d(0.92f, 0.85f, 0.85f),
-			new Vec3d(0.8f,  0.8f,  0.8f),
+	private final Vec3[] colors = {
+			new Vec3(0.95f, 0.9f,  0.9f),
+			new Vec3(0.75f, 0.75f, 0.75f),
+			new Vec3(1f,    1f,    1f),
+			new Vec3(0.6f,  0.6f,  0.6f),
+			new Vec3(0.92f, 0.85f, 0.85f),
+			new Vec3(0.8f,  0.8f,  0.8f),
 	};
 
 	// Building mesh
-	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, Vec3d cloudColor, double offset, float cloudHeight) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		Camera camera = client.gameRenderer.getCamera();
+	private @Nullable MeshData rebuildCloudMesh(Tesselator tesselator, Vec3 cloudColor, double offset, float cloudHeight) {
+		Minecraft client = Minecraft.getInstance();
+		Camera camera = client.gameRenderer.getMainCamera();
 
-		Vec3d look = null, up = null, right = null;
+		Vec3 look = null, up = null, right = null;
 		double tanHalfFov = 0, tanHalfFovHorizontal = 0;
 		boolean enableCulling = CONFIG.getEnableViewCulling();
 		if (enableCulling) {
-			look = new Vec3d(camera.getHorizontalPlane());
-			up = new Vec3d(camera.getVerticalPlane());
-			right = new Vec3d(camera.getDiagonalPlane());
-			tanHalfFov = Math.tan(Math.toRadians(CONFIG.getCullRadianMultiplier() * client.options.getFov().getValue() * client.player.getFovMultiplier()) / 2F);
-			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getFramebufferWidth() / client.getWindow().getFramebufferHeight();
+			look = new Vec3(camera.getLookVector());
+			up = new Vec3(camera.getUpVector());
+			right = new Vec3(camera.getLeftVector());
+			tanHalfFov = Math.tan(Math.toRadians(CONFIG.getCullRadianMultiplier() * client.options.fov().get() * client.player.getFieldOfViewModifier()) / 2F);
+			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getWidth() / client.getWindow().getHeight();
 		}
 
 		int customColor = CONFIG.getCloudColor();  //apply custom color
 		cloudColor = cloudColor.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
 		float cloudAlpha = ((customColor & 0xFF000000) >>> 24) / 255F;
 		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
-			cloudColor = cloudColor.multiply(getBlushColorByTime(client.world.getTimeOfDay()));
+			cloudColor = cloudColor.multiply(getBlushColorByTime(client.level.getDayTime()));
 
-		builder.clear();
-		builder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR_NORMAL);
+		BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
+
+		for (int i = 0; i < 4; i ++)  // empty builder will lead game crash... we draw a holder face to prevent that.
+			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
+
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
@@ -266,33 +279,32 @@ public class Renderer {
 					};
 					boolean isDrawn = false;
 
-					for (int j = 0; j <= 3; j ++) {
+					for (int j = 0; j < 4; j ++) {
 						if (enableCulling) {
-							Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling (camera relative)
+							Vec3 cloudVec = new Vec3(  // turns to exactly pos & size to calc position culling (camera relative)
 									(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
-									verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
+									verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
 									(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
 							);
-							double depth = look.dotProduct(cloudVec);
+							double depth = look.dot(cloudVec);
 							if (depth < 0.05F ||
-									Math.abs(up.dotProduct(cloudVec)) / depth > tanHalfFov ||
-									Math.abs(right.dotProduct(cloudVec)) / depth > tanHalfFovHorizontal)
+									Math.abs(up.dot(cloudVec)) / depth > tanHalfFov ||
+									Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
 								continue;
 						}
-						FACING facing = FACING.get(CloudData.depressFromHead(vertexList.get(i * 4)));
-						Vec3d faceColor = cloudColor.multiply(colors[facing.ordinal()]);
+						Facing facing = Facing.get(CloudData.depressFromHead(vertexList.get(i * 4)));
+						Vec3 faceColor = cloudColor.multiply(colors[facing.ordinal()]);
 						if (CONFIG.isEnableBottomDim()) {
-							faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
+							faceColor = faceColor.scale(Math.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
 						}
 						int nx = facing.normal.getX();
 						int ny = facing.normal.getY();
 						int nz = facing.normal.getZ();
 						for (int k = 0; k < 4; k++) {
-							builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
-									.texture(0.5f, 0.5f)
-									.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
-									.normal(nx, ny, nz)
-									.next();
+							builder.addVertex(verCache[k][0], verCache[k][1], verCache[k][2])
+									.setUv(0.5f, 0.5f)
+									.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+									.setNormal(nx, ny, nz);
 						}
 						isDrawn = true;
 						break;
@@ -310,8 +322,8 @@ public class Renderer {
 				} else if (data.getDataType().equals(CloudData.Type.TRANS_MID_BODY)) {
 					data.tick();
 					if (data.getLifeTime() <= 0) {		// Clear if lifetime reach end
-						while (!cloudDataGroup.get(0).getDataType().equals(CloudData.Type.NORMAL)) {
-							cloudDataGroup.remove(0);
+						while (!cloudDataGroup.getFirst().getDataType().equals(CloudData.Type.NORMAL)) {
+							cloudDataGroup.removeFirst();
 						}
 					}
 					break;		// Only render IN, BODY, OUT till its life end and remove.
@@ -320,7 +332,7 @@ public class Renderer {
 				}
 			}
 
-			return builder.end();
+			return builder.buildOrThrow();
 		} catch (Exception e) {
 			exceptionCatcher(e);
 			return null;
@@ -333,9 +345,9 @@ public class Renderer {
 
 		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
+			fadeIn = new CloudFadeData(cloudDataGroup.getFirst(), tmp, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudFadeData(tmp, cloudDataGroup.getFirst(), CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudMidData(cloudDataGroup.getFirst(), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
@@ -349,7 +361,7 @@ public class Renderer {
 		}
 	}
 
-	protected Vec3d getBlushColorByTime(long worldTime) {
+	protected Vec3 getBlushColorByTime(long worldTime) {
 		int r = 255, g = 255, b = 255;
 		int t = (int) (worldTime % 24000);
 
@@ -367,10 +379,10 @@ public class Renderer {
 			g = (int) (g * (1 - v / 2.1));
 			b = (int) (b * (1 - v / 1.6));
 		}
-		return new Vec3d(r / 255F, g / 255F, b / 255F);
+		return new Vec3(r / 255F, g / 255F, b / 255F);
 	}
 
-	protected Vec3d getBrightMultiplier(Vec3d cloudColor) {
+	protected Vec3 getBrightMultiplier(Vec3 cloudColor) {
 		return cloudColor.add(
 				(1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
 				(1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),

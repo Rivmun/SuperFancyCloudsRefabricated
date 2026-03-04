@@ -1,5 +1,6 @@
 package com.rimo.sfcr.core;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.rimo.sfcr.Common;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
@@ -8,10 +9,9 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiRenderableBoxGroup
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3d;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import java.awt.*;
@@ -152,9 +152,9 @@ public class RendererDHCompat extends Renderer {
 
 	//update cloud invoked by mixin (instead of manual call in 2.0)
 	@Override
-	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	                   ClientWorld world, int ticks) {
-		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+	public void render(PoseStack poseStack, Matrix4f matrix4f, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	                   ClientLevel world, int ticks) {
+		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.effects().getCloudHeight() : CONFIG.getCloudHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;
@@ -169,13 +169,13 @@ public class RendererDHCompat extends Renderer {
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
 		int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
-		Vec3d cloudColor = world.getCloudsColor(tickDelta);
+		Vec3 cloudColor = world.getCloudColor(tickDelta);
 
 		cloudColor = getBrightMultiplier(cloudColor);
 
 		//refresh check
-		resamplingTimer += MinecraftClient.getInstance().getLastFrameDuration() * 0.25 * 0.25;
-		if (! MinecraftClient.getInstance().isPaused() && ! isResampling &&
+		resamplingTimer += Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false) * 0.25 * 0.25;
+		if (! Minecraft.getInstance().isPaused() && ! isResampling &&
 				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ)) {
 			isResampling = true;
 			resamplingTimer = 0.0;
@@ -196,7 +196,7 @@ public class RendererDHCompat extends Renderer {
 		this.cloudBlockHeight = CLOUD_BLOCK_HEIGHT;
 		this.cloudBlockWidth = CLOUD_BLOCK_WIDTH;
 		this.timeOffset = timeOffset;
-		cloudColor.multiply(getBlushColorByTime(world.getTimeOfDay()));
+		cloudColor.multiply(getBlushColorByTime(world.getDayTime()));
 		this.cloudColor = new Color((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z).getRGB();
 	}
 
@@ -258,7 +258,7 @@ public class RendererDHCompat extends Renderer {
 		//color
 		if (! group.isEmpty()) {
 			Color color = new Color(cloudColor);
-			if (! group.get(0).color.equals(color)) {
+			if (! group.getFirst().color.equals(color)) {
 				for (DhApiRenderableBox box : group)
 					box.color = color;
 				group.triggerBoxChange();
@@ -266,17 +266,17 @@ public class RendererDHCompat extends Renderer {
 		}
 
 		//pos
-		Vec3d cameraPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
-		double xOffsetInGrid = (cameraPos.getX() + timeOffset) / cloudBlockWidth - oldGridX;
-		double zOffsetInGrid = cameraPos.getZ() / cloudBlockWidth + 0.33F - oldGridZ;
+		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+		double xOffsetInGrid = (cameraPos.x() + timeOffset) / cloudBlockWidth - oldGridX;
+		double zOffsetInGrid = cameraPos.z() / cloudBlockWidth + 0.33F - oldGridZ;
 		xOffsetInGrid *= cloudBlockWidth;  //turns to blocks
 		zOffsetInGrid *= cloudBlockWidth;
 		xOffset = xOffsetInGrid - 0.33F * cloudBlockWidth;
 		zOffset = zOffsetInGrid - 0.33F * cloudBlockWidth;
 		/* Suddenly I realized that there should be simply "cameraPos - offset" ...
 		 * W T F to my brain (╯‵□′)╯︵┻━┻ */
-		double cloudX = cameraPos.getX() - xOffsetInGrid;
-		double cloudZ = cameraPos.getZ() - zOffsetInGrid;
+		double cloudX = cameraPos.x() - xOffsetInGrid;
+		double cloudZ = cameraPos.z() - zOffsetInGrid;
 		double cloudY = getCloudHeight() + 0.33F;
 		group.setOriginBlockPos(new DhApiVec3d(cloudX, cloudY, cloudZ));
 	}

@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.gradleup.shadow" version "9.3.1"
 }
 
 architectury {
@@ -31,7 +31,7 @@ dependencies {
     modApi "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
 
 	//Mod Menu
-	modImplementation "com.terraformersmc:modmenu:7.0.0"
+	modImplementation "com.terraformersmc:modmenu:${rootProject.modmenu_version}"
 
     // Cloth Config
     modRuntimeOnly("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}") {

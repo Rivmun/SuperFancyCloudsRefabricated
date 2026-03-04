@@ -2,20 +2,20 @@
   "schemaVersion": 1,
   "id": "sfcr",
   "version": "${version}",
-  "name": "SuperFancyClouds: Rearchitected",
-  "description": "A client/server side mod makes your Minecraft sky full of more stereoscopic and dynamic clouds.",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
   "authors": [
-    "Rimo"
+    "${mod_author}"
   ],
   "contributors": [
-    "ami-wishes"
+    "${mod_credits}"
   ],
   "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/superfancyclouds-refabricated",
-    "sources": "https://github.com/Rivmun/SuperFancyCloudsRefabricated",
-    "issues": "https://github.com.Rivemun/SuperFancyCloudsRefabricated/issues"
+    "homepage": "${mod_link}",
+    "sources": "${mod_source}",
+    "issues": "${mod_issue_tracker}"
   },
-  "license": "MIT",
+  "license": "${mod_license}",
   "icon": "icon.png",
   "environment": "*",
   "entrypoints": {
@@ -38,14 +38,14 @@
   ],
   "depends": {
     "fabric": "*",
-    "minecraft": ">=1.20",
-    "architectury": ">=9.0.8"
+    "minecraft": ">=${minecraft_version}",
+    "architectury": ">=${architectury_version}"
   },
   "suggests": {
-    "cloth-config2":">=11.1.136",
-    "modmenu": ">=7.0.0",
-    "distanthorizons": ">=2.4.5",
-    "particlerain": "~4.0.0-beta.5"
+    "cloth-config2":">=${cloth_config_version}",
+    "modmenu": ">=${modmenu_version}",
+    "distanthorizons": ">=${distant_horizon_min_version}",
+    "particlerain": "~${particle_rain_version}"
   },
   "custom": {
     "modmenu": {

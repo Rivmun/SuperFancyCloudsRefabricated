@@ -34,7 +34,8 @@
   },
   "mixins": [
     "sfcr.mixins.json",
-    "sfcr.particlerain.mixins.json"
+    "sfcr.particlerain.mixins.json",
+    "sfcr.iris.mixins.json"
   ],
   "depends": {
     "fabric": "*",
@@ -46,6 +47,9 @@
     "modmenu": ">=${modmenu_version}",
     "distanthorizons": ">=${distant_horizon_min_version}",
     "particlerain": "~${particle_rain_version}"
+  },
+  "conflicts": {
+    "iris": "*"
   },
   "custom": {
     "modmenu": {

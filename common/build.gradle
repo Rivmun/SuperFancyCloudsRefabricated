@@ -25,6 +25,8 @@ dependencies {
     modApi("maven.modrinth:DistantHorizonsApi:${rootProject.distant_horizon_api_version}")
     //Particle Rain
     modCompileOnly("maven.modrinth:particle-rain:${rootProject.particle_rain_mod_version}-fabric")
+    //Iris
+    modCompileOnly("maven.modrinth:iris:${rootProject.iris_version}")
 }
 
 publishing {

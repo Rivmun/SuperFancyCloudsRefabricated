@@ -14,24 +14,26 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
-@Mod(Common.MOD_ID)
+import static com.rimo.sfcr.Common.*;
+
+@Mod(MOD_ID)
 public class SFCReNeoforge {
 	public SFCReNeoforge(IEventBus bus) {
 		Common.init();
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	@EventBusSubscriber(modid = Common.MOD_ID, value = Dist.CLIENT)
+	@EventBusSubscriber(modid = MOD_ID, value = Dist.CLIENT)
 	public static class ClientInit {
 		@SubscribeEvent
 		public static void clientInit(FMLClientSetupEvent event) {
 			Client.init();
 			// TODO: Issue that ArchAPI's LifeCircleEvent.CLIENT_STARTED cannot invoke correctly, so we manually init Renderer in here temporally.
-			Client.RENDERER = Common.CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
+			Client.RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
 			ModList modList = ModList.get();
 			if (modList.isLoaded("cloth_config")) {
-				modList.getModContainerById(Common.MOD_ID).ifPresent(container ->
+				modList.getModContainerById(MOD_ID).ifPresent(container ->
 						container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, parentScreen) ->
 								new ConfigScreen().build()
 						)
@@ -41,7 +43,7 @@ public class SFCReNeoforge {
 	}
 
 	@OnlyIn(Dist.DEDICATED_SERVER)
-	@EventBusSubscriber(modid = Common.MOD_ID, value = Dist.DEDICATED_SERVER)
+	@EventBusSubscriber(modid = MOD_ID, value = Dist.DEDICATED_SERVER)
 	public static class ServerInit {
 		@SubscribeEvent
 		public static void serverInit(FMLDedicatedServerSetupEvent event) {

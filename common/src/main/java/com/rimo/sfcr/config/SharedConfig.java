@@ -3,6 +3,7 @@ package com.rimo.sfcr.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.rimo.sfcr.Client;
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
@@ -18,22 +19,16 @@ public class SharedConfig {
 	));
 
 	private boolean isEnableRender = true;
-	private boolean enableFog = true;
-	private boolean fogAutoDistance = true;
-	private int fogMinDistance = 2;
-	private int fogMaxDistance = 4;
 	private boolean isEnableCloudRain = false;
-	private int cloudRenderDistance = 64;
+	private int cloudRenderDistance = 31;
 	private boolean cloudRenderDistanceFitToView = false;
-	private int cloudHeight = 192;
-	private int cloudBlockSize = 12;
+	private int cloudHeightOffset = 0;
 	private int cloudLayerThickness = 10;
 	private boolean enableTerrainDodge = true;
 	private int sampleSteps = 2;
 	private int cloudColor = 0xFFFFFFFF;
 	private boolean enableBottomDim = true;
 	private boolean enableDuskBlush = true;
-	private float cloudBrightMultiplier = 0.1f;
 	private float densityThreshold = 1.3f;
 	private float thresholdMultiplier = 1.5f;
 	private boolean enableWeatherDensity = true;
@@ -55,22 +50,16 @@ public class SharedConfig {
 	public SharedConfig() {}
 	public void setSharedConfig(SharedConfig config) {
 		this.isEnableRender               = config.isEnableRender;
-		this.enableFog                    = config.enableFog;
-		this.fogAutoDistance              = config.fogAutoDistance;
-		this.fogMinDistance               = config.fogMinDistance;
-		this.fogMaxDistance               = config.fogMaxDistance;
 		this.isEnableCloudRain            = config.isEnableCloudRain;
 		this.cloudRenderDistance          = config.cloudRenderDistance;
 		this.cloudRenderDistanceFitToView = config.cloudRenderDistanceFitToView;
-		this.cloudHeight                  = config.cloudHeight;
-		this.cloudBlockSize               = config.cloudBlockSize;
+		this.cloudHeightOffset            = config.cloudHeightOffset;
 		this.cloudLayerThickness          = config.cloudLayerThickness;
 		this.enableTerrainDodge           = config.enableTerrainDodge;
 		this.sampleSteps                  = config.sampleSteps;
 		this.cloudColor                   = config.cloudColor;
 		this.enableBottomDim              = config.enableBottomDim;
 		this.enableDuskBlush              = config.enableDuskBlush;
-		this.cloudBrightMultiplier        = config.cloudBrightMultiplier;
 		this.densityThreshold             = config.densityThreshold;
 		this.thresholdMultiplier          = config.thresholdMultiplier;
 		this.enableWeatherDensity         = config.enableWeatherDensity;
@@ -90,13 +79,11 @@ public class SharedConfig {
 		this.biomeFilterList              = config.biomeFilterList;
 	}
 
-	public boolean isEnableRender() {return isEnableRender;}
-	public int getCloudHeight() {return cloudHeight;}
-	public int getCloudBlockSize() {return cloudBlockSize;}
+	public boolean isEnableRender() {return isEnableRender && ! Client.isIrisLoadedShader;}
+	public int getCloudHeightOffset() {return cloudHeightOffset;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	public int getSampleSteps() {return sampleSteps;}
 	public int getCloudColor() {return cloudColor;}
-	public float getCloudBrightMultiplier() {return cloudBrightMultiplier;}
 	public float getDensityThreshold() {return densityThreshold;}
 	public float getThresholdMultiplier() {return thresholdMultiplier;}
 	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
@@ -117,22 +104,15 @@ public class SharedConfig {
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
-	public boolean isEnableFog() {return enableFog;}
-	public boolean isFogAutoDistance() {return fogAutoDistance;}
-	public int getFogMinDistance() {return fogMinDistance;}
-	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
 	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
 
-	public void setEnableRender(boolean isEnable) {
-		isEnableRender = isEnable;}
-	public void setCloudHeight(int height) {cloudHeight = height;}
-	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
+	public void setEnableRender(boolean isEnable) {isEnableRender = isEnable && ! Client.isIrisLoadedShader;}
+	public void setCloudHeightOffset(int height) {cloudHeightOffset = height;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
-	public void setCloudBrightMultiplier(float cloudBrightMultiplier) {this.cloudBrightMultiplier = cloudBrightMultiplier;}
 	public void setDensityThreshold(float density) {densityThreshold = density;}
 	public void setThresholdMultiplier(float multiplier) {thresholdMultiplier = multiplier;}
 	public void setEnableWeatherDensity(boolean isEnable) {enableWeatherDensity = isEnable;}
@@ -153,29 +133,13 @@ public class SharedConfig {
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
-	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
-	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
-	public void setFogDisance(int min, int max) {
-		if (min > max) {
-			fogMinDistance = max;
-			fogMaxDistance = min;
-		} else {
-			fogMinDistance = min;
-			fogMaxDistance = max;
-		}
-	}
 	public void setEnableBottomDim(boolean enableBottomDim) {this.enableBottomDim = enableBottomDim;}
 	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
 	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
 
-	//conversion
-	public int getAutoFogMaxDistance() {
-		return (int) (cloudRenderDistance / 24f * cloudRenderDistance / 24f * getCloudBlockSize() / 16f);
-	}
-
 	public boolean isFilterListHasBiome(Holder<Biome> biome) {
 		var isHas = false;
-		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).location().toString())) {
+		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).identifier().toString())) {
 			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.tags().toList()) {

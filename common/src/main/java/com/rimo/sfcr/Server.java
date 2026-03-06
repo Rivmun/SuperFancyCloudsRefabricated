@@ -9,6 +9,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
 
 import static net.minecraft.commands.Commands.argument;
@@ -20,7 +21,7 @@ public class Server {
 	public static void init() {
 		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
 				.register(literal("sfcr")
-						.requires(source -> source.hasPermission(2))
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 						.executes(context -> {
 							context.getSource().sendSystemMessage(Component.nullToEmpty("- - - - - SFCR Help Page - - - - -"));
 							context.getSource().sendSystemMessage(Component.nullToEmpty("/sfcr - Show this page"));
@@ -30,9 +31,9 @@ public class Server {
 							return 1;
 						})
 						.then(literal("status")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.executes(context -> {
-									String dimensionName = context.getSource().getLevel().dimension().location().toString();
+									String dimensionName = context.getSource().getLevel().dimension().identifier().toString();
 									String configJson = Common.getDimensionConfigJson(dimensionName);
 									if (configJson.isEmpty()) {
 										context.getSource().sendSystemMessage(Component.nullToEmpty("[SFCRe] This dimension '" + dimensionName + "' has no config."));
@@ -45,7 +46,7 @@ public class Server {
 								})
 						)
 						.then(literal("enable")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
 											Common.CONFIG.setEnableRender(context.getArgument("e", Boolean.class));
@@ -55,7 +56,7 @@ public class Server {
 								)
 						)
 						.then(literal("debug")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
 											Common.CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
@@ -65,7 +66,7 @@ public class Server {
 								)
 						)
 						.then(literal("upload")
-								.requires(source -> source.hasPermission(4))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_OWNER))
 								.executes(context -> {
 									ServerPlayer player = context.getSource().getPlayer();
 									if (player == null) {
@@ -90,8 +91,8 @@ public class Server {
 			String dimensionName = payload.name();
 			String configJson = payload.sharedConfigJson();
 			Player player = context.getPlayer();
-			if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
-				player.sendSystemMessage(Component.nullToEmpty("§4[SFCRe] Your permission is not enough to upload config!"));
+			if (! player.permissions().hasPermission(Permissions.COMMANDS_OWNER)) {  //check permission again
+				player.displayClientMessage(Component.nullToEmpty("§4[SFCRe] Your permission is not enough to upload config!"), false);
 				LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?", MOD_ID, player.getName().getString());
 				return;
 			}
@@ -99,13 +100,13 @@ public class Server {
 			try {
 				config.fromString(configJson);
 			} catch (JsonSyntaxException e) {
-				player.sendSystemMessage(Component.nullToEmpty("§4[SFCRe] You upload a config that server cannot read, please check your mod version!"));
+				player.displayClientMessage(Component.nullToEmpty("§4[SFCRe] You upload a config that server cannot read, please check your mod version!"), false);
 				LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
 				return;
 			}
 			config.save(dimensionName);
 			setDimensionConfigJson(dimensionName, configJson);
-			player.sendSystemMessage(Component.nullToEmpty("[SFCRe] Config was success to upload!"));
+			player.displayClientMessage(Component.nullToEmpty("[SFCRe] Config was success to upload!"),  false);
 			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, dimensionName, player.getName().getString());
 		}));
 	}

@@ -8,10 +8,11 @@ import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.NameAndId;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +31,7 @@ public class Common {
 	 * long seed - part of world seed use to init sampler, sent when player join this world.
 	 */
 	public record SeedPayload(long seed) implements CustomPacketPayload {
-		public static final Type<SeedPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "seed_s2c"));
+		public static final Type<SeedPayload> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "seed_s2c"));
 		public static final StreamCodec<FriendlyByteBuf, SeedPayload> CODEC = StreamCodec.of(
 				(buf, value) -> buf.writeLong(value.seed),
 				buf -> new SeedPayload(buf.readLong())
@@ -44,7 +45,7 @@ public class Common {
 	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
 	 */
 	public record WeatherPayload(Data.Weather weather) implements CustomPacketPayload {
-		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "weather_s2c"));
+		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "weather_s2c"));
 		public static final StreamCodec<FriendlyByteBuf, WeatherPayload> CODEC = StreamCodec.of(
 				(buf, value) -> buf.writeEnum(value.weather),
 				buf -> new WeatherPayload(buf.readEnum(Data.Weather.class))
@@ -60,7 +61,7 @@ public class Common {
 	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled
 	 */
 	public record DimensionPayload(String name, String sharedConfigJson) implements CustomPacketPayload {
-		public static final Type<DimensionPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "dimension"));
+		public static final Type<DimensionPayload> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "dimension"));
 		public static final StreamCodec<FriendlyByteBuf, DimensionPayload> CODEC = StreamCodec.of(
 				((buf, value) -> {
 					buf.writeUtf(value.name);
@@ -77,7 +78,7 @@ public class Common {
 	 * an empty packet to notice client upload its config
 	 */
 	public record UploadRequestPayload() implements CustomPacketPayload {
-		public static final Type<UploadRequestPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(MOD_ID, "upload_request_s2c"));
+		public static final Type<UploadRequestPayload> TYPE = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(MOD_ID, "upload_request_s2c"));
 		public static final StreamCodec<FriendlyByteBuf, UploadRequestPayload> CODEC = StreamCodec.of(
 				((buf, value) -> {}),
 				buf -> new UploadRequestPayload()
@@ -94,10 +95,10 @@ public class Common {
 	public static void init() {
 		// Seed Sender
 		PlayerEvent.PLAYER_JOIN.register(player -> {
-			MinecraftServer server = player.getServer();
-			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
+			MinecraftServer server = player.level().getServer();
+			if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
 				return;
-			long seed = player.serverLevel().getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
+			long seed = player.level().getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
 			NetworkManager.sendToPlayer(player, new SeedPayload(seed));
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send seed {} to {}", MOD_ID, seed, player.getName().getString());
@@ -107,9 +108,9 @@ public class Common {
 		});
 
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-			MinecraftServer server = player.getServer();
+			MinecraftServer server = player.level().getServer();
 			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
-			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
+			if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
 				return;
 			sendDimensionPacket(player, newLevel);
 		});
@@ -129,7 +130,7 @@ public class Common {
 
 	// Dimension Packet Sender
 	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> newLevel) {
-		String name = newLevel.location().toString();
+		String name = newLevel.identifier().toString();
 		String configJson = CONFIG.isEnableServer() ? getDimensionConfigJson(name) : "";
 		NetworkManager.sendToPlayer(player, new DimensionPayload(
 				name,

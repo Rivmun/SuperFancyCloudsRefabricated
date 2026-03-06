@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.rimo.sfcr.mixin.iris",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "IrisConfigMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

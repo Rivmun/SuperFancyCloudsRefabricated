@@ -97,7 +97,7 @@ public class Data {
 			if (! biomeDensityByChunk) {		//Hasn't effected if use chunk data.
 				BlockPos pos = player.getOnPos();
 				if (CONFIG.isFilterListHasBiome(world.getBiome(pos)))
-					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitationAt(pos));
+					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitationAt(pos, world.getSeaLevel()));
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {

@@ -7,6 +7,8 @@ issueTrackerURL="${mod_issue_tracker}"
 config="sfcr.mixins.json"
 [[mixins]]
 config="sfcr.particlerain.mixins.json"
+[[mixins]]
+config="sfcr.iris.mixins.json"
 
 [[mods]]
 modId="sfcr"
@@ -60,5 +62,12 @@ side="CLIENT"
 modId="particlerain"
 type="optional"
 versionRange="[${particle_rain_version},)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.sfcr]]
+modId="iris"
+type="discouraged"
+versionRange="[1.0,)"
 ordering="NONE"
 side="CLIENT"

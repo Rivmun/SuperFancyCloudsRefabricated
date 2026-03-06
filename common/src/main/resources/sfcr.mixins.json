@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.rimo.sfcr.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "ServerLevelAccessor"
+  ],
+  "client": [
+    "CloudRendererMixin",
+    "DebugScreenEntriesMixin",
+    "OptionsMixin",
+    "RenderPipelinesMixin",
+    "ValueProbeMixin",
+    "WeatherEffectRendererMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -2,7 +2,6 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.core.CloudData;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Renderer;
 import com.rimo.sfcr.core.RendererDHCompat;
@@ -13,6 +12,7 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.client.Minecraft;
 
 import java.util.Random;
@@ -23,6 +23,7 @@ import static com.rimo.sfcr.Common.*;
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
+	public static boolean isIrisLoadedShader = false;
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;
@@ -32,31 +33,41 @@ public class Client {
 		// Game boot
 		// TODO: Issue that this event (include CLIENT_SETUP) cannot invoke correctly on neoforge, it's causing NPE when quit...
 		ClientLifecycleEvent.CLIENT_STARTED.register(client -> {
+			if (Platform.isModLoaded("iris"))
+				isIrisLoadedShader = IrisApi.getInstance().getConfig().areShadersEnabled();
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 		});
 
 		// World loaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
 			if (! hasServer)
-				CloudData.initSampler(new Random().nextLong());  //get a random seed before server send
+				RENDERER.initSampler(new Random().nextLong());  //get a random seed before server send
+			RENDERER.setRenderer(CONFIG);
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
-			String dimensionName = world.dimension().location().toString();
+			String dimensionName = world.dimension().identifier().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
+				boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
+				applyConfigChange(oldEnableDHCompat);
 			}
 		});
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (! CONFIG.isEnableRender() || client.level == null || client.level.getGameTime() % 20 != 0)
+			if (! CONFIG.isEnableRender())
 				return;
-			if (! hasServer && ! client.isLocalServer())
-				DATA.updateWeatherClient(client.level);
-			if (client.player != null)
-				DATA.updateDensity(client.player);
+			if (client.level != null && client.level.getGameTime() % 20 == 0) {
+				if (! hasServer && ! client.isLocalServer())
+					DATA.updateWeatherClient(client.level);
+				if (client.player != null)
+					DATA.updateDensity(client.player);
+			}
+			if (RENDERER instanceof RendererDHCompat renderer) {
+				renderer.updateDHRenderer();  //manually update when inject to DH instead of mixinned vanilla call.
+			}
 		});
 
 		// Quit reset
@@ -74,7 +85,7 @@ public class Client {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, SeedPayload.TYPE, SeedPayload.CODEC, (payload, context) -> {
 			hasServer = true;
 			long seed = payload.seed();
-			CloudData.initSampler(seed);
+			RENDERER.initSampler(seed);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive seed {}", MOD_ID, seed);
 		});
@@ -102,6 +113,7 @@ public class Client {
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
 			}
+			RENDERER.setRenderer(CONFIG);
 		});
 
 		//weather receiver
@@ -114,7 +126,7 @@ public class Client {
 
 		//upload request receiver & shared config sender
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, UploadRequestPayload.TYPE, UploadRequestPayload.CODEC, (buf, context) -> {
-			String name = context.getPlayer().level().dimension().location().toString();
+			String name = context.getPlayer().level().dimension().identifier().toString();
 			String configJson = CONFIG.toString();
 			NetworkManager.sendToServer(new DimensionPayload(name, configJson));
 			if (CONFIG.isEnableDebug())
@@ -123,8 +135,11 @@ public class Client {
 	}
 
 	public static void applyConfigChange(boolean oldEnableDHCompat) {
-		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
+		if (oldEnableDHCompat != CONFIG.isEnableDHCompat()) {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
+		} else {
+			RENDERER.setRenderer(CONFIG);
+		}
 	}
 
 	/**

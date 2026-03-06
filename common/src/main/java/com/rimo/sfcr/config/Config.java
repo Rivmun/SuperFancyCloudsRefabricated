@@ -17,11 +17,12 @@ public class Config extends SharedConfig {
 	private boolean enableDebug = false;
 	private boolean enableServer = true;
 	private boolean enableViewCulling = true;
-	private float cullRadianMultiplier = 1.1f;
+	private float cullRadianMultiplier = 1.2f;
 	private int rebuildInterval = 10;
-	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
 	private boolean isEnableParticleRainCompat = false;
+	private int dhDistanceMultipler = 1;
+	private int dhHeightEnhance = 0;
 
 	/**
 	 * Do you want to call .load() to read a local config?
@@ -33,9 +34,10 @@ public class Config extends SharedConfig {
 		this.enableViewCulling          = config.enableViewCulling;
 		this.cullRadianMultiplier       = config.cullRadianMultiplier;
 		this.rebuildInterval            = config.rebuildInterval;
-		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
+		this.dhDistanceMultipler        = config.dhDistanceMultipler;
+		this.dhHeightEnhance            = config.dhHeightEnhance;
 		setSharedConfig(config);
 	}
 
@@ -44,22 +46,24 @@ public class Config extends SharedConfig {
 	public boolean getEnableViewCulling() {return enableViewCulling;}
 	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
 	public int getRebuildInterval() {return rebuildInterval;}
-	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
+	public int getDhDistanceMultipler() {return dhDistanceMultipler;}
+	public int getDhHeightEnhance() {return dhHeightEnhance;}
 
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {enableServer = isEnable;}
 	public void setEnableViewCulling(boolean enableViewCulling) {this.enableViewCulling = enableViewCulling;}
 	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
-	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 	public void setEnableParticleRainCompat(boolean enable) {
 		isEnableParticleRainCompat = enable;
 		if (enable)
 			setEnableCloudRain(true);
 	}
+	public void setDhDistanceMultipler(int dhDistanceMultipler) {this.dhDistanceMultipler = dhDistanceMultipler;}
+	public void setDhHeightEnhance(int dhHeightEnhance) {this.dhHeightEnhance = dhHeightEnhance;}
 
 	/*
 	 * -----IO-----

@@ -6,16 +6,19 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Client.RENDERER;
@@ -39,25 +42,21 @@ public abstract class WorldRendererMixin {
 	/* - - NO CLOUD NO RAIN - - */
 	@Unique private double sfcr$x, sfcr$y, sfcr$z;
 
-	@Redirect(method = "renderWeather", at = @At(
+	@ModifyArgs(method = "renderWeather", at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/util/math/BlockPos$Mutable;set(DDD)Lnet/minecraft/util/math/BlockPos$Mutable;"
 	))
-	private BlockPos.Mutable sfcr$getRenderWeatherPos(BlockPos.Mutable instance, double x, double y, double z) {
-		sfcr$x = x;
-		sfcr$y = y;
-		sfcr$z = z;
-		return instance.set(x, y, z);
+	private void sfcr$getRenderWeatherPos(Args args) {
+		sfcr$x = args.get(0);
+		sfcr$y = args.get(1);
+		sfcr$z = args.get(2);
 	}
 
-	@Redirect(method = "renderWeather", at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation()Lnet/minecraft/world/biome/Biome$Precipitation;"
-	))
-	private Biome.Precipitation sfcr$modifyGetPrecipitation(Biome instance) {
+	@ModifyVariable(method = "renderWeather", at = @At("STORE"))
+	private Biome sfcr$modifyBiomeRain(Biome biome) {
 		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return Biome.Precipitation.NONE;
-		return instance.getPrecipitation();
+			return BuiltinRegistries.BIOME.get(BiomeKeys.SAVANNA);
+		return biome;
 	}
 
 	@ModifyVariable(method = "tickRainSplashing", at = @At("STORE"), ordinal = 2)  //DO NOT use name that cannot found
@@ -68,13 +67,11 @@ public abstract class WorldRendererMixin {
 		return pos;
 	}
 
-	@Redirect(method = "tickRainSplashing", at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation()Lnet/minecraft/world/biome/Biome$Precipitation;"))
-	private Biome.Precipitation sfcr$redirectGetPrecipitation(Biome instance) {
+	@ModifyVariable(method = "tickRainSplashing", at = @At("STORE"))
+	private Biome sfcr$modifyBiomeSplash(Biome biome) {
 		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return Biome.Precipitation.NONE;
-		return instance.getPrecipitation();
+			return BuiltinRegistries.BIOME.get(BiomeKeys.SAVANNA);
+		return biome;
 	}
 
 }

@@ -2,12 +2,13 @@ package com.rimo.sfcr.mixin.particlerain;
 
 import com.rimo.sfcr.Client;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.BuiltinRegistries;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.BiomeKeys;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import pigcart.particlerain.WeatherParticleSpawner;
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -24,10 +25,10 @@ public abstract class WeatherParticleSpawnerMixin {
 		return value;
 	}
 
-	@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/biome/Biome;getPrecipitation()Lnet/minecraft/world/biome/Biome$Precipitation;"))
-	private Biome.Precipitation sfcr$redirectPrecipitation(Biome instance) {
+	@ModifyVariable(method = "update", at = @At("STORE"))
+	private Biome sfcr$modifyBiome(Biome biome) {
 		if (CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return Biome.Precipitation.NONE;
-		return instance.getPrecipitation();
+			return BuiltinRegistries.BIOME.get(BiomeKeys.SAVANNA);
+		return biome;
 	}
 }

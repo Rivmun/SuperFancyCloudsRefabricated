@@ -45,7 +45,7 @@
     "cloth-config2":">=11.1.136",
     "modmenu": ">=7.0.0",
     "distanthorizons": ">=2.4.5",
-    "particlerain": "~4.0.0-beta.5"
+    "particlerain": ">=4.0.0-beta.6"
   },
   "custom": {
     "modmenu": {

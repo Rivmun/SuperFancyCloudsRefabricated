@@ -1,5 +1,7 @@
 package com.rimo.sfcr.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
@@ -10,10 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -36,36 +36,23 @@ public abstract class WorldRendererMixin {
 	}
 
 	/* - - NO CLOUD NO RAIN - - */
-	@Unique private double sfcr$x, sfcr$y, sfcr$z;
 
-	@Redirect(method = "renderWeather", at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/util/math/BlockPos$Mutable;set(DDD)Lnet/minecraft/util/math/BlockPos$Mutable;"
-	))
-	private BlockPos.Mutable sfcr$getRenderWeatherPos(BlockPos.Mutable instance, double x, double y, double z) {
-		sfcr$x = x;
-		sfcr$y = y;
-		sfcr$z = z;
-		return instance.set(x, y, z);
-	}
-
-	@Redirect(method = "renderWeather", at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;hasPrecipitation()Z"
-	))
-	private boolean sfcr$redirectHasPrecipitation(Biome biome) {
-		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return false;
-		return biome.hasPrecipitation();
-	}
-
-	@Redirect(method = "tickRainSplashing", at = @At(
+	@WrapOperation(method = "renderWeather", at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
-	private Biome.Precipitation sfcr$redirectGetPrecipitation(Biome instance, BlockPos pos) {
+	private Biome.Precipitation sfcr$redirectGetPrecipitationRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
 		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
-		return instance.getPrecipitation(pos);
+		return original.call(instance, pos);
+	}
+
+	@WrapOperation(method = "tickRainSplashing", at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
+	private Biome.Precipitation sfcr$redirectGetPrecipitationSplash(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
+		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+			return Biome.Precipitation.NONE;
+		return original.call(instance, pos);
 	}
 
 }

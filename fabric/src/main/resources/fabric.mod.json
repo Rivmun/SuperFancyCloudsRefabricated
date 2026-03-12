@@ -46,7 +46,7 @@
     "cloth-config2":">=${cloth_config_version}",
     "modmenu": ">=${modmenu_version}",
     "distanthorizons": ">=${distant_horizon_min_version}",
-    "particlerain": "~${particle_rain_version}"
+    "particlerain": ">=${particle_rain_version}"
   },
   "conflicts": {
     "iris": "*"

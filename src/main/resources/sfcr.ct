@@ -1,0 +1,4 @@
+classTweaker v1 official
+accessible class net/minecraft/client/renderer/CloudRenderer$RelativeCameraPos
+accessible field net/minecraft/world/level/biome/Biome climateSettings Lnet/minecraft/world/level/biome/Biome$ClimateSettings;
+accessible field net/minecraft/world/level/biome/Biome$ClimateSettings downfall F

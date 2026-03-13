@@ -1,7 +1,7 @@
 package com.rimo.sfcr.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.rimo.sfcr.Renderer;
+import com.rimo.sfcr.core.Renderer;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
@@ -23,9 +23,9 @@ import static com.rimo.sfcr.Common.CONFIG;
 public abstract class CloudRendererMixin {
 
 	@Unique
-	int oldX, oldY, oldZ;
+	int sfcr$oldX, sfcr$oldY, sfcr$oldZ, sfcr$rebuildTick = 0;
 	@Unique
-	float oldCloudHeight;
+	float sfcr$oldCloudHeight;
 	@Shadow
 	private int quadCount;
 	@Shadow
@@ -36,43 +36,42 @@ public abstract class CloudRendererMixin {
 	/*
 		grabbing camera pos of grid
 	 */
-	@Inject(method = "render", at = @At("HEAD"), cancellable = true)
-	private void render(int color, CloudStatus mode, float cloudHeight, Vec3 cameraPos, long l, float cloudPhase, CallbackInfo ci) {
-		if (!CONFIG.isEnableMod())
+	@Inject(method = "render", at = @At("HEAD"))
+	private void render(int color, CloudStatus cloudStatus, float bottomY, int range, Vec3 cameraPosition, long gameTime, float partialTicks, CallbackInfo ci) {
+		if (!CONFIG.isEnableRender())
 			return;
 
 		//keep xOffset compute as same as vanilla
-		float o = (float)(l % ((long) this.texture.width() * 400L)) + cloudPhase;
-		double d = cameraPos.x + (double)(o * 0.030000001F);
-		double e = cameraPos.z + 3.96F;
+		float o = (float)(gameTime % ((long) this.texture.width() * 400L)) + partialTicks;
+		double d = cameraPosition.x + (double)(o * 0.030000001F);
+		double e = cameraPosition.z + 3.96F;
 
-		float f = (float)(cameraPos.y - (double)cloudHeight);
-		int x = Mth.floor(d / Renderer.CLOUD_BLOCK_WIDTH);
-		int y = Mth.floor(f / Renderer.CLOUD_BLOCK_HEIGHT);
-		int z = Mth.floor(e / Renderer.CLOUD_BLOCK_WIDTH);
+		float f = (float)(cameraPosition.y - (double)bottomY);
+		int x = Mth.floor(d / RENDERER.getCloudBlockWidth());
+		int y = Mth.floor(f / RENDERER.getCloudBlockHeight());
+		int z = Mth.floor(e / RENDERER.getCloudBlockWidth());
 
-		if (oldX != x || oldY != y || oldZ != z) {
-			if (oldY != y && (
+		if (sfcr$oldX != x || sfcr$oldY != y || sfcr$oldZ != z) {
+			if (sfcr$oldY != y && (
 					f > RENDERER.getCloudHeight() ||
-					f < RENDERER.getCloudHeight() + CONFIG.getCloudThickness() * Renderer.CLOUD_BLOCK_HEIGHT))
+					f < RENDERER.getCloudHeight() + CONFIG.getCloudThickness() * RENDERER.getCloudBlockHeight()))
 				markForRebuild();  //forcibly vanilla cloud to update when player in cloud and Y changed.
-			oldX = x;
-			oldY = y;
-			oldZ = z;
+			sfcr$oldX = x;
+			sfcr$oldY = y;
+			sfcr$oldZ = z;
 			RENDERER.setGridPos(x, y, z);
 		}
 
-		if (cloudHeight != oldCloudHeight) {
-			oldCloudHeight = cloudHeight;
-			RENDERER.setCloudHeight(cloudHeight);
+		if (bottomY != sfcr$oldCloudHeight) {
+			sfcr$oldCloudHeight = bottomY;
+			RENDERER.setCloudHeight(bottomY);
 		}
 
 		RENDERER.counting(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false) / 20.0);
-		if (RENDERER.isTimeToResampling())
+		if (CONFIG.getEnableViewCulling() && ++ sfcr$rebuildTick > CONFIG.getRebuildInterval()) {
+			sfcr$rebuildTick = 0;
 			markForRebuild();  //manually update
-
-		if (CONFIG.isEnableDHCompat())
-			ci.cancel();  //cancel vanilla build & render, only get pos for DHCompat.
+		}
 	}
 
 	/*
@@ -80,7 +79,7 @@ public abstract class CloudRendererMixin {
 	 */
 	@ModifyVariable(method = "render", at = @At("STORE"))
 	private RenderPipeline setRenderPipeline(RenderPipeline pipeline) {
-		if (!CONFIG.isEnableMod())
+		if (!CONFIG.isEnableRender())
 			return pipeline;
 		if (!CONFIG.isEnableBottomDim())
 			return Renderer.SUPER_FANCY_CLOUDS_NOTHICKNESS;
@@ -93,7 +92,7 @@ public abstract class CloudRendererMixin {
 	 */
 	@Redirect(method = "render", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/CloudRenderer;quadCount:I", opcode = Opcodes.GETFIELD))
 	private int getQuadCount(CloudRenderer renderer) {
-		if (!CONFIG.isEnableMod())
+		if (!CONFIG.isEnableRender())
 			return quadCount;
 		if (!CONFIG.isEnableBottomDim())
 			return quadCount * 3 / 4;
@@ -107,9 +106,9 @@ public abstract class CloudRendererMixin {
 	 */
 	@Inject(method = "buildMesh", at = @At("HEAD"), cancellable = true)
 	private void buildMesh(CloudRenderer.RelativeCameraPos relativeCameraPos, ByteBuffer byteBuffer, int x, int z, boolean isFancy, int cloudRange, CallbackInfo ci) {
-		if (!CONFIG.isEnableMod())
+		if (!CONFIG.isEnableRender())
 			return;
-		RENDERER.buildMesh(byteBuffer, isFancy);
+		RENDERER.buildMesh(byteBuffer);
 		ci.cancel();
 	}
 

@@ -24,10 +24,10 @@ public abstract class ValueProbeMixin {
 	 */
 	@Inject(method = "get", at = @At("TAIL"), cancellable = true)
 	private <Value> void get(EnvironmentAttribute<Value> environmentAttribute, float f, CallbackInfoReturnable<Integer> cir) {
-		if (! CONFIG.isEnableMod() || level == null)
+		if (! CONFIG.isEnableRender() || level == null)
 			return;
 		if (EnvironmentAttributes.CLOUD_COLOR.equals(environmentAttribute)) {
-			long t = level.getDayTime() % 24000L;
+			long t = level.getDefaultClockTime() % 24000L;
 			int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
 			int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
 			int b = (CONFIG.getCloudColor() & 0x0000FF);

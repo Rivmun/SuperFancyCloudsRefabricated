@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Config {
-	private boolean enableMod = true;
+	private boolean enableRender = true;
 	private int cloudHeightOffset = 0;
 	private int cloudThickness = 34;
 	private int renderDistance = 31;
@@ -46,12 +46,14 @@ public class Config {
 	private boolean enableDebug = false;
 	private int cloudColor = 0xFFFFFF;
 	private boolean enableDuskBlush = true;
-	private boolean enableDHCompat = false;
-	private int dhDistanceMultipler = 1;
-	private int dhHeightEnhance = 0;
+	private boolean enableViewCulling = true;
+	private float cullRadianMultiplier = 1.2f;
+	private int rebuildInterval = 10;
+	private boolean isEnableCloudRain = false;
+	private float densityAtNight = 0.7F;
 
-	public boolean isEnableMod() {return enableMod && !Client.isIrisLoadedShader;}
-	public void setEnableMod(boolean enableMod) {this.enableMod = enableMod && !Client.isIrisLoadedShader;}
+	public boolean isEnableRender() {return enableRender;}
+	public void setEnableRender(boolean enableRender) {this.enableRender = enableRender;}
 	public int getCloudHeightOffset() {return cloudHeightOffset;}
 	public void setCloudHeightOffset(int cloudHeightOffset) {this.cloudHeightOffset = cloudHeightOffset;}
 	public int getCloudThickness() {return cloudThickness;}
@@ -102,12 +104,16 @@ public class Config {
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
 	public boolean isEnableDuskBlush() {return enableDuskBlush;}
 	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
-	public boolean isEnableDHCompat() {return enableDHCompat && Client.isDistantHorizonsLoaded;}
-	public void setEnableDHCompat(boolean enableDHCompat) {this.enableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
-	public int getDhDistanceMultipler() {return dhDistanceMultipler;}
-	public void setDhDistanceMultipler(int dhDistanceMultipler) {this.dhDistanceMultipler = dhDistanceMultipler;}
-	public int getDhHeightEnhance() {return dhHeightEnhance;}
-	public void setDhHeightEnhance(int dhHeightEnhance) {this.dhHeightEnhance = dhHeightEnhance;}
+	public boolean getEnableViewCulling() {return enableViewCulling;}
+	public float getCullRadianMultiplier() {return cullRadianMultiplier;}
+	public int getRebuildInterval() {return rebuildInterval;}
+	public void setEnableViewCulling(boolean enableViewCulling) {this.enableViewCulling = enableViewCulling;}
+	public void setCullRadianMultiplier(float value) {cullRadianMultiplier = value;}
+	public void setRebuildInterval(int value) {rebuildInterval = value;}
+	public boolean isEnableCloudRain() {return isEnableCloudRain && enableRender;}
+	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
+	public void setDensityAtNight(float density) {this.densityAtNight = density;}
+	public float getDensityAtNight() {return densityAtNight;}
 
 	private static final String OVERWORLD = "minecraft:overworld";
 	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve(Common.MOD_ID + ".json");

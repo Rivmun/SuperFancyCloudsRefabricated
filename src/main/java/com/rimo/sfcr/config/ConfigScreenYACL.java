@@ -12,8 +12,7 @@ import java.awt.Color;
 
 public class ConfigScreenYACL {
 	private final Config CONFIG = Common.CONFIG;
-	private final boolean oldEnableMod = CONFIG.isEnableMod();
-	private final boolean oldDHCompat = CONFIG.isEnableDHCompat();
+	private final boolean oldEnableMod = CONFIG.isEnableRender();
 	private final boolean oldBottomDim = CONFIG.isEnableBottomDim();
 
 	public Screen buildScreen(Screen parent) {
@@ -40,60 +39,72 @@ public class ConfigScreenYACL {
 							return Component.nullToEmpty(value.toString());
 						}))
 				.build();
-		Option<Boolean> biomeDetectUseLoadedChunk = Option.<Boolean>createBuilder()
-				.name(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk"))
-				.description(OptionDescription.of(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip")))
-				.binding(false, CONFIG::isEnableBiomeDensityUseLoadedChunk, CONFIG::setEnableBiomeDensityUseLoadedChunk)
+		Option<Boolean> cullMode = Option.<Boolean>createBuilder()
+				.name(Component.translatable("text.sfcr.option.cullMode"))
+				.description(OptionDescription.of(Component.translatable("text.sfcr.option.cullMode.@Tooltip")))
+				.binding(true, CONFIG::getEnableViewCulling, CONFIG::setEnableViewCulling)
+				.controller(BooleanControllerBuilder::create)
+				.build();
+		// well..
+		Option<Boolean> densityByChunk = Option.<Boolean>createBuilder()
+				.name(Component.translatable("text.sfcr.option.isBiomeDensityByChunk"))
+				.description(OptionDescription.of(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip")))
+				.binding(false, CONFIG::isEnableBiomeDensityByChunk, CONFIG::setEnableBiomeDensityByChunk)
 				.controller(TickBoxControllerBuilder::create)
 				.build();
-		Option<Integer> dHEnhanceDistance = Option.<Integer>createBuilder()
-				.name(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance"))
-				.description(OptionDescription.of(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance.@Tooltip")))
-				.binding(1, CONFIG::getDhDistanceMultipler, CONFIG::setDhDistanceMultipler)
-				.controller(opt -> IntegerSliderControllerBuilder.create(opt)
-						.range(1, 8)
-						.step(1)
-						.formatValue(value -> Component.nullToEmpty(value + "x")))
-				.build();
-		Option<Integer> dHEnhanceHeight = Option.<Integer>createBuilder()
-				.name(Component.translatable("text.sfcr.option.DHCompat.enhanceHeight"))
-				.binding(1, CONFIG::getDhHeightEnhance, CONFIG::setDhHeightEnhance)
-				.controller(opt -> IntegerSliderControllerBuilder.create(opt)
-						.range(0, 512)
-						.step(16))
-				.build();
-		LabelOption dHDetectBiomeByChunk = LabelOption.create(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHChunk",
-//				CONFIG.isEnableBiomeDensityByChunk() ?
-//						Component.translatable("text.cloth-config.boolean.value.true") :
-						Component.translatable("text.cloth-config.boolean.value.false")
-		));
-		LabelOption dHDetectBiomeUseLoadedChunk = LabelOption.create(Component.translatable("text.sfcr.option.DHCompat.detectBiomeByDHLoadedChunk",
-//				CONFIG.isEnableBiomeDensityUseLoadedChunk() ?
-//						Component.translatable("text.cloth-config.boolean.value.true") :
-						Component.translatable("text.cloth-config.boolean.value.false")
-		));
-		// well..
 		return YetAnotherConfigLib.createBuilder()
 				.title(Client.isCustomDimensionConfig ?
 						Component.translatable("text.sfcr.option.title.customDimensionMode") :
 						Component.translatable("text.sfcr.option.title"))
 				.save(() -> {
-					if (Client.isCustomDimensionConfig)
+					if (Client.isCustomDimensionConfig) {
 						Config.save(CONFIG, Minecraft.getInstance().level.dimension().identifier().toString());
-					else
+					} else {
 						Config.save(CONFIG);
-					Client.applyConfigChange(oldEnableMod, oldDHCompat);
-					if (Minecraft.getInstance().level != null && (oldEnableMod != CONFIG.isEnableMod() || oldBottomDim != CONFIG.isEnableBottomDim()))  //notify vanilla cloudRenderer to update
+					}
+					Client.applyConfigChange();
+					if (Minecraft.getInstance().level != null && (oldEnableMod != CONFIG.isEnableRender() || oldBottomDim != CONFIG.isEnableBottomDim()))  //notify vanilla cloudRenderer to update
 						Minecraft.getInstance().levelRenderer.getCloudRenderer().markForRebuild();
 				})
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable("text.sfcr.category.general"))
+						.optionIf(Client.isCustomDimensionConfig, LabelOption.create(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText")))
 						.option(Option.<Boolean>createBuilder()
 								.name(Component.translatable("text.sfcr.option.enableMod"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.enableMod.@Tooltip")))
-								.binding(true, CONFIG::isEnableMod, CONFIG::setEnableMod)
+								.binding(true, CONFIG::isEnableRender, CONFIG::setEnableRender)
 								.controller(BooleanControllerBuilder::create)
 								.build())
+						.option(cullMode)
+						.optionIf(cullMode.pendingValue(), Option.<Float>createBuilder()
+								.name(Component.translatable("text.sfcr.option.cullRadianMultiplier"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip")))
+								.binding(1.2F, CONFIG::getCullRadianMultiplier, CONFIG::setCullRadianMultiplier)
+								.controller(opt1 -> FloatSliderControllerBuilder.create(opt1)
+										.range(0.8F, 2.0F)
+										.step(0.1F)
+										.formatValue(value1 -> Component.nullToEmpty(value1 + "x")))
+								.build())
+						.optionIf(cullMode.pendingValue(), Option.<Integer>createBuilder()
+								.name(Component.translatable("text.sfcr.option.rebuildInterval"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.rebuildInterval.@Tooltip")))
+								.binding(10, CONFIG::getRebuildInterval, CONFIG::setRebuildInterval)
+								.controller(opt2 -> IntegerSliderControllerBuilder.create(opt2)
+										.range(0, 30)
+										.step(1)
+										.formatValue(value2 -> value2 == 0 ?
+												Component.translatable("text.sfcr.disabled") :
+												Component.translatable("text.sfcr.frame", value2)
+										))
+								.build())
+						.option(Option.<Boolean>createBuilder()
+								.name(Component.translatable("text.sfcr.option.enableDebug"))
+								.binding(false, CONFIG::isEnableDebug, CONFIG::setEnableDebug)
+								.controller(TickBoxControllerBuilder::create)
+								.build())
+						.build())
+				.category(ConfigCategory.createBuilder()
+						.name(Component.translatable("text.sfcr.category.clouds"))
 						.option(Option.<Integer>createBuilder()
 								.name(Component.translatable("text.sfcr.option.cloudHeight"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip")))
@@ -148,11 +159,6 @@ public class ConfigScreenYACL {
 								.name(Component.translatable("text.sfcr.option.enableBottomDim"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.enableBottomDim.@Tooltip")))
 								.binding(true, CONFIG::isEnableBottomDim, CONFIG::setEnableBottomDim)
-								.controller(TickBoxControllerBuilder::create)
-								.build())
-						.option(Option.<Boolean>createBuilder()
-								.name(Component.translatable("text.sfcr.option.enableDebug"))
-								.binding(false, CONFIG::isEnableDebug, CONFIG::setEnableDebug)
 								.controller(TickBoxControllerBuilder::create)
 								.build())
 						.build())
@@ -211,6 +217,14 @@ public class ConfigScreenYACL {
 										.step(1)
 										.formatValue(value -> Component.nullToEmpty(value + "%")))
 								.build())
+						.option(Option.<Float>createBuilder()
+								.name(Component.translatable("text.sfcr.option.densityAtNight"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.densityAtNight.@Tooltip")))
+								.binding(0.7F, CONFIG::getDensityAtNight, CONFIG::setDensityAtNight)
+								.controller(opt -> FloatSliderControllerBuilder.create(opt)
+										.range(0F, 1F)
+										.step(1F))
+								.build())
 						.option(Option.<Integer>createBuilder()
 								.name(Component.translatable("text.sfcr.option.weatherPreDetectTime"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.weatherPreDetectTime.@Tooltip")))
@@ -261,16 +275,13 @@ public class ConfigScreenYACL {
 											return Component.nullToEmpty(value + "%");
 										}))
 								.build())
-						.option(Option.<Boolean>createBuilder()
-								.name(Component.translatable("text.sfcr.option.isBiomeDensityByChunk"))
-								.description(OptionDescription.of(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip")))
-								.binding(false, CONFIG::isEnableBiomeDensityByChunk, CONFIG::setEnableBiomeDensityByChunk)
+						.option(densityByChunk)
+						.optionIf(densityByChunk.pendingValue(), Option.<Boolean>createBuilder()
+								.name(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip")))
+								.binding(false, CONFIG::isEnableBiomeDensityUseLoadedChunk, CONFIG::setEnableBiomeDensityUseLoadedChunk)
 								.controller(TickBoxControllerBuilder::create)
-								.addListener((option, event) -> {
-									switch (event) {case INITIAL, STATE_CHANGE -> biomeDetectUseLoadedChunk.setAvailable(option.pendingValue());}
-								})
 								.build())
-						.option(biomeDetectUseLoadedChunk)
 						.group(ListOption.<String>createBuilder()
 								.name(Component.translatable("text.sfcr.option.biomeFilter"))
 								.description(OptionDescription.of(Component.translatable("text.sfcr.option.biomeFilter.@Tooltip")))
@@ -290,24 +301,11 @@ public class ConfigScreenYACL {
 								.option(LabelOption.create(Component.translatable("text.sfcr.option.dimensionCompat.@Tooltip")))
 								.build())
 						.option(Option.<Boolean>createBuilder()
-								.name(Component.translatable("text.sfcr.option.DHCompat"))
-								.description(OptionDescription.of(Component.translatable("text.sfcr.option.DHCompat.@Tooltip")))
-								.binding(false, CONFIG::isEnableDHCompat, CONFIG::setEnableDHCompat)
+								.name(Component.translatable("text.sfcr.option.isCloudRain"))
+								.description(OptionDescription.of(Component.translatable("text.sfcr.option.isCloudRain.@Tooltip")))
+								.binding(false, CONFIG::isEnableCloudRain, CONFIG::setEnableCloudRain)
 								.controller(BooleanControllerBuilder::create)
-								.addListener((option, event) -> {
-									switch (event) {case INITIAL, STATE_CHANGE -> {
-										dHEnhanceDistance.setAvailable(option.pendingValue());
-										dHEnhanceHeight.setAvailable(option.pendingValue());
-//										dHDetectBiomeByChunk.setAvailable(option.pendingValue());
-//										dHDetectBiomeUseLoadedChunk.setAvailable(option.pendingValue());
-									}}
-								})
-								.available(Client.isDistantHorizonsLoaded)
 								.build())
-						.option(dHEnhanceDistance)
-						.option(dHEnhanceHeight)
-						.option(dHDetectBiomeByChunk)
-						.option(dHDetectBiomeUseLoadedChunk)
 						.build())
 				.build()
 				.generateScreen(parent);

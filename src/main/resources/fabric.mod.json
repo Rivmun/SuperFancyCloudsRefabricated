@@ -23,17 +23,16 @@
 			"com.rimo.sfcr.Client"
 		],
 		"server": [
-			"com.rimo.sfcr.Server"
+          "com.rimo.sfcr.DedicatedServer"
 		],
 		"modmenu": [
 			"com.rimo.sfcr.config.ModMenuIntegration"
 		]
 	},
 	"mixins": [
-		"sfcr.mixins.json",
-		"sfcr.iris.mixins.json"
+		"sfcr.mixins.json"
 	],
-	"accessWidener": "sfcr.accesswidener",
+	"accessWidener": "sfcr.ct",
 	"depends": {
 		"fabricloader": ">=0.18.2",
 		"minecraft": ">=1.21.11",

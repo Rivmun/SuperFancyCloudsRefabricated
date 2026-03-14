@@ -29,7 +29,7 @@ public abstract class WorldRendererMixin {
 	// Do not use wildcard here that will make mixin inject failure when test without dev env!!
 	@Inject(method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FDDD)V", at = @At("HEAD"), cancellable = true)
 	public void sfcr$render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-		if (world != null && CONFIG.isEnableRender() && world.getDimension().hasSkyLight()) {
+		if (world != null && CONFIG.isEnableRender()) {
 			RENDERER.render(matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, world, ticks);
 			ci.cancel();
 		}

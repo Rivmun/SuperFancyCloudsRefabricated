@@ -74,9 +74,9 @@ public class Config extends SharedConfig {
 	}
 
 	/**
-	 * Load dimensionName specific config then setConfig to this instance.<br>
-	 * If specific config not exist, it'll load default config then setConfig.<br>
-	 * File path like sfcr_modName_dimensionName.json
+	 * Load dimensionName specific config then {@link #setConfig} to this instance.<br>
+	 * If specific config not exist, it'll load default config then {@link #setConfig}.<br>
+	 * File path like 'sfcr_modName_dimensionName.json'
 	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
 	 * @return true if success to load dimension specific config, false if not.
 	 */
@@ -96,7 +96,7 @@ public class Config extends SharedConfig {
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
 			setConfig(GSON.fromJson(reader, Config.class));
 		} catch (IOException | JsonParseException e) {
-			Common.LOGGER.error("{} failed to read config file: {}", MOD_ID, path.getFileName());
+			Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
 			return false;
 		}
 		Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());

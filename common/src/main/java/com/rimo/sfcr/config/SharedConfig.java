@@ -3,19 +3,22 @@ package com.rimo.sfcr.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.rimo.sfcr.Client;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeKeys;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SharedConfig {
 	protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	public static final List<String> DEF_BIOME_FILTER_LIST = new ArrayList<>(List.of(
+	public static final List<String> DEF_BIOME_FILTER_LIST = List.of(
 			"#minecraft:is_river"
-	));
+	);
+	public static final List<String> DEF_SEASON_DENSITY_MAP = List.of(
+			"MID_SUMMER=130,LATE_WINTER=70"
+	);
 
 	private boolean isEnableRender = true;
 	private boolean enableFog = true;
@@ -35,8 +38,8 @@ public class SharedConfig {
 	private boolean enableDuskBlush = true;
 	private float cloudBrightMultiplier = 0.1f;
 	private float densityThreshold = 1.3f;
-	private float thresholdMultiplier = 1.5f;
-	private boolean enableWeatherDensity = true;
+	private float thresholdMaxReduction = 1.5f;
+	private boolean enableDynamic = true;
 	private int weatherPreDetectTime = 5;
 	private int cloudDensityPercent = 25;
 	private int rainDensityPercent = 60;
@@ -51,6 +54,7 @@ public class SharedConfig {
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
+	private List<String> seasonDensityPercentMap = DEF_SEASON_DENSITY_MAP;
 
 	public SharedConfig() {}
 	public void setSharedConfig(SharedConfig config) {
@@ -72,8 +76,8 @@ public class SharedConfig {
 		this.enableDuskBlush              = config.enableDuskBlush;
 		this.cloudBrightMultiplier        = config.cloudBrightMultiplier;
 		this.densityThreshold             = config.densityThreshold;
-		this.thresholdMultiplier          = config.thresholdMultiplier;
-		this.enableWeatherDensity         = config.enableWeatherDensity;
+		this.thresholdMaxReduction        = config.thresholdMaxReduction;
+		this.enableDynamic                = config.enableDynamic;
 		this.weatherPreDetectTime         = config.weatherPreDetectTime;
 		this.cloudDensityPercent          = config.cloudDensityPercent;
 		this.rainDensityPercent           = config.rainDensityPercent;
@@ -88,6 +92,7 @@ public class SharedConfig {
 		this.isBiomeDensityByChunk        = config.isBiomeDensityByChunk;
 		this.isBiomeDensityUseLoadedChunk = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList              = config.biomeFilterList;
+		this.seasonDensityPercentMap      = config.seasonDensityPercentMap;
 	}
 
 	public boolean isEnableRender() {return isEnableRender;}
@@ -98,8 +103,8 @@ public class SharedConfig {
 	public int getCloudColor() {return cloudColor;}
 	public float getCloudBrightMultiplier() {return cloudBrightMultiplier;}
 	public float getDensityThreshold() {return densityThreshold;}
-	public float getThresholdMultiplier() {return thresholdMultiplier;}
-	public boolean isEnableWeatherDensity() {return enableWeatherDensity;}
+	public float getThresholdMaxReduction() {return thresholdMaxReduction;}
+	public boolean isEnableDynamic() {return enableDynamic;}
 	public int getWeatherPreDetectTime() {return weatherPreDetectTime;}
 	public int getCloudDensityPercent() {return cloudDensityPercent;}
 	public int getRainDensityPercent() {return rainDensityPercent;}
@@ -124,6 +129,7 @@ public class SharedConfig {
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
 	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
+	public List<String> getSeasonDensityPercentMap() {return seasonDensityPercentMap;}
 
 	public void setEnableRender(boolean isEnable) {
 		isEnableRender = isEnable;}
@@ -134,8 +140,10 @@ public class SharedConfig {
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
 	public void setCloudBrightMultiplier(float cloudBrightMultiplier) {this.cloudBrightMultiplier = cloudBrightMultiplier;}
 	public void setDensityThreshold(float density) {densityThreshold = density;}
-	public void setThresholdMultiplier(float multiplier) {thresholdMultiplier = multiplier;}
-	public void setEnableWeatherDensity(boolean isEnable) {enableWeatherDensity = isEnable;}
+	public void setThresholdMaxReduction(float multiplier) {
+		thresholdMaxReduction = multiplier;}
+	public void setEnableDynamic(boolean isEnable) {
+		enableDynamic = isEnable;}
 	public void setWeatherPreDetectTime(int time) {weatherPreDetectTime = time;}
 	public void setCloudDensityPercent(int density) {cloudDensityPercent = density;}
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}
@@ -148,7 +156,7 @@ public class SharedConfig {
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
-	public void setCloudRenderDistance(int distance) {cloudRenderDistance = distance;}
+	public void setCloudRenderDistance(int distance) {cloudRenderDistance = Math.min(distance, 192);}
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
@@ -167,6 +175,11 @@ public class SharedConfig {
 	public void setEnableBottomDim(boolean enableBottomDim) {this.enableBottomDim = enableBottomDim;}
 	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
 	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
+	public void setSeasonDensityPercentMap(List<String> list) {
+		this.seasonDensityPercentMap = list;
+		if (Client.seasonHandler != null)
+			Client.seasonHandler.setDensityMapFromString(list.get(0));
+	}
 
 	//conversion
 	public int getAutoFogMaxDistance() {
@@ -174,7 +187,7 @@ public class SharedConfig {
 	}
 
 	public boolean isFilterListHasBiome(RegistryEntry<Biome> biome) {
-		var isHas = false;
+		boolean isHas = false;
 		if (this.getBiomeFilterList().contains(biome.getKey().orElse(BiomeKeys.THE_VOID).getValue().toString())) {
 			isHas = true;
 		} else {

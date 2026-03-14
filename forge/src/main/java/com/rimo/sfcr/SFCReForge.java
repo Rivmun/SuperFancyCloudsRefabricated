@@ -20,7 +20,7 @@ public class SFCReForge {
 
 		Common.init();
 		DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Client::init);
-		DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> Server::init);
+		DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> DedicatedServer::init);
 
 		if (ModList.get().isLoaded("cloth_config")) {
 			ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));

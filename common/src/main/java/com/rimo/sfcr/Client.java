@@ -2,10 +2,9 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.core.CloudData;
-import com.rimo.sfcr.core.Data;
-import com.rimo.sfcr.core.Renderer;
-import com.rimo.sfcr.core.RendererDHCompat;
+import com.rimo.sfcr.config.ConfigScreen;
+import com.rimo.sfcr.core.*;
+import dev.architectury.event.events.client.ClientCommandRegistrationEvent;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -16,6 +15,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.text.Text;
+import net.minecraft.world.World;
 
 import java.util.Random;
 
@@ -25,6 +26,7 @@ import static com.rimo.sfcr.Common.*;
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
+	public static AbstractSeasonCompat seasonHandler = AbstractSeasonCompat.getInstance(CONFIG);
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;
@@ -48,6 +50,8 @@ public class Client {
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
 			}
+			if (seasonHandler != null)
+				DATA.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 
 		// Update data
@@ -59,6 +63,8 @@ public class Client {
 			if (client.player != null)
 				DATA.updateDensity(client.player);
 		});
+		if (seasonHandler != null)
+			seasonHandler.registerListener(DATA::setDensityBySeason);
 
 		// Quit reset
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
@@ -69,6 +75,18 @@ public class Client {
 			CONFIG.load();
 			Common.clearConfigCache(null);
 		});
+
+		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
+				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
+					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {
+						MinecraftClient client = MinecraftClient.getInstance();
+						client.execute(() -> client.setScreen(new ConfigScreen().build()));
+					} else {
+						context.getSource().arch$sendFailure(Text.translatable("text.sfcr.requiredCloth"));
+					}
+					return 1;
+				}))
+		);
 
 		//seed receiver
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_SEED, (buf, context) -> {
@@ -114,8 +132,13 @@ public class Client {
 
 		//upload request receiver & shared config sender
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
+			World world = MinecraftClient.getInstance().world;
+			if (world == null)
+				return;
+			String name = world.getRegistryKey().getValue().toString();
 			String configJson = CONFIG.toString();
-			NetworkManager.sendToServer(PACKET_SHARED_CONFIG, new PacketByteBuf(Unpooled.buffer())
+			NetworkManager.sendToServer(PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
+					.writeString(name)
 					.writeString(configJson)
 			);
 			if (CONFIG.isEnableDebug())

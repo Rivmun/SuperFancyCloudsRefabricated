@@ -3,7 +3,7 @@ architectury {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/sfcr.accesswidener")
+//    accessWidenerPath = file("src/main/resources/sfcr.accesswidener")
 }
 
 repositories {
@@ -24,7 +24,12 @@ dependencies {
     // Distant Horizons
     modApi("maven.modrinth:DistantHorizonsApi:${rootProject.distant_horizon_api_version}")
     //Particle Rain
-    modCompileOnly("maven.modrinth:particle-rain:v4-beta.6+1.20.1-fabric")
+    modCompileOnly("maven.modrinth:particle-rain:${rootProject.particle_rain_version}")
+    //Serene Seasons
+    modCompileOnly("maven.modrinth:glitchcore:${rootProject.glitchcore_version}")
+    modCompileOnly("maven.modrinth:serene-seasons:${rootProject.serene_seasons_version}")
+    //Fabric Seasons
+    modCompileOnly("maven.modrinth:fabric-seasons:${rootProject.fabric_seasons_version}")
 }
 
 publishing {

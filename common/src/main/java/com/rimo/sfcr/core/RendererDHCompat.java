@@ -54,6 +54,8 @@ public class RendererDHCompat extends Renderer {
 		int h = grid[0].length;
 		boolean[][][] covered = new boolean[w][h][w];
 		List<DhApiRenderableBox> result = new ArrayList<>();
+		cullStateShown = 0;
+		cullStateSkipped = 0;
 
 		for (int z = 0; z < w; z++) {
 			for (int y = 0; y < h; y++) {
@@ -143,6 +145,7 @@ public class RendererDHCompat extends Renderer {
 								new Color(255,255,255,255),  //color change by time, here just placeholder
 								EDhApiBlockMaterial.UNKNOWN
 						));
+						cullStateShown ++;
 					}
 				}
 			}
@@ -154,9 +157,12 @@ public class RendererDHCompat extends Renderer {
 	@Override
 	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	                   ClientWorld world, int ticks) {
-		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+		float cloudHeight = world.getDimensionEffects().getCloudsHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
+		int configHeight = CONFIG.getCloudHeight();
+		if (configHeight >= 0)
+			cloudHeight = configHeight;
 		this.cloudHeight = cloudHeight;
 
 		//vanilla cloud pos calculation

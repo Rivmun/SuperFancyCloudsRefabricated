@@ -37,15 +37,11 @@ public class Common {
 	 * 1.String dimensionName - use to load specific config, sent when player join at first time and dimension change. <br>
 	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled
 	 */
-	public static final Identifier PACKET_DIMENSION = new Identifier(MOD_ID, "dimension_s2c");
+	public static final Identifier PACKET_DIMENSION = new Identifier(MOD_ID, "dimension");
 	/**
 	 * an empty packet to notice client upload its config
 	 */
 	public static final Identifier PACKET_UPLOAD_REQUEST = new Identifier(MOD_ID, "upload_request_s2c");
-	/**
-	 * String SharedConfigJson
-	 */
-	public static final Identifier PACKET_SHARED_CONFIG = new Identifier(MOD_ID, "shared_config_c2s");
 
 	private static final Map<String, String> CONFIG_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
 	private static final Object CACHE_LOCK = new Object();
@@ -109,20 +105,11 @@ public class Common {
 		}
 	}
 
-	// - concurrent check powered by doubao.ai
 	static String getDimensionConfigJson(String dimensionName) {
-		if (CONFIG_CACHE.containsKey(dimensionName))
-			return CONFIG_CACHE.get(dimensionName);
-		synchronized (CACHE_LOCK) {
-			if (CONFIG_CACHE.containsKey(dimensionName))  //check again
-				return CONFIG_CACHE.get(dimensionName);
+		return CONFIG_CACHE.computeIfAbsent(dimensionName, name -> {
 			Config config = new Config();
-			String configJson = config.load(dimensionName) ?
-					config.toString() :
-					"";
-			CONFIG_CACHE.put(dimensionName, configJson);
-			return configJson;
-		}
+			return config.load(name) ? config.toString() : "";
+		});
 	}
 
 	/**

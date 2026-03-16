@@ -11,6 +11,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 
 import static net.minecraft.server.command.CommandManager.argument;
@@ -36,8 +37,9 @@ public class DedicatedServer {
 						.then(literal("status")
 								.requires(source -> source.hasPermissionLevel(2))
 								.executes(context -> {
-									String dimensionName = context.getSource().getWorld().getRegistryKey().getValue().toString();
-									String configJson = Common.getDimensionConfigJson(dimensionName);
+									ServerWorld world = context.getSource().getWorld();
+									String dimensionName = world.getRegistryKey().getValue().toString();
+									String configJson = Common.getDimensionConfigJson(world);
 									if (configJson.isEmpty()) {
 										context.getSource().sendMessage(Text.of("[SFCRe] This dimension '" + dimensionName + "' has no config."));
 										context.getSource().sendMessage(Text.of("[SFCRe] Use '/sfcr upload' to upload your current config to server."));
@@ -88,6 +90,7 @@ public class DedicatedServer {
 		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, ((buf, context) -> {
 			String name = buf.readString();
 			String configJson = buf.readString();
+			long l = buf.readVarLong();
 			PlayerEntity player = context.getPlayer();
 			if (! player.getCommandSource().hasPermissionLevel(4)) {  //check permission again
 				player.sendMessage(Text.of("§4[SFCRe] Your permission is not enough to upload config!"));

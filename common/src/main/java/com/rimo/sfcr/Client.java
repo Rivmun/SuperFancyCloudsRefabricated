@@ -88,19 +88,13 @@ public class Client {
 				}))
 		);
 
-		//seed receiver
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_SEED, (buf, context) -> {
-			hasServer = true;
-			long seed = buf.readVarLong();
-			CloudData.initSampler(seed);
-			if (CONFIG.isEnableDebug())
-				LOGGER.info("{} receive seed {}", MOD_ID, seed);
-		});
-
 		//dimension packet receiver
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
+			hasServer = true;
 			String name = buf.readString();
 			String configJson = buf.readString();
+			long seed = buf.readVarLong();
+			CloudData.initSampler(seed);
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
@@ -140,6 +134,7 @@ public class Client {
 			NetworkManager.sendToServer(PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
 					.writeString(name)
 					.writeString(configJson)
+					.writeVarLong(0L)
 			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);

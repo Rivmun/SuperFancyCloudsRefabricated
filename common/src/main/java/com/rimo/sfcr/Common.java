@@ -1,7 +1,11 @@
 package com.rimo.sfcr;
 
+import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.SharedConfig;
 import com.rimo.sfcr.core.Data;
+import com.rimo.sfcr.core.Sampler;
+import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
@@ -10,6 +14,7 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -25,17 +30,14 @@ public class Common {
 	public static final Config CONFIG = new Config().load();
 	public static final Data DATA = new Data(CONFIG);
 	/**
-	 * long seed - part of world seed use to init sampler, sent when player join this world.
-	 */
-	public static final Identifier PACKET_SEED = new Identifier(MOD_ID, "seed_s2c");
-	/**
 	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
 	 */
 	public static final Identifier PACKET_WEATHER = new Identifier(MOD_ID, "weather_s2c");
 	/**
 	 * Contains:<br>
 	 * 1.String dimensionName - use to load specific config, sent when player join at first time and dimension change. <br>
-	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled
+	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled<br>
+	 * 3.Long seed - use to init sampler.
 	 */
 	public static final Identifier PACKET_DIMENSION = new Identifier(MOD_ID, "dimension");
 	/**
@@ -43,29 +45,36 @@ public class Common {
 	 */
 	public static final Identifier PACKET_UPLOAD_REQUEST = new Identifier(MOD_ID, "upload_request_s2c");
 
-	private static final Map<String, String> CONFIG_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
-	private static final Object CACHE_LOCK = new Object();
+	private static final Map<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
 
 	public static void init() {
-		// Seed Sender
-		PlayerEvent.PLAYER_JOIN.register(player -> {
-			MinecraftServer server = player.getServer();
-			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
-				return;
-			long seed = player.getServerWorld().getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
-			NetworkManager.sendToPlayer(player, PACKET_SEED, new PacketByteBuf(Unpooled.buffer())
-					.writeVarLong(seed)
-			);
-			if (CONFIG.isEnableDebug())
-				LOGGER.info("{} send seed {} to {}", MOD_ID, seed, player.getName().getString());
-
-			// Dimension Sender also run here because CHANGE_DIMENSION event not be called when join
-			sendDimensionPacket(player, player.getServerWorld().getRegistryKey());
+		//create new dimension cache
+		LifecycleEvent.SERVER_LEVEL_LOAD.register(world -> {
+			String name = world.getRegistryKey().getValue().toString();
+			Config config = new Config();
+			String configJson = config.load(name) ? config.toString() : "";
+			DIMENSION_CACHE.compute(name, (key, existing) -> {
+				if (existing == null) {
+					long seed = getSeed(world);
+					Sampler sampler = new Sampler(seed);
+					return new DimensionData(seed, configJson, sampler);
+				} else {
+					existing.sampler.setSamplerData(config);
+					return new DimensionData(existing.seed(), configJson, existing.sampler());
+				}
+			});
 		});
 
-		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
+		// Dimension Sender
+		PlayerEvent.PLAYER_JOIN.register(player -> {
 			MinecraftServer server = player.getServer();
 			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
+			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
+				return;
+			sendDimensionPacket(player, player.getServerWorld().getRegistryKey());
+		});
+		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
+			MinecraftServer server = player.getServer();
 			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
 				return;
 			sendDimensionPacket(player, newLevel);
@@ -87,29 +96,41 @@ public class Common {
 	}
 
 	// Dimension Packet Sender
-	private static void sendDimensionPacket(ServerPlayerEntity player, RegistryKey<World> newLevel) {
-		String name = newLevel.getValue().toString();
-		String configJson = CONFIG.isEnableServer() ? getDimensionConfigJson(name) : "";
+	private static void sendDimensionPacket(ServerPlayerEntity player, RegistryKey<World> key) {
+		String name = key.getValue().toString();
+		DimensionData data = DIMENSION_CACHE.computeIfAbsent(name, name1 ->
+			getDimensionData(player.getServerWorld())
+		);
 		NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
 				.writeString(name)
-				.writeString(configJson)
+				.writeString(data.configJson)
+				.writeVarLong(data.seed)
 		);
 		if (CONFIG.isEnableDebug())
 			LOGGER.info("{} send dimension '{}' packet to {}", MOD_ID, name, player.getName().getString());
 	}
 
-	static void setDimensionConfigJson(String dimensionName, String configJson) {
-		synchronized (CACHE_LOCK) {
-			clearConfigCache(dimensionName);
-			CONFIG_CACHE.put(dimensionName, configJson);
-		}
+	private static long getSeed(ServerWorld world) {
+		return world.getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
 	}
 
-	static String getDimensionConfigJson(String dimensionName) {
-		return CONFIG_CACHE.computeIfAbsent(dimensionName, name -> {
-			Config config = new Config();
-			return config.load(name) ? config.toString() : "";
-		});
+	/**
+	 * Will do nothing if {@link #DIMENSION_CACHE} no have such dimension
+	 */
+	static void setDimensionConfigJson(String dimensionName, String configJson) {
+		try {
+			DIMENSION_CACHE.computeIfPresent(dimensionName, (key, existing) -> {
+				existing.sampler.setSamplerData(new Config().fromString(configJson));
+				return new DimensionData(existing.seed, configJson, existing.sampler());
+			});
+		} catch (JsonSyntaxException ignored) {}
+	}
+
+	static String getDimensionConfigJson(ServerWorld world) {
+		String name = world.getRegistryKey().getValue().toString();
+		return DIMENSION_CACHE.computeIfAbsent(name, key ->
+			getDimensionData(world)
+		).configJson;
 	}
 
 	/**
@@ -117,9 +138,9 @@ public class Common {
 	 */
 	public static void clearConfigCache(@Nullable String name) {
 		if (name == null)
-			CONFIG_CACHE.clear();
+			DIMENSION_CACHE.clear();
 		else
-			CONFIG_CACHE.remove(name);
+			DIMENSION_CACHE.remove(name);
 	}
 
 	//Debug
@@ -130,4 +151,15 @@ public class Common {
 		}
 		LOGGER.error(text.toString());
 	}
+
+	private static DimensionData getDimensionData(ServerWorld world) {
+		String name = world.getRegistryKey().getValue().toString();
+		long seed = getSeed(world);
+		Config config = new Config();
+		String configJson = config.load(name) ? config.toString() : "";
+		Sampler sampler = new Sampler(seed);
+		return new DimensionData(seed, configJson, sampler);
+	}
+
+	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 }

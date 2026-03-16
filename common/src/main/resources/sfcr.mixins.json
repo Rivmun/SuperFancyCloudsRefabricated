@@ -4,13 +4,14 @@
   "package": "com.rimo.sfcr.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-	"ServerWorldAccessor"
+    "ServerWorldAccessor"
   ],
   "client": [
-    "WorldRendererMixin",
-    "GameRendererMixin",
+    "DebugHudMixin",
     "GameOptionsMixin",
-    "DebugHudMixin"
+    "GameRendererMixin",
+    "LeavesBlockMixin",
+    "WorldRendererMixin"
   ],
   "server": [],
   "injectors": {

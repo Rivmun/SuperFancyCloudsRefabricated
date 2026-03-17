@@ -1,4 +1,4 @@
-package com.rimo.sfcr.mixin;
+package com.rimo.sfcr.mixin.extra;
 
 import com.rimo.sfcr.Common;
 import net.minecraft.util.math.BlockPos;

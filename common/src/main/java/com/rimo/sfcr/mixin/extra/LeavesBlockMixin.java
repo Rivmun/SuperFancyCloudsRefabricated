@@ -1,4 +1,4 @@
-package com.rimo.sfcr.mixin;
+package com.rimo.sfcr.mixin.extra;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;

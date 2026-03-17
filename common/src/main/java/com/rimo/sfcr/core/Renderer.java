@@ -307,9 +307,9 @@ public class Renderer {
 
 		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
+			fadeIn = new CloudData.CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudData.CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudData.CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {

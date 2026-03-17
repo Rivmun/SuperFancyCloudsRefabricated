@@ -1,15 +1,14 @@
 {
-  "required": true,
+  "required": false,
   "minVersion": "0.8",
-  "package": "com.rimo.sfcr.mixin",
+  "package": "com.rimo.sfcr.mixin.extra",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ServerWorldAccessor"
+    "ServerWorldMixin",
+    "WorldMixin"
   ],
   "client": [
-    "DebugHudMixin",
-    "GameOptionsMixin",
-    "GameRendererMixin",
+    "LeavesBlockMixin",
     "WorldRendererMixin"
   ],
   "server": [],

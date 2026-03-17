@@ -26,7 +26,7 @@ dependencies {
     //Particle Rain
     modCompileOnly("maven.modrinth:particle-rain:${rootProject.particle_rain_version}")
     //Serene Seasons
-    modCompileOnly("maven.modrinth:glitchcore:${rootProject.glitchcore_version}")
+//    modCompileOnly("maven.modrinth:glitchcore:${rootProject.glitchcore_version}")
     modCompileOnly("maven.modrinth:serene-seasons:${rootProject.serene_seasons_version}")
     //Fabric Seasons
     modCompileOnly("maven.modrinth:fabric-seasons:${rootProject.fabric_seasons_version}")

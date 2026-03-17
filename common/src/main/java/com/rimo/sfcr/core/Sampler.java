@@ -71,9 +71,7 @@ public class Sampler {
 	private float f = 0.5F;
 
 	/**
-	 * @param x cloud grid pos - (camX + world.time + tickDelta) / cloudBlockSize
-	 * @param y cloud grid pos - [0 - cloudLayerHeight]
-	 * @param z cloud grid pos -
+	 * @see #isCloudCovered(double, double, double) 
 	 */
 	boolean isGridHasCloud(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		if (world == null || cloudNoise == null || Float.isNaN(cloudHeight))

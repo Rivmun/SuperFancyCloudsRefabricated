@@ -22,6 +22,7 @@ public class Config extends SharedConfig {
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
 	private boolean isEnableParticleRainCompat = false;
+	private boolean isCloudRainLogically = false;
 
 	/**
 	 * Do you want to call .load() to read a local config?
@@ -36,6 +37,7 @@ public class Config extends SharedConfig {
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
+		this.isCloudRainLogically       = config.isCloudRainLogically;
 		setSharedConfig(config);
 	}
 
@@ -47,6 +49,7 @@ public class Config extends SharedConfig {
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
+	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {enableServer = isEnable;}
@@ -60,6 +63,7 @@ public class Config extends SharedConfig {
 		if (enable)
 			setEnableCloudRain(true);
 	}
+	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 
 	/*
 	 * -----IO-----

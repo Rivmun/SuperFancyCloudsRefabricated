@@ -1,9 +1,7 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
-import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.platform.Platform;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -157,15 +155,12 @@ public abstract class AbstractSeasonCompat {
 	}
 
 	/**
-	 * Register a polling cycle of 24000 ticks in {@link ClientTickEvent#CLIENT_POST} to check the season changed
+	 * A polling cycle of 24000 ticks to check the season changed
 	 * @param consumer accept the new density value via {@link #getDensityValue(Enum)}
 	 */
-	public void registerListener(Consumer<Integer> consumer) {
-		ClientTickEvent.CLIENT_POST.register(client -> {
-			ClientWorld world = client.world;
-			if (world != null && world.getTime() % 24000 == 0)
-				consumer.accept(getSeasonDensityPercent(world));
-		});
+	public void updateSeasonDensity(World world, Consumer<Integer> consumer) {
+		if (world != null && world.getTime() % 24000 == 0)
+			consumer.accept(getSeasonDensityPercent(world));
 	}
 
 	protected abstract Enum<?> getSeason(World world);

@@ -1,17 +1,9 @@
 package com.rimo.sfcr.core;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.LightType;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 
 import java.util.ArrayList;
 
@@ -19,7 +11,7 @@ import static com.rimo.sfcr.Client.RENDERER;
 import static com.rimo.sfcr.Common.*;
 
 public class CloudData {
-	private static SimplexNoiseSampler cloudNoise;
+	public static Sampler sampler = new Sampler();
 	private final Type dataType;
 	private float lifeTime;
 	protected ArrayList<Integer> meshData = new ArrayList<>();
@@ -52,10 +44,6 @@ public class CloudData {
 		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
 	}
 
-	public static void initSampler(long seed) {
-		cloudNoise = new SimplexNoiseSampler(Random.create(seed));
-	}
-
 	public void tick() {
 		lifeTime -= MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
 	}
@@ -74,7 +62,7 @@ public class CloudData {
 		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
 		int gy = (int) (y / cbSize * 2);
 		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
-		for (int i = 0; i < height; i ++) {
+		for (int i = height - 1; i >= 0; i --) {
 			if (_cloudData[gx][i][gz]) {
 				return minusCloudGridHeight(gy) <= i;
 			}
@@ -82,142 +70,21 @@ public class CloudData {
 		return false;
 	}
 
-	private float thresholdFormula(float threshold, float reduction, float weather, float biome) {
-		return threshold - reduction * weather * biome;
-	}
-
 	private void collectCloudData(int x, int z, float densityByWeather, float densityByBiome) {
 		World world = MinecraftClient.getInstance().world;
 		if (world == null)
 			return;
 
-		final float sx = x - width / 2f;  //sampling start pos
-		final float sz = z - width / 2f;
-		final int cloudBlockSize = CONFIG.getCloudBlockSize();
-		final float cloudHeight = RENDERER.getCloudHeight();
-
-		boolean isEnableDynamic = CONFIG.isEnableDynamic();
-		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
-		boolean isBiomeUseLoadedChunk = CONFIG.isBiomeDensityUseLoadedChunk();
-		boolean isEnableTerrainDodge = CONFIG.isEnableTerrainDodge();
-		int steps = CONFIG.getSampleSteps();
-		float threshold = CONFIG.getDensityThreshold();
-		float reduction = CONFIG.getThresholdMaxReduction();
-
-		float densityMultiplier = 1F;
-		double time = 0.0;
-		float f = threshold;
-		if (isEnableDynamic) {
-			densityMultiplier = getDensityMultiplier(world.getTime());
-			time = world.getTime() / 20.0;
-			f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
-		}
+		final int sx = x - width / 2;  //sampling start pos
+		final int sz = z - width / 2;
 
 		for (int cx = 0; cx < width; cx++) {
 			for (int cz = 0; cz < width; cz++) {
-				int bx = (int) (sx + cx + 0.5f) * cloudBlockSize;		// transform cloudpos to blockpos
-				int bz = (int) (sz + cz + 0.5f) * cloudBlockSize;
-				final int h = world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz);  //height sampling use to get biome
-
-				// calculating density...
-				if (isEnableDynamic && isBiomeByChunk) {
-					BlockPos pos;
-					if (isBiomeUseLoadedChunk) {
-						Vec2f cellPos = new Vec2f(bx, bz);
-						Vec2f unit = cellPos.normalize().multiply(16);  //measure as chunk
-						while (! world.getChunkManager().isChunkLoaded((int) cellPos.x / 16, (int) cellPos.y / 16)
-								&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
-							cellPos = cellPos.add(unit.negate());  // stepping pos near towards to player
-
-						pos = new BlockPos((int) cellPos.x, h, (int) cellPos.y);
-					} else {
-						pos = new BlockPos(bx, h, bz);
-					}
-					RegistryEntry<Biome> biome = world.getBiome(pos);
-					if (! CONFIG.isFilterListHasBiome(biome))
-						f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitation(pos)));
-				}
-
-				// sampling...
 				for (int cy = 0; cy < height; cy++) {
-					_cloudData[cx][cy][cz] = getCloudSampleProxy(world, sx, sz, 0, time, steps, cx, cy, cz) * densityMultiplier > f && (
-							// terrain dodge (detect light level)
-							! isEnableTerrainDodge || world.getLightLevel(LightType.SKY, new BlockPos(
-									bx,
-									(int) (cloudHeight + (cy - 2) * cloudBlockSize / 2f),
-									bz
-							)) == 15
-					);
+					_cloudData[cx][cy][cz] = sampler.isGridHasCloud(sx + cx, cy, sz + cz, densityByWeather, densityByBiome);
 				}
 			}
 		}
-	}
-
-	private float getDensityMultiplier(long worldTime) {
-		float m = 1F;
-		float time = (worldTime % 24000L);
-		if (time > 13000F || time < 1000F) {  // decreased density at night
-			float remapTime = (time < 1000F ? time + 11000F : time - 13000F) / 12000F;
-			float curveFactor = (float) Math.pow(4 * remapTime * (1 - remapTime), 0.5);  //smooth it...
-			m = 1 - curveFactor * (1 - CONFIG.getDensityAtNight());
-		}
-		return m * DATA.getDensityBySeason();
-	}
-
-	private double getCloudSampleProxy(World world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
-		double sample = getCloudSample(startX, startZ, zOffset, timeOffset, steps, cx, cy, cz);
-		if (world.isRaining() && CONFIG.isEnableDynamic()) {  //make cloud top more continuous when rain
-			float clearDensity = CONFIG.getCloudDensityPercent() / 100f + 1;
-			float currentDensity = DATA.densityByWeather + 1;
-			float cyMax = CONFIG.getCloudLayerThickness();
-			final float MAX_ADD = 3F;
-			sample += Math.pow(cy / cyMax, 2) * Math.max((1 - clearDensity / Math.max(clearDensity, currentDensity)) * MAX_ADD, 0);
-		}
-		return sample;
-	}
-
-	/* - - - - - Sampler Core - - - - - */
-
-	private static final float baseFreq = 0.05f;
-	private static final float baseTimeFactor = 0.01f;
-
-	private static final float l1Freq = 0.09f;
-	private static final float l1TimeFactor = 0.02f;
-
-	private static final float l2Freq = 0.001f;
-	private static final float l2TimeFactor = 0.1f;
-
-	private double remappedValue(double noise) {
-		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;
-			// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2, 32=height
-	}
-
-	private double getCloudSample(double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
-		double cloudVal = cloudNoise.sample(
-				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
-				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
-				(startZ + cz + zOffset) * baseFreq
-		);
-		if (steps > 1) {
-			double cloudVal1 = cloudNoise.sample(
-					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-					(startZ + cz + zOffset) * l1Freq
-			);
-			double cloudVal2 = 1;
-			if (steps > 2) {
-				cloudVal2 = cloudNoise.sample(
-						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-						0,
-						(startZ + cz + zOffset) * l2Freq
-				);
-				//Smooth floor function...
-				cloudVal2 *= 3;
-				cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;		// (3*x-sin(2*3.1415926*3*x/(2*3.1415926)))/2
-			}
-			cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
-		}
-		return cloudVal * remappedValue(1 - (cy + 1) / height);		//cloudVal ~ [-1, 2]
 	}
 
 	/* - - - - - Mesh Computing - - - - - */

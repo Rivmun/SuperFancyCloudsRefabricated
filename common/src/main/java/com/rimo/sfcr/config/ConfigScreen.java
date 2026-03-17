@@ -65,6 +65,20 @@ public class ConfigScreen {
 				.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudRenderDistanceFitToView)
 				.build();
+		BooleanListEntry ncnr = builder.entryBuilder()
+				.startBooleanToggle(Text.translatable("text.sfcr.option.isCloudRain")
+						, CONFIG.isEnableCloudRain())
+				.setDefaultValue(false)
+				.setTooltip(Text.translatable("text.sfcr.option.isCloudRain.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableCloudRain)
+				.build();
+		BooleanListEntry enableServer = builder.entryBuilder()
+				.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
+						, CONFIG.isEnableServer())
+				.setDefaultValue(true)
+				.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableServer)
+				.build();
 		// (i love it...
 		return builder.setParentScreen(MinecraftClient.getInstance().currentScreen)
 				.setTitle(Client.isCustomDimensionConfig ?
@@ -74,13 +88,13 @@ public class ConfigScreen {
 				.setSavingRunnable(() -> {
 					if (CONFIG.isCloudRenderDistanceFitToView())
 						CONFIG.setCloudRenderDistance(MinecraftClient.getInstance().options.getClampedViewDistance() * 12);
-					CONFIG.setFogDisance(fogMin, fogMax);
+					CONFIG.setFogDistance(fogMin, fogMax);
 					if (Client.isCustomDimensionConfig) {
 						CONFIG.save(dimensionName);
 					} else {
 						CONFIG.save();
 					}
-					Common.clearConfigCache(dimensionName);
+					Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
 					DATA.setConfig(CONFIG);
 					Client.applyConfigChange(oldEnableDHCompat);
 				})
@@ -106,13 +120,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setEnableRender)
 								.build())
 						//enable server
-						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Text.translatable("text.sfcr.option.enableServer")
-										, CONFIG.isEnableServer())
-								.setDefaultValue(true)
-								.setTooltip(Text.translatable("text.sfcr.option.enableServer.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableServer)
-								.build())
+						.addEntry(enableServer)
 						//cull mode
 						.addEntry(cullMode)
 						//cull radian multiplier
@@ -191,7 +199,7 @@ public class ConfigScreen {
 								.setTextGetter(value -> Text.of(value.toString()))
 								.setTooltip(Text.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
 								.setSaveConsumer(CONFIG::setCloudRenderDistance)
-								.setRequirement(Requirement.isTrue(distanceFitToView))
+								.setRequirement(Requirement.isFalse(distanceFitToView))
 								.build())
 						//cloud distance fit to view
 						.addEntry(distanceFitToView)
@@ -472,12 +480,16 @@ public class ConfigScreen {
 				)
 				.setFallbackCategory(builder.getOrCreateCategory(Text.translatable("text.sfcr.category.compat"))
 						//NO CLOUD NO RAIN
+						.addEntry(ncnr)
+						//NO CLOUD NO RAIN logically
 						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Text.translatable("text.sfcr.option.isCloudRain")
-										, CONFIG.isEnableCloudRain())
+								.startBooleanToggle(Text.translatable("text.sfcr.option.cloudRainLogically"),
+										CONFIG.isCloudRainLogically())
 								.setDefaultValue(false)
-								.setTooltip(Text.translatable("text.sfcr.option.isCloudRain.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableCloudRain)
+								.setTooltip(Text.translatable("text.sfcr.option.cloudRainLogically.@Tooltip"))
+								.setSaveConsumer(CONFIG::setCloudRainLogically)
+								.setDisplayRequirement(Requirement.isTrue(ncnr))
+								.setRequirement(Requirement.isTrue(enableServer))
 								.build())
 						//custom dimension
 						.addEntry(builder.entryBuilder()
@@ -507,8 +519,8 @@ public class ConfigScreen {
 						)
 						//seasons
 						.addEntry(builder.entryBuilder()
-								.startStrList(Text.translatable("text.sfcr.option.seasonCompat", Client.seasonHandler != null ?
-												Client.seasonHandler.getClass().getSimpleName() :
+								.startStrList(Text.translatable("text.sfcr.option.seasonCompat", Common.seasonHandler != null ?
+												Common.seasonHandler.getClass().getSimpleName() :
 												"§4null"
 										),
 										CONFIG.getSeasonDensityPercentMap())
@@ -519,13 +531,13 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setSeasonDensityPercentMap)
 								.setErrorSupplier(str -> {
 									try {
-										Client.seasonHandler.castStringToDensityMap(str.get(0));
+										Common.seasonHandler.castStringToDensityMap(str.get(0));
 									} catch (IllegalArgumentException e) {
 										return Optional.ofNullable(Text.of(e.getLocalizedMessage()));
 									} catch (Exception ignored) {}
 									return Optional.empty();
 								})
-								.setRequirement(Requirement.isTrue(() -> Client.seasonHandler != null))
+								.setRequirement(Requirement.isTrue(() -> Common.seasonHandler != null))
 								.build())
 				)
 				.build();

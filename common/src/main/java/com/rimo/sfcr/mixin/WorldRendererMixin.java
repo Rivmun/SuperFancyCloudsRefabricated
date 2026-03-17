@@ -23,14 +23,13 @@ import static com.rimo.sfcr.Client.RENDERER;
 public abstract class WorldRendererMixin {
 
 	@Shadow private @Nullable ClientWorld world;
-	@Shadow private int ticks;
 
 	// MAIN FUNCTION CALL...
 	// Do not use wildcard here that will make mixin inject failure when test without dev env!!
 	@Inject(method = "renderClouds(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;FDDD)V", at = @At("HEAD"), cancellable = true)
 	public void sfcr$render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
 		if (world != null && CONFIG.isEnableRender()) {
-			RENDERER.render(matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, world, ticks);
+			RENDERER.render(matrices, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, world);
 			ci.cancel();
 		}
 	}
@@ -41,7 +40,7 @@ public abstract class WorldRendererMixin {
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
-		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}
@@ -50,7 +49,7 @@ public abstract class WorldRendererMixin {
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationSplash(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
-		if (CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}

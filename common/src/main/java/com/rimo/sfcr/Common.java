@@ -3,6 +3,7 @@ package com.rimo.sfcr;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.SharedConfig;
+import com.rimo.sfcr.core.AbstractSeasonCompat;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
 import dev.architectury.event.events.common.LifecycleEvent;
@@ -21,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Common {
@@ -29,6 +29,7 @@ public class Common {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	public static final Config CONFIG = new Config().load();
 	public static final Data DATA = new Data(CONFIG);
+	public static AbstractSeasonCompat seasonHandler = AbstractSeasonCompat.getInstance(CONFIG);
 	/**
 	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
 	 */
@@ -45,24 +46,15 @@ public class Common {
 	 */
 	public static final Identifier PACKET_UPLOAD_REQUEST = new Identifier(MOD_ID, "upload_request_s2c");
 
-	private static final Map<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
+	private record DimensionData(long seed, String configJson, Sampler sampler) {}
+	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
 
 	public static void init() {
-		//create new dimension cache
-		LifecycleEvent.SERVER_LEVEL_LOAD.register(world -> {
+		// dimension cache system
+		LifecycleEvent.SERVER_LEVEL_LOAD.register(Common::loadDimensionData);
+		LifecycleEvent.SERVER_LEVEL_UNLOAD.register(world -> {
 			String name = world.getRegistryKey().getValue().toString();
-			Config config = new Config();
-			String configJson = config.load(name) ? config.toString() : "";
-			DIMENSION_CACHE.compute(name, (key, existing) -> {
-				if (existing == null) {
-					long seed = getSeed(world);
-					Sampler sampler = new Sampler(seed);
-					return new DimensionData(seed, configJson, sampler);
-				} else {
-					existing.sampler.setSamplerData(config);
-					return new DimensionData(existing.seed(), configJson, existing.sampler());
-				}
-			});
+			DIMENSION_CACHE.remove(name);
 		});
 
 		// Dimension Sender
@@ -80,17 +72,23 @@ public class Common {
 			sendDimensionPacket(player, newLevel);
 		});
 
-		// Weather Sender
 		TickEvent.SERVER_LEVEL_POST.register(world -> {
-			if (world.getTime() % 20 == 0 && DATA.updateWeather(world)) {  // always update
-				if (!CONFIG.isEnableServer())
-					return;
-				Data.Weather nextWeather = DATA.getNextWeather();
-				NetworkManager.sendToPlayers(world.getPlayers(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
-						.writeEnumConstant(nextWeather)
-				);
-				if (CONFIG.isEnableDebug())
-					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
+			if (world.getTime() % 20 == 0) {
+				// Weather Sender
+				if (DATA.updateWeather(world)) {  // always update
+					if (!CONFIG.isEnableServer())
+						return;
+					Data.Weather nextWeather = DATA.getNextWeather();
+					NetworkManager.sendToPlayers(world.getPlayers(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
+							.writeEnumConstant(nextWeather)
+					);
+					if (CONFIG.isEnableDebug())
+						LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
+				}
+				// update
+				DATA.updateWeatherDensity(world);
+				if (seasonHandler != null)
+					seasonHandler.updateSeasonDensity(world, DATA::setDensityBySeason);
 			}
 		});
 	}
@@ -98,9 +96,7 @@ public class Common {
 	// Dimension Packet Sender
 	private static void sendDimensionPacket(ServerPlayerEntity player, RegistryKey<World> key) {
 		String name = key.getValue().toString();
-		DimensionData data = DIMENSION_CACHE.computeIfAbsent(name, name1 ->
-			getDimensionData(player.getServerWorld())
-		);
+		DimensionData data = loadDimensionData(player.getServerWorld());
 		NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
 				.writeString(name)
 				.writeString(data.configJson)
@@ -115,32 +111,78 @@ public class Common {
 	}
 
 	/**
-	 * Will do nothing if {@link #DIMENSION_CACHE} no have such dimension
+	 * Load a dimension config into cache, or refresh its config and sampler.
+	 * @return the newest cache of this world.
 	 */
-	static void setDimensionConfigJson(String dimensionName, String configJson) {
+	private static DimensionData loadDimensionData(ServerWorld world) {
+		String name = world.getRegistryKey().getValue().toString();
+		Config config = new Config();
+		String configJson = config.load(name) ? config.toString() : "";
+		return DIMENSION_CACHE.compute(name, (key, existing) -> {
+			if (existing == null) {
+				long seed = getSeed(world);
+				Sampler sampler = new Sampler().setSeed(seed).setWorld(world).setConfig(config);
+				return new DimensionData(seed, configJson, sampler);
+			} else {
+				existing.sampler.setConfig(config).setWorld(world);
+				return new DimensionData(existing.seed(), configJson, existing.sampler());
+			}
+		});
+	}
+
+	/**
+	 * Refresh specific dimension cache config from JSON String.<br>
+	 * Will do nothing if {@link #DIMENSION_CACHE} no have such dimension
+	 * @param dimensionName Syntax example: 'minecraft:overworld'
+	 * @param configJson Generated by {@link SharedConfig#toString()}
+	 */
+	public static void setDimensionConfigJson(String dimensionName, String configJson) {
 		try {
 			DIMENSION_CACHE.computeIfPresent(dimensionName, (key, existing) -> {
-				existing.sampler.setSamplerData(new Config().fromString(configJson));
+				existing.sampler.setConfig(new Config().fromString(configJson));
 				return new DimensionData(existing.seed, configJson, existing.sampler());
 			});
 		} catch (JsonSyntaxException ignored) {}
 	}
 
-	static String getDimensionConfigJson(ServerWorld world) {
-		String name = world.getRegistryKey().getValue().toString();
-		return DIMENSION_CACHE.computeIfAbsent(name, key ->
-			getDimensionData(world)
-		).configJson;
+	/**
+	 * Get specific config of dimension from cache
+	 * @return a String generated by {@link SharedConfig#toString()}, or {@code null} if specific dimension doesn't exist in cache
+	 */
+	public static @Nullable String getDimensionConfigJson(String dimensionName) {
+		try {
+			return DIMENSION_CACHE.get(dimensionName).configJson;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	static void clearDimensionCache() {
+		DIMENSION_CACHE.clear();
 	}
 
 	/**
-	 * @param name syntax like "minecraft:overworld", input null to clear all
+	 * For logical side, use {@link Sampler#isCloudCovered(double, double, double)} from {@link #DIMENSION_CACHE} to calculate where is no cloud above.<br>
+	 * If you are client, {@link Client#isNoCloudCovered(double, double, double)} is recommended.
+	 * @param world Current world/level
+	 * @param x Components of target world pos
+	 * @param y Components of target world pos
+	 * @param z Components of target world pos
+	 * @return Always {@code false} if this point above cloud, or cache of this world not found, or 'NCNR logical' function disabled.
 	 */
-	public static void clearConfigCache(@Nullable String name) {
-		if (name == null)
-			DIMENSION_CACHE.clear();
-		else
-			DIMENSION_CACHE.remove(name);
+	public static boolean isNoCloudCovered(World world, double x, double y, double z) {
+		if (! CONFIG.isCloudRainLogically())
+			return false;
+		String name = world.getRegistryKey().getValue().toString();
+		DimensionData data = DIMENSION_CACHE.get(name);
+		if (data == null) {
+			if (world instanceof ServerWorld serverWorld) {
+				data = loadDimensionData(serverWorld);
+			} else {
+				return false;
+			}
+		}
+		return ! data.sampler.isCloudCovered(x, y, z);
 	}
 
 	//Debug
@@ -151,15 +193,4 @@ public class Common {
 		}
 		LOGGER.error(text.toString());
 	}
-
-	private static DimensionData getDimensionData(ServerWorld world) {
-		String name = world.getRegistryKey().getValue().toString();
-		long seed = getSeed(world);
-		Config config = new Config();
-		String configJson = config.load(name) ? config.toString() : "";
-		Sampler sampler = new Sampler(seed);
-		return new DimensionData(seed, configJson, sampler);
-	}
-
-	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 }

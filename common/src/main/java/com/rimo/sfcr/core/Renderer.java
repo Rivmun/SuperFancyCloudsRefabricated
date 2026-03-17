@@ -39,7 +39,7 @@ public class Renderer {
 
 	//Rewrite of vanilla renderClouds invoke by mixin
 	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	                   ClientWorld world, int ticks) {
+	                   ClientWorld world) {
 		float cloudHeight = world.getDimensionEffects().getCloudsHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
@@ -52,7 +52,7 @@ public class Renderer {
 		//vanilla cloud pos calculation
 		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
 		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
-		double timeOffset = (ticks + tickDelta) * 0.03F;
+		double timeOffset = (world.getTime() + tickDelta) * 0.03F;
 		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;

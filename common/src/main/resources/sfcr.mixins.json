@@ -4,7 +4,9 @@
   "package": "com.rimo.sfcr.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ServerWorldAccessor"
+    "ServerWorldAccessor",
+    "ServerWorldMixin",
+    "WorldMixin"
   ],
   "client": [
     "DebugHudMixin",

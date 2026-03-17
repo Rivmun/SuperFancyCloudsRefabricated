@@ -3,7 +3,7 @@ package com.rimo.sfcr.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
@@ -25,7 +25,7 @@ public class SharedConfig {
 	private boolean fogAutoDistance = true;
 	private int fogMinDistance = 2;
 	private int fogMaxDistance = 4;
-	private boolean isEnableCloudRain = false;
+	protected boolean isEnableCloudRain = false;
 	private int cloudRenderDistance = 64;
 	private boolean cloudRenderDistanceFitToView = false;
 	private int cloudHeight = 192;
@@ -163,7 +163,7 @@ public class SharedConfig {
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
 	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
 	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
-	public void setFogDisance(int min, int max) {
+	public void setFogDistance(int min, int max) {
 		if (min > max) {
 			fogMinDistance = max;
 			fogMaxDistance = min;
@@ -177,8 +177,8 @@ public class SharedConfig {
 	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
 	public void setSeasonDensityPercentMap(List<String> list) {
 		this.seasonDensityPercentMap = list;
-		if (Client.seasonHandler != null)
-			Client.seasonHandler.setDensityMapFromString(list.get(0));
+		if (Common.seasonHandler != null)
+			Common.seasonHandler.setDensityMapFromString(list.get(0));
 	}
 
 	//conversion
@@ -222,7 +222,8 @@ public class SharedConfig {
 	/**
 	 * @throws JsonSyntaxException if input string cannot convert to SharedConfig
 	 */
-	public void fromString(String s) throws JsonSyntaxException {
+	public SharedConfig fromString(String s) throws JsonSyntaxException {
 		setSharedConfig(GSON.fromJson(s, SharedConfig.class));
+		return this;
 	}
 }

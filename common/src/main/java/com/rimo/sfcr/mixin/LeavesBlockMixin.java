@@ -3,7 +3,6 @@ package com.rimo.sfcr.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
-import com.rimo.sfcr.Common;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
@@ -20,7 +19,7 @@ public abstract class LeavesBlockMixin {
 			target = "Lnet/minecraft/client/util/ParticleUtil;spawnParticle(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/particle/ParticleEffect;)V"
 	))
 	private void sfcr$disableDrippingWater(World world, BlockPos pos, Random random, ParticleEffect effect, Operation<Void> original) {
-		if (Common.CONFIG.isEnableCloudRain() && effect == ParticleTypes.DRIPPING_WATER && Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
+		if (effect == ParticleTypes.DRIPPING_WATER && Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
 			return;
 		original.call(world, pos, random, effect);
 	}

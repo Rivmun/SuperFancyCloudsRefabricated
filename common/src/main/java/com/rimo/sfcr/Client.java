@@ -26,7 +26,6 @@ import static com.rimo.sfcr.Common.*;
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
-	public static AbstractSeasonCompat seasonHandler = AbstractSeasonCompat.getInstance(CONFIG);
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;
@@ -41,14 +40,16 @@ public class Client {
 		// World loaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
 			if (! hasServer)
-				CloudData.initSampler(new Random().nextLong());  //get a random seed before server send
+				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
+			Sampler sampler = CloudData.sampler.setWorld(world);
 			String dimensionName = world.getRegistryKey().getValue().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
+				sampler.setConfig(CONFIG);
 			}
 			if (seasonHandler != null)
 				DATA.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
@@ -58,13 +59,15 @@ public class Client {
 		ClientTickEvent.CLIENT_POST.register(client -> {
 			if (! CONFIG.isEnableRender() || client.world == null || client.world.getTime() % 20 != 0)
 				return;
-			if (! hasServer && ! client.isIntegratedServerRunning())
-				DATA.updateWeatherClient(client.world);
+			if (! client.isIntegratedServerRunning()) {
+				if (! hasServer)
+					DATA.updateWeatherClient(client.world);
+				DATA.updateWeatherDensity(client.world);
+				seasonHandler.updateSeasonDensity(client.world, DATA::setDensityBySeason);
+			}
 			if (client.player != null)
-				DATA.updateDensity(client.player);
+				DATA.updateBiomeDensity(client.player);
 		});
-		if (seasonHandler != null)
-			seasonHandler.registerListener(DATA::setDensityBySeason);
 
 		// Quit reset
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
@@ -73,7 +76,7 @@ public class Client {
 			isConfigHasBeenOverride = false;
 			RENDERER.stop();
 			CONFIG.load();
-			Common.clearConfigCache(null);
+			Common.clearDimensionCache();
 		});
 
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
@@ -94,7 +97,6 @@ public class Client {
 			String name = buf.readString();
 			String configJson = buf.readString();
 			long seed = buf.readVarLong();
-			CloudData.initSampler(seed);
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
@@ -114,6 +116,7 @@ public class Client {
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
 			}
+			CloudData.sampler.setSeed(seed).setConfig(CONFIG);
 		});
 
 		//weather receiver
@@ -147,10 +150,17 @@ public class Client {
 	}
 
 	/**
-	 * @return true if this point is covered by SFC clouds, false if not.<br>
-	 * Note that if this point is above cloud, it always returns false.
+	 * For render (client) side, use {@link CloudData#isCloudCovered(double, double, double)} to calculate where is no cloud above<br>
+	 * Call from logical side is useless and may crash, {@link Common#isNoCloudCovered(World, double, double, double)} is recommended.
+	 * @param x Components of target world pos
+	 * @param y Components of target world pos
+	 * @param z Components of target world pos
+	 * @return {@code true} if this point is covered by SFC clouds, {@code false} if not.<br>
+	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */
 	public static boolean isNoCloudCovered(double x, double y, double z) {
-		return RENDERER == null || ! RENDERER.isCloudCovered(x, y, z);
+		if (! CONFIG.isEnableCloudRain() || RENDERER == null )
+			return false;
+		return ! RENDERER.isCloudCovered(x, y, z);
 	}
 }

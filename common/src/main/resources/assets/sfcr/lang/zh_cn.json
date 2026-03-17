@@ -88,6 +88,8 @@
 	"text.sfcr.category.compat": "兼容 & 杂项",
 	"text.sfcr.option.isCloudRain": "无云则无雨",
 	"text.sfcr.option.isCloudRain.@Tooltip": "使雨粒子仅出现在有云层遮挡的地方。\n仅对原版粒子有效。",
+	"text.sfcr.option.cloudRainLogically": "- 影响逻辑行为（实验性）",
+	"text.sfcr.option.cloudRainLogically.@Tooltip": "若启用，大部分只在下雨时触发的行为和事件\n会受“无云则无雨”功能额外控制。\n包括火焰熄灭、耕地湿润、怪物自燃、积雪等。\n需要将模组安装在逻辑服务端且“启用服务”。",
 	"text.sfcr.option.dHCompat": "Distant Horizons",
 	"text.sfcr.option.dHCompat.@Tooltip": "如果你想在没有错误覆盖的情况下\n让SFCR的云生成在DH的LOD区块上\n请启用该项。\n§4注意：\n- 因为DH的渲染特性，云层将不再透明。\n- 启用该兼容后某些功能将失效。\n- 云层将无法渲染在原版区块前方。",
 	"text.sfcr.option.dimensionCompat.@PrefixText": "自定义维度: %s",

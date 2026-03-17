@@ -16,7 +16,8 @@ public abstract class WorldRendererMixin {
 
 	@WrapOperation(method = "renderWeather", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
+			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"
+	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
 		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
@@ -25,7 +26,8 @@ public abstract class WorldRendererMixin {
 
 	@WrapOperation(method = "tickRainSplashing", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"))
+			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"
+	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationSplash(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
 		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;

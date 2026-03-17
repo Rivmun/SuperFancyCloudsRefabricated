@@ -14,6 +14,10 @@ import net.minecraft.world.biome.Biome;
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
+/**
+ * Independent sampler for any side uses
+ * @since 1.9
+ */
 public class Sampler {
 	private World world;
 	private SimplexNoiseSampler cloudNoise;
@@ -71,7 +75,8 @@ public class Sampler {
 	private float f = 0.5F;
 
 	/**
-	 * @see #isCloudCovered(double, double, double) 
+	 * @see #isCloudCovered(double, double, double)
+	 * @see CloudData#collectCloudData(int, int, float, float)
 	 */
 	boolean isGridHasCloud(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		if (world == null || cloudNoise == null || Float.isNaN(cloudHeight))

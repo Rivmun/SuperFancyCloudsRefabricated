@@ -1,6 +1,7 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.ConfigScreen;
 import dev.architectury.platform.Platform;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +16,9 @@ import static com.rimo.sfcr.Common.MOD_ID;
 /**
  * An abstract class to handle current season mod listener and season density map.<br>
  * Each season mod has its own implementation invoke by reflection to prevent api changed.<br>
+ * SubClass name use to show compat status in {@link ConfigScreen}, make it readable.<br>
  * Static call {@link #getInstance(Config)} to get an instance of impl.
+ * @since 1.9
  */
 public abstract class AbstractSeasonCompat {
 	@SuppressWarnings("rawtypes")
@@ -96,6 +99,7 @@ public abstract class AbstractSeasonCompat {
 	 * @param key Seasons Enum Key
 	 * @return percentage value, or 100 if map is empty or key class not match the map.
 	 * @see #castStringToDensityMap(String)
+	 * @author <a href="https://chat.deepseek.com/">Deepseek.ai</a>
 	 */
 	private Integer getDensityValue(Enum<?> key) {
 		final int DEFAULT = 100;
@@ -171,8 +175,6 @@ public abstract class AbstractSeasonCompat {
 
 	/*
 	 * Implementation...
-	 * Reflection invoke to prevent crash when api changed.
-	 * Class name use to show compat status in configScreen, make it readable.
 	 */
 
 	// I want to register an event handle of SeasonChangedEvent.Standard in glitchcore.event.EventManager at first.

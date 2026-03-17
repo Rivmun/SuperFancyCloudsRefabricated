@@ -15,7 +15,6 @@ loom {
 //        extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
 
         mixinConfig "sfcr.mixins.json"
-        mixinConfig "sfcr.particlerain.mixins.json"
     }
 }
 

@@ -79,6 +79,7 @@ public class Client {
 			Common.clearDimensionCache();
 		});
 
+		// client command for configScreen
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
 				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {

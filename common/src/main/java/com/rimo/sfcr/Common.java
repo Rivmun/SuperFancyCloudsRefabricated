@@ -6,6 +6,7 @@ import com.rimo.sfcr.config.SharedConfig;
 import com.rimo.sfcr.core.AbstractSeasonCompat;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
+import com.rimo.sfcr.mixin.Plugin;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Common {
@@ -50,6 +52,17 @@ public class Common {
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
 
 	public static void init() {
+		// manually mixin debug
+		LifecycleEvent.SETUP.register(() -> {
+			Set<String> list = Plugin.MIXINS;
+			if (! list.isEmpty()) {
+				StringBuilder str = new StringBuilder();
+				for (String s : list)
+					str.append(s).append("\n");
+				LOGGER.error("{} was failed to apply mixin(s):\n{}\nSome function will no work.", MOD_ID,  str);
+			}
+		});
+
 		// dimension cache system
 		LifecycleEvent.SERVER_LEVEL_LOAD.register(Common::loadDimensionData);
 		LifecycleEvent.SERVER_LEVEL_UNLOAD.register(world -> {
@@ -74,6 +87,7 @@ public class Common {
 
 		TickEvent.SERVER_LEVEL_POST.register(world -> {
 			if (world.getTime() % 20 == 0) {
+
 				// Weather Sender
 				if (DATA.updateWeather(world)) {  // always update
 					if (!CONFIG.isEnableServer())
@@ -85,6 +99,7 @@ public class Common {
 					if (CONFIG.isEnableDebug())
 						LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 				}
+
 				// update
 				DATA.updateWeatherDensity(world);
 				if (seasonHandler != null)

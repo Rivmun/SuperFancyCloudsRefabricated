@@ -33,8 +33,7 @@
     ]
   },
   "mixins": [
-    "sfcr.mixins.json",
-    "sfcr.particlerain.mixins.json"
+    "sfcr.mixins.json"
   ],
   "depends": {
     "fabric": "*",

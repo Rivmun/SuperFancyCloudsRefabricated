@@ -62,6 +62,8 @@ public class CloudData {
 		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
 		int gy = (int) (y / cbSize * 2);
 		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
+		if (gx < 0 || gx >= width || gz < 0 || gz >= width)
+			return false;
 		for (int i = height - 1; i >= 0; i --) {
 			if (_cloudData[gx][i][gz]) {
 				return minusCloudGridHeight(gy) <= i;

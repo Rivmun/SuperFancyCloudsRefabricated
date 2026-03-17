@@ -51,6 +51,9 @@ public class Common {
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
 
+	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
+	public static String debugString;
+
 	public static void init() {
 		// manually mixin debug
 		LifecycleEvent.SETUP.register(() -> {
@@ -58,8 +61,8 @@ public class Common {
 			if (! list.isEmpty()) {
 				StringBuilder str = new StringBuilder();
 				for (String s : list)
-					str.append(s).append("\n");
-				LOGGER.error("{} was failed to apply mixin(s):\n{}\nSome function will no work.", MOD_ID,  str);
+					str.append("  ").append(s).append("\n");
+				LOGGER.error("{} was failed to apply mixin(s):\n{}Some function may no work.", MOD_ID,  str);
 			}
 		});
 
@@ -85,26 +88,45 @@ public class Common {
 			sendDimensionPacket(player, newLevel);
 		});
 
-		TickEvent.SERVER_LEVEL_POST.register(world -> {
-			if (world.getTime() % 20 == 0) {
-
-				// Weather Sender
-				if (DATA.updateWeather(world)) {  // always update
-					if (!CONFIG.isEnableServer())
-						return;
-					Data.Weather nextWeather = DATA.getNextWeather();
-					NetworkManager.sendToPlayers(world.getPlayers(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
-							.writeEnumConstant(nextWeather)
-					);
-					if (CONFIG.isEnableDebug())
-						LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
-				}
-
-				// update
-				DATA.updateWeatherDensity(world);
-				if (seasonHandler != null)
-					seasonHandler.updateSeasonDensity(world, DATA::setDensityBySeason);
+		TickEvent.SERVER_POST.register(server -> {
+			if (server.getTicks() % 20 != 0)
+				return;
+			// Weather is a common stat between different world, just check once
+			ServerWorld world = server.getOverworld();
+			// Sender
+			if (DATA.updateWeather(world)) {  // always update
+				if (! CONFIG.isEnableServer())
+					return;
+				Data.Weather nextWeather = DATA.getNextWeather();
+				NetworkManager.sendToPlayers(server.getPlayerManager().getPlayerList(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
+						.writeEnumConstant(nextWeather)
+				);
+				if (CONFIG.isEnableDebug())
+					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 			}
+			// update
+			DATA.updateWeatherDensity(world);
+
+			//debug
+			if (! apiDebugTime.isEmpty()) {
+				double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
+				int size = apiDebugTime.size();
+				debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
+						"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
+				apiDebugTime.clear();
+			}
+		});
+
+		if (seasonHandler == null)
+			return;
+		TickEvent.SERVER_LEVEL_POST.register(world -> {
+			if (world.getTime() % 24000 != 0)
+				return;
+			// season base on time, but different world may have different time, so we must update it in level tick instead of server.
+			DimensionData data = DIMENSION_CACHE.get(world.getRegistryKey().getValue().toString());
+			if (data == null)
+				return;
+			data.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 	}
 
@@ -186,6 +208,12 @@ public class Common {
 	 * @return Always {@code false} if this point above cloud, or cache of this world not found, or 'NCNR logical' function disabled.
 	 */
 	public static boolean isNoCloudCovered(World world, double x, double y, double z) {
+		long time = System.nanoTime();
+		boolean result = _isNoCloudCovered(world, x, y, z);
+		apiDebugTime.add(System.nanoTime() - time);
+		return result;
+	}
+	private static boolean _isNoCloudCovered(World world, double x, double y, double z) {
 		if (! CONFIG.isCloudRainLogically())
 			return false;
 		String name = world.getRegistryKey().getValue().toString();

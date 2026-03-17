@@ -14,6 +14,7 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
@@ -52,21 +53,23 @@ public class Client {
 				sampler.setConfig(CONFIG);
 			}
 			if (seasonHandler != null)
-				DATA.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (! CONFIG.isEnableRender() || client.world == null || client.world.getTime() % 20 != 0)
+			ClientWorld world = client.world;
+			if (! CONFIG.isEnableRender() || world == null || world.getTime() % 20 != 0)
 				return;
 			if (! client.isIntegratedServerRunning()) {
 				if (! hasServer)
-					DATA.updateWeatherClient(client.world);
-				DATA.updateWeatherDensity(client.world);
-				seasonHandler.updateSeasonDensity(client.world, DATA::setDensityBySeason);
+					DATA.updateWeatherClient(world);
+				DATA.updateWeatherDensity(world);
 			}
 			if (client.player != null)
 				DATA.updateBiomeDensity(client.player);
+			if (seasonHandler != null && world.getTime() % 24000 == 0)
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 
 		// Quit reset
@@ -148,6 +151,7 @@ public class Client {
 	public static void applyConfigChange(boolean oldEnableDHCompat) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
+		CloudData.sampler.setConfig(CONFIG);
 	}
 
 	/**

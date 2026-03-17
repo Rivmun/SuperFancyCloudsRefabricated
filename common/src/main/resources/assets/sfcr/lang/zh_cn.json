@@ -96,7 +96,7 @@
 	"text.sfcr.option.dimensionCompat.@Tooltip": "每当你切换维度时，SFCR会尝试从配置文件夹中\n加载§b§osfcr_modName_dimensionName.json§r作为当前维度的设置。\n若不存在，则使用原始配置。\n你可将原始配置文件§b§osfcr.json§r复制并重命名后\n为任意维度配置独立的SFCR行为。\n或者，直接在你想要配置的维度中打开本页面。\n§4注意：§r\n- 除了§ominecraft:overworld§r，作为主世界，它使用原始配置。\n- 此功能§l不能§r被禁用。\n- 此选项用于显示你正在阅读的提示和当前维度的支持情况。 §a绿色§r表示已加载配置，§c红色§r为否。",
 	"text.sfcr.option.customDimensionMode.@PrefixText": "§4警告：§r你正位于自定义维度%s，任何更改都将保存在该维度的独立配置文件中。\n若想更改默认配置，你需要返回主世界§ominecraft:overworld§r或移除该维度的独立配置文件。",
 	"text.sfcr.option.configHasBeenOverride.@PrefixText": "§4警告：§r你正在浏览被服务器覆盖的设置，若在退出该页面时选择保存，你的原始设置将丢失。\n若不想被服务器覆盖、或使用本地的设置，请在断开连接后关闭“启用服务”选项。",
-	"text.sfcr.option.particleRainCompat": "Particle Rain",
+	"text.sfcr.option.particleRainCompat": "- Particle Rain",
 	"text.sfcr.option.particleRainCompat.@Tooltip": "使 ParticleRain 的雨粒子只生成在云层下方。",
 	"text.sfcr.option.seasonCompat": "季节密度表（当前监视对象：%s）",
 	"text.sfcr.option.seasonCompat.@Tooltip": "格式：§oName=Value, ...§r，不区分大小写且可无序。\n对于§5静谧四季§r，Name应为：\n  [ EARLY | MID | LATE ]_[ SPRING | SUMMER | AUTUMN | WINTER ]\n对于§5FabricSeasons§r，Name应为：\n  SPRING | SUMMER | FALL | WINTER\nvalue必须是正整数，将以百分比形式与采样值相乘。\n若某个季节在表中不存在，模组会按季节顺序自动计算插值。\n可将列表清空来禁用该功能。",

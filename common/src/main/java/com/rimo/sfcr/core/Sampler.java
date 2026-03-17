@@ -30,6 +30,7 @@ public class Sampler {
 	private int steps;
 	private float threshold;
 	private float reduction;
+	private float densityBySeason = 1F;
 
 	public Sampler setSeed(long seed) {
 		cloudNoise = new SimplexNoiseSampler(Random.create(seed));
@@ -52,6 +53,10 @@ public class Sampler {
 		threshold = config.getDensityThreshold();
 		reduction = config.getThresholdMaxReduction();
 		return this;
+	}
+
+	public void setDensityBySeason(float percent) {
+		this.densityBySeason = percent / 100F;
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
@@ -129,7 +134,7 @@ public class Sampler {
 			float curveFactor = (float) Math.pow(4 * remapTime * (1 - remapTime), 0.5);  //smooth it...
 			m = 1 - curveFactor * (1 - CONFIG.getDensityAtNight());
 		}
-		return m * DATA.getDensityBySeason();
+		return m * densityBySeason;
 	}
 
 	private double getCloudSampleProxy(double timeOffset, int steps, double cx, double cy, double cz) {

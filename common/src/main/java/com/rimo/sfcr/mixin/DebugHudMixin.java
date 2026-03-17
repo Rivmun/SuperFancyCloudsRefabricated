@@ -19,6 +19,7 @@ public abstract class DebugHudMixin {
 		if (Common.CONFIG.isEnableRender()) {
 			list.add(Client.RENDERER.getDebugString());
 			list.add(Common.DATA.getDebugString());
+			list.add(Common.debugString);
 		}
 		callback.setReturnValue(list);
 	}

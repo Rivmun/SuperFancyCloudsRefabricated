@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 
 import static com.rimo.sfcr.Common.LOGGER;
 import static com.rimo.sfcr.Common.MOD_ID;
@@ -24,10 +23,6 @@ public abstract class AbstractSeasonCompat {
 	@SuppressWarnings("rawtypes")
 	protected Class<? extends Enum> season;
 	private TreeMap<Enum<?>, Integer> densityMap;
-
-	private AbstractSeasonCompat(Config config) throws RuntimeException {
-		setDensityMapFromString(config.getSeasonDensityPercentMap().get(0));
-	}
 
 	/**
 	 * @param config use to initialize density map.
@@ -52,7 +47,11 @@ public abstract class AbstractSeasonCompat {
 		try {
 			densityMap = castStringToDensityMap(str);
 		} catch (IllegalArgumentException e) {
-			LOGGER.error("{} Failed to apply seasonDensityPercentMap from {}: {}", MOD_ID, str, e.getMessage());
+			if (season == null)
+				LOGGER.error("{} Failed to apply seasonDensityMap because seasonEnum hasn't initialized.", MOD_ID);
+			else {
+				LOGGER.error("{} Failed to apply seasonDensityMap from '{}', please check config:\n{}", MOD_ID, str, e.getMessage());
+			}
 			if (densityMap == null) {
 				densityMap = new TreeMap<>();
 			}
@@ -109,7 +108,7 @@ public abstract class AbstractSeasonCompat {
 		} else {
 			Class<?> mapEnumClass = map.firstKey().getDeclaringClass();
 			if (! mapEnumClass.equals(key.getDeclaringClass())) {
-				LOGGER.error("{} SeasonMap class mismatch: map expects {}, but key {} is of type {}. Map keys: {}.",
+				LOGGER.error("{} SeasonMap class mismatch: map expects {}, but key {} is of type {}. Map keys: {}. It shouldn't be happened, please report.",
 						MOD_ID, mapEnumClass.getName(), key.name(), key.getDeclaringClass().getName(), map.keySet());
 				return DEFAULT;
 			}
@@ -158,15 +157,6 @@ public abstract class AbstractSeasonCompat {
 		return (int) Math.round(y1 + t * (y2 - y1));
 	}
 
-	/**
-	 * A polling cycle of 24000 ticks to check the season changed
-	 * @param consumer accept the new density value via {@link #getDensityValue(Enum)}
-	 */
-	public void updateSeasonDensity(World world, Consumer<Integer> consumer) {
-		if (world != null && world.getTime() % 24000 == 0)
-			consumer.accept(getSeasonDensityPercent(world));
-	}
-
 	protected abstract Enum<?> getSeason(World world);
 
 	public int getSeasonDensityPercent(World world) {
@@ -183,9 +173,9 @@ public abstract class AbstractSeasonCompat {
 		private final Method getSeasonState;
 		private final Method getSubSeason;
 		private SereneSeasons(Config config) throws RuntimeException {
-			super(config);
 			try {
 				season = Class.forName("sereneseasons.api.season.Season$SubSeason").asSubclass(Enum.class);
+				setDensityMapFromString(config.getSeasonDensityPercentMap().get(0));  //should call after seasonClass get
 				getSeasonState = Class.forName("sereneseasons.api.season.SeasonHelper")
 						.getDeclaredMethod("getSeasonState", World.class);
 				getSubSeason = Class.forName("sereneseasons.api.season.ISeasonState")
@@ -210,9 +200,9 @@ public abstract class AbstractSeasonCompat {
 	private static class FabricSeasons extends AbstractSeasonCompat {
 		private final Method getCurrentSeason;
 		private FabricSeasons(Config config) throws RuntimeException {
-			super(config);
 			try {
 				season = Class.forName("io.github.lucaargolo.seasons.utils.Season").asSubclass(Enum.class);
+				setDensityMapFromString(config.getSeasonDensityPercentMap().get(0));
 				getCurrentSeason = Class.forName("io.github.lucaargolo.seasons.FabricSeasons")
 						.getMethod("getCurrentSeason", World.class);
 			} catch (Exception e) {

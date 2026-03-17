@@ -18,7 +18,6 @@ public class Data {
 	protected float densityByWeather = 0f;
 	protected float densityByBiome = 0f;
 	private float targetDownFall = 1f;
-	private float densityBySeason = 1F;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
 	private int normalRefreshSpeed;
@@ -158,14 +157,6 @@ public class Data {
 				target;
 	}
 
-	public float getDensityBySeason() {
-		return densityBySeason;
-	}
-
-	public void setDensityBySeason(float percent) {
-		this.densityBySeason = percent / 100F;
-	}
-
 	public Weather getNextWeather() {
 		return nextWeather;
 	}
@@ -175,7 +166,7 @@ public class Data {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome + ", sd:" + densityBySeason;
+		return "[SFCR] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome;
 	}
 
 	public enum Weather {

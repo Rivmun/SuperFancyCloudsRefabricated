@@ -182,10 +182,10 @@ public class ConfigScreen {
 						.addEntry(builder.entryBuilder()
 								.startIntSlider(Text.translatable("text.sfcr.option.cloudLayerThickness")
 										, CONFIG.getCloudLayerThickness()
-										,3
-										,66)
-								.setDefaultValue(10)
-								.setTextGetter(value -> Text.of(String.valueOf(value - 2)))
+										,2
+										,65)
+								.setDefaultValue(9)
+								.setTextGetter(value -> Text.of(String.valueOf(value - 1)))
 								.setTooltip(Text.translatable("text.sfcr.option.cloudLayerThickness.@Tooltip"))
 								.setSaveConsumer(CONFIG::setCloudLayerThickness)
 								.build())
@@ -491,6 +491,17 @@ public class ConfigScreen {
 								.setDisplayRequirement(Requirement.isTrue(ncnr))
 								.setRequirement(Requirement.isTrue(enableServer))
 								.build())
+						//particle rain
+						.addEntry(builder.entryBuilder()
+								.startBooleanToggle(Text.translatable("text.sfcr.option.particleRainCompat"),
+										CONFIG.isEnableParticleRainCompat())
+								.setDefaultValue(false)
+								.setTooltip(Text.translatable("text.sfcr.option.particleRainCompat.@Tooltip"))
+								.setSaveConsumer(CONFIG::setEnableParticleRainCompat)
+								.setDisplayRequirement(Requirement.isTrue(ncnr))
+								.setRequirement(Requirement.isTrue(() -> Client.isParticleRainLoaded))
+								.build()
+						)
 						//custom dimension
 						.addEntry(builder.entryBuilder()
 								.startTextDescription(Text.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
@@ -507,16 +518,6 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setEnableDHCompat)
 								.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
 								.build())
-						//particle rain
-						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Text.translatable("text.sfcr.option.particleRainCompat"),
-										CONFIG.isEnableParticleRainCompat())
-								.setDefaultValue(false)
-								.setTooltip(Text.translatable("text.sfcr.option.particleRainCompat.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableParticleRainCompat)
-								.setRequirement(Requirement.isTrue(() -> Client.isParticleRainLoaded))
-								.build()
-						)
 						//seasons
 						.addEntry(builder.entryBuilder()
 								.startStrList(Text.translatable("text.sfcr.option.seasonCompat", Common.seasonHandler != null ?

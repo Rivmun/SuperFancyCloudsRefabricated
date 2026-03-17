@@ -2,6 +2,7 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
@@ -220,12 +221,16 @@ public class Renderer {
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
+		final int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
+		int cloudBlockSize = CONFIG.getCloudBlockSize();
+		boolean enableBottomDim = CONFIG.isEnableBottomDim();
+		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
 				cloudAlpha *= switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
 					case NORMAL, TRANS_MID_BODY -> 1F;
-					case TRANS_IN -> 1F - data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
-					case TRANS_OUT -> data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
+					case TRANS_IN -> 1F - data.getLifeTime() / refreshSpeed * 5f;
+					case TRANS_OUT -> data.getLifeTime() / refreshSpeed * 5f;
 				};
 
 				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
@@ -240,12 +245,20 @@ public class Renderer {
 					};
 					boolean isDrawn = false;
 
+					if (isDebug && ! Common.isNoCloudCovered(MinecraftClient.getInstance().world,
+							(verCache[0][0] + offset - 1) * cloudBlockSize + camera.getPos().getX(),
+							63,
+							(verCache[0][2] - 1) * cloudBlockSize + camera.getPos().getZ()
+					)) {
+						cloudColor = cloudColor.multiply(0, 1, 0);
+					}
+
 					for (int j = 0; j <= 3; j ++) {
 						if (enableCulling) {
 							Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling (camera relative)
-									(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
-									verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
-									(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
+									(verCache[j][0] + offset - 1) * cloudBlockSize,
+									verCache[j][1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
+									(verCache[j][2] - 1) * cloudBlockSize + 0.33f
 							);
 							double depth = look.dotProduct(cloudVec);
 							if (depth < 0.05F ||
@@ -255,7 +268,7 @@ public class Renderer {
 						}
 						CloudData.Facing facing = CloudData.Facing.get(CloudData.depressFromHead(vertexList.get(i * 4)));
 						Vec3d faceColor = cloudColor.multiply(facing.color);
-						if (CONFIG.isEnableBottomDim()) {
+						if (enableBottomDim) {
 							faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
 						}
 						int nx = facing.normal.getX();

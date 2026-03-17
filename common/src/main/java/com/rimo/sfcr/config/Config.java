@@ -58,11 +58,7 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
-	public void setEnableParticleRainCompat(boolean enable) {
-		isEnableParticleRainCompat = enable;
-		if (enable)
-			setEnableCloudRain(true);
-	}
+	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 
 	/*
@@ -103,7 +99,8 @@ public class Config extends SharedConfig {
 			Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
 			return false;
 		}
-		Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
+		if (isEnableDebug())
+			Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
 		return true;
 	}
 

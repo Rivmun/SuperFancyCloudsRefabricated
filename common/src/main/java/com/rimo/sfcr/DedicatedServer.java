@@ -54,8 +54,8 @@ public class DedicatedServer {
 								.requires(source -> source.hasPermissionLevel(2))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
-											Common.CONFIG.setEnableRender(context.getArgument("e", Boolean.class));
-											context.getSource().sendMessage(Text.of("[SFCRe] server status changed!"));
+											Common.CONFIG.setEnableServer(context.getArgument("e", Boolean.class));
+											context.getSource().sendMessage(Text.of("[SFCRe] service status changed!"));
 											return 1;
 										})
 								)

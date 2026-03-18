@@ -22,6 +22,7 @@ public class Config extends SharedConfig {
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
 	private boolean isEnableParticleRainCompat = false;
+	private boolean isCloudRainLogically = false;
 
 	/**
 	 * Do you want to call .load() to read a local config?
@@ -36,6 +37,7 @@ public class Config extends SharedConfig {
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
+		this.isCloudRainLogically       = config.isCloudRainLogically;
 		setSharedConfig(config);
 	}
 
@@ -47,6 +49,7 @@ public class Config extends SharedConfig {
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
+	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {enableServer = isEnable;}
@@ -55,11 +58,8 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
-	public void setEnableParticleRainCompat(boolean enable) {
-		isEnableParticleRainCompat = enable;
-		if (enable)
-			setEnableCloudRain(true);
-	}
+	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
+	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 
 	/*
 	 * -----IO-----
@@ -74,9 +74,9 @@ public class Config extends SharedConfig {
 	}
 
 	/**
-	 * Load dimensionName specific config then setConfig to this instance.<br>
-	 * If specific config not exist, it'll load default config then setConfig.<br>
-	 * File path like sfcr_modName_dimensionName.json
+	 * Load dimensionName specific config then {@link #setConfig} to this instance.<br>
+	 * If specific config not exist, it'll load default config then {@link #setConfig}.<br>
+	 * File path like 'sfcr_modName_dimensionName.json'
 	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
 	 * @return true if success to load dimension specific config, false if not.
 	 */
@@ -96,10 +96,11 @@ public class Config extends SharedConfig {
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
 			setConfig(GSON.fromJson(reader, Config.class));
 		} catch (IOException | JsonParseException e) {
-			Common.LOGGER.error("{} failed to read config file: {}", MOD_ID, path.getFileName());
+			Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
 			return false;
 		}
-		Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
+		if (isEnableDebug())
+			Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
 		return true;
 	}
 

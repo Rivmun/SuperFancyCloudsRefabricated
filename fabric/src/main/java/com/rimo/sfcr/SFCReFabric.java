@@ -17,6 +17,6 @@ public class SFCReFabric implements ModInitializer, ClientModInitializer, Dedica
 
 	@Override
 	public void onInitializeServer() {
-		Server.init();
+		DedicatedServer.init();
 	}
 }

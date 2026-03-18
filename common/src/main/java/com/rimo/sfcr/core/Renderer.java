@@ -2,6 +2,7 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.*;
@@ -10,7 +11,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
@@ -30,8 +30,8 @@ public class Renderer {
 	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	private int rebuildTimer = 0;  //measure in ticks
-	public int cullStateSkipped, cullStateShown;  //debug counter
-	public double debugRebuildTime, debugUploadTime;
+	protected int cullStateSkipped, cullStateShown;  //debug counter
+	protected double debugRebuildTime, debugUploadTime;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
@@ -40,17 +40,20 @@ public class Renderer {
 
 	//Rewrite of vanilla renderClouds invoke by mixin
 	public void render(MatrixStack matrices, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	                   ClientWorld world, int ticks) {
-		float cloudHeight = CONFIG.getCloudHeight() < 0 ? world.getDimensionEffects().getCloudsHeight() : CONFIG.getCloudHeight();
+	                   ClientWorld world) {
+		float cloudHeight = world.getDimensionEffects().getCloudsHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
+		int configHeight = CONFIG.getCloudHeight();
+		if (configHeight >= 0)
+			cloudHeight = configHeight;
 		this.cloudHeight = cloudHeight;
 		boolean isPause = MinecraftClient.getInstance().isPaused();
 
 		//vanilla cloud pos calculation
 		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
 		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
-		double timeOffset = (ticks + tickDelta) * 0.03F;
+		double timeOffset = (world.getTime() + tickDelta) * 0.03F;
 		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
 		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
@@ -191,34 +194,6 @@ public class Renderer {
 		}
 	}
 
-	enum FACING {
-		EAST(1, 0, 0),
-		WEST(-1, 0, 0),
-		TOP(0, 1, 0),
-		BOTTOM(0, -1, 0),
-		SOUTH(0, 0, 1),
-		NORTH(0, 0, -1);
-
-		final Vec3i normal;
-
-		FACING(int x, int y, int z) {
-			this.normal = new Vec3i(x, y, z);
-		}
-
-		static FACING get(int i) {
-			return FACING.values()[i];
-		}
-	}
-
-	private final Vec3d[] colors = {
-			new Vec3d(0.95f, 0.9f,  0.9f),
-			new Vec3d(0.75f, 0.75f, 0.75f),
-			new Vec3d(1f,    1f,    1f),
-			new Vec3d(0.6f,  0.6f,  0.6f),
-			new Vec3d(0.92f, 0.85f, 0.85f),
-			new Vec3d(0.8f,  0.8f,  0.8f),
-	};
-
 	// Building mesh
 	private @Nullable BufferBuilder.BuiltBuffer rebuildCloudMesh(BufferBuilder builder, Vec3d cloudColor, double offset, float cloudHeight) {
 		MinecraftClient client = MinecraftClient.getInstance();
@@ -246,12 +221,16 @@ public class Renderer {
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
+		final int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
+		int cloudBlockSize = CONFIG.getCloudBlockSize();
+		boolean enableBottomDim = CONFIG.isEnableBottomDim();
+		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
 				cloudAlpha *= switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
 					case NORMAL, TRANS_MID_BODY -> 1F;
-					case TRANS_IN -> 1F - data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
-					case TRANS_OUT -> data.getLifeTime() / CONFIG.getNormalRefreshSpeed().getValue() * 5f;
+					case TRANS_IN -> 1F - data.getLifeTime() / refreshSpeed * 5f;
+					case TRANS_OUT -> data.getLifeTime() / refreshSpeed * 5f;
 				};
 
 				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
@@ -266,12 +245,20 @@ public class Renderer {
 					};
 					boolean isDrawn = false;
 
+					if (isDebug && ! Common.isNoCloudCovered(MinecraftClient.getInstance().world,
+							(verCache[0][0] + offset - 1) * cloudBlockSize + camera.getPos().getX(),
+							63,
+							(verCache[0][2] - 1) * cloudBlockSize + camera.getPos().getZ()
+					)) {
+						cloudColor = cloudColor.multiply(0, 1, 0);
+					}
+
 					for (int j = 0; j <= 3; j ++) {
 						if (enableCulling) {
 							Vec3d cloudVec = new Vec3d(  // turns to exactly pos & size to calc position culling (camera relative)
-									(verCache[j][0] + offset - 1) * CONFIG.getCloudBlockSize(),
-									verCache[j][1] * CONFIG.getCloudBlockSize() / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
-									(verCache[j][2] - 1) * CONFIG.getCloudBlockSize() + 0.33f
+									(verCache[j][0] + offset - 1) * cloudBlockSize,
+									verCache[j][1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPos().getY(),
+									(verCache[j][2] - 1) * cloudBlockSize + 0.33f
 							);
 							double depth = look.dotProduct(cloudVec);
 							if (depth < 0.05F ||
@@ -279,9 +266,9 @@ public class Renderer {
 									Math.abs(right.dotProduct(cloudVec)) / depth > tanHalfFovHorizontal)
 								continue;
 						}
-						FACING facing = FACING.get(CloudData.depressFromHead(vertexList.get(i * 4)));
-						Vec3d faceColor = cloudColor.multiply(colors[facing.ordinal()]);
-						if (CONFIG.isEnableBottomDim()) {
+						CloudData.Facing facing = CloudData.Facing.get(CloudData.depressFromHead(vertexList.get(i * 4)));
+						Vec3d faceColor = cloudColor.multiply(facing.color);
+						if (enableBottomDim) {
 							faceColor = faceColor.multiply(MathHelper.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
 						}
 						int nx = facing.normal.getX();
@@ -333,9 +320,9 @@ public class Renderer {
 
 		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
-			fadeOut = new CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
-			midBody = new CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
+			fadeIn = new CloudData.CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudData.CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudData.CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
@@ -388,5 +375,12 @@ public class Renderer {
 				return true;
 		}
 		return false;
+	}
+
+	public String getDebugString() {
+		return "[SFCR] build " + cullStateShown + "/" +
+				(cullStateSkipped + cullStateShown) + " faces, cost " +
+				debugRebuildTime + "ms, upload in " +
+				debugUploadTime + "ms";
 	}
 }

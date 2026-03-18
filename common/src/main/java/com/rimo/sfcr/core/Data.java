@@ -2,11 +2,12 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.level.ServerWorldProperties;
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -19,8 +20,8 @@ public class Data {
 	private float targetDownFall = 1f;
 	private boolean isWeatherChange = false;
 	private boolean isBiomeChange = false;
-	private int normalRefreshSpeed;  //use to control rebuild interval in old code
-	private int weatheringRefreshSpeed;  //(same as above)
+	private int normalRefreshSpeed;
+	private int weatheringRefreshSpeed;
 	private int densityChangingSpeed;
 
 	public Data(Config config) {
@@ -75,15 +76,46 @@ public class Data {
 		nextWeather = world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR;
 	}
 
-	public void updateDensity(ClientPlayerEntity player) {
+	/**
+	 * !! Only call in client because server is multiplayer that cannot ensure what pos will use.
+	 */
+	public void updateBiomeDensity(PlayerEntity player) {
 		World world = player.getWorld();
+		boolean isDynamic = CONFIG.isEnableDynamic();
+		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 
-		//Detect Weather Change
+		if (isDynamic) {  //Detect Biome Change
+			if (! isBiomeByChunk) {		//Hasn't effected if use chunk data.
+				BlockPos pos = player.getBlockPos();
+				RegistryEntry<Biome> biome = world.getBiome(pos);
+				if (CONFIG.isFilterListHasBiome(biome))
+					targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitation(pos));
+				isBiomeChange = densityByBiome != targetDownFall;
+			}
+		} else {
+			isBiomeChange = false;
+		}
+
+		if (isDynamic) {  //Density Change by Biome
+			if (! isBiomeByChunk) {
+				densityByBiome = isBiomeChange ? stepDensity(targetDownFall, densityByBiome, densityChangingSpeed) : targetDownFall;
+			} else {
+				densityByBiome = 0.5f;		//Output common value if use chunk.
+			}
+		} else {
+			densityByBiome = 0f;
+		}
+	}
+
+	/**
+	 * Run on both side, but be careful to run twice in single tick.
+	 */
+	public void updateWeatherDensity(World world) {
 		float thunderDensity = CONFIG.getThunderDensityPercent() / 100f;
 		float rainDensity = CONFIG.getRainDensityPercent() / 100f;
 		float clearDensity = CONFIG.getCloudDensityPercent() / 100f;
-		boolean enableDynamic = CONFIG.isEnableWeatherDensity();
-		boolean biomeDensityByChunk = CONFIG.isBiomeDensityByChunk();
+		boolean enableDynamic = CONFIG.isEnableDynamic();
+
 		if (enableDynamic) {
 			boolean isPreDetectOn = CONFIG.getWeatherPreDetectTime() != 0;
 			if (world.isThundering()) {
@@ -93,16 +125,8 @@ public class Data {
 			} else {		//Clear...
 				isWeatherChange = nextWeather != Weather.CLEAR && isPreDetectOn || densityByWeather > clearDensity;
 			}
-			//Detect Biome Change
-			if (! biomeDensityByChunk) {		//Hasn't effected if use chunk data.
-				BlockPos pos = player.getBlockPos();
-				if (CONFIG.isFilterListHasBiome(world.getBiome(pos)))
-					targetDownFall = CONFIG.getDownfall(world.getBiome(pos).value().getPrecipitation(pos));
-				isBiomeChange = densityByBiome != targetDownFall;
-			}
 		} else {
 			isWeatherChange = false;
-			isBiomeChange = false;
 		}
 
 		//Density Change by Weather
@@ -120,19 +144,9 @@ public class Data {
 					case CLEAR -> densityByWeather = clearDensity;
 				}
 			}
-			//Density Change by Biome
-			if (! biomeDensityByChunk) {
-				densityByBiome = isBiomeChange ? stepDensity(targetDownFall, densityByBiome, densityChangingSpeed) : targetDownFall;
-			} else {
-				densityByBiome = 0.5f;		//Output common value if use chunk.
-			}
 		} else {		//Initialize if disabled detect in rain/thunder.
 			densityByWeather = clearDensity;
-			densityByBiome = 0f;
 		}
-
-		if (CONFIG.isEnableDebug() && (isWeatherChange || isBiomeChange))
-			player.sendMessage(Text.of("[SFCRe Debug] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome), true);
 	}
 
 	private float stepDensity(float target, float current, float speed) {
@@ -149,6 +163,10 @@ public class Data {
 
 	public void setNextWeather(Weather nextWeather) {
 		this.nextWeather = nextWeather;
+	}
+
+	public String getDebugString() {
+		return "[SFCR] wc:" + isWeatherChange + ", bc:" + isBiomeChange + ", wd:" + densityByWeather + ", bd:" + densityByBiome;
 	}
 
 	public enum Weather {

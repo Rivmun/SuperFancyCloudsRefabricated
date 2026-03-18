@@ -2,10 +2,9 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.core.CloudData;
-import com.rimo.sfcr.core.Data;
-import com.rimo.sfcr.core.Renderer;
-import com.rimo.sfcr.core.RendererDHCompat;
+import com.rimo.sfcr.config.ConfigScreen;
+import com.rimo.sfcr.core.*;
+import dev.architectury.event.events.client.ClientCommandRegistrationEvent;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -15,7 +14,10 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.text.Text;
+import net.minecraft.world.World;
 
 import java.util.Random;
 
@@ -39,25 +41,35 @@ public class Client {
 		// World loaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
 			if (! hasServer)
-				CloudData.initSampler(new Random().nextLong());  //get a random seed before server send
+				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
 		});
 		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
+			Sampler sampler = CloudData.sampler.setWorld(world);
 			String dimensionName = world.getRegistryKey().getValue().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
 				isConfigHasBeenOverride = false;
+				sampler.setConfig(CONFIG);
 			}
+			if (seasonHandler != null)
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			if (! CONFIG.isEnableRender() || client.world == null || client.world.getTime() % 20 != 0)
+			ClientWorld world = client.world;
+			if (! CONFIG.isEnableRender() || world == null || world.getTime() % 20 != 0)
 				return;
-			if (! hasServer && ! client.isIntegratedServerRunning())
-				DATA.updateWeatherClient(client.world);
+			if (! client.isIntegratedServerRunning()) {
+				if (! hasServer)
+					DATA.updateWeatherClient(world);
+				DATA.updateWeatherDensity(world);
+			}
 			if (client.player != null)
-				DATA.updateDensity(client.player);
+				DATA.updateBiomeDensity(client.player);
+			if (seasonHandler != null && world.getTime() % 24000 == 0)
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
 		});
 
 		// Quit reset
@@ -67,22 +79,28 @@ public class Client {
 			isConfigHasBeenOverride = false;
 			RENDERER.stop();
 			CONFIG.load();
-			Common.clearConfigCache(null);
+			Common.clearDimensionCache();
 		});
 
-		//seed receiver
-		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_SEED, (buf, context) -> {
-			hasServer = true;
-			long seed = buf.readVarLong();
-			CloudData.initSampler(seed);
-			if (CONFIG.isEnableDebug())
-				LOGGER.info("{} receive seed {}", MOD_ID, seed);
-		});
+		// client command for configScreen
+		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
+				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
+					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {
+						MinecraftClient client = MinecraftClient.getInstance();
+						client.execute(() -> client.setScreen(new ConfigScreen().build()));
+					} else {
+						context.getSource().arch$sendFailure(Text.translatable("text.sfcr.requiredCloth"));
+					}
+					return 1;
+				}))
+		);
 
 		//dimension packet receiver
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
+			hasServer = true;
 			String name = buf.readString();
 			String configJson = buf.readString();
+			long seed = buf.readVarLong();
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
@@ -102,6 +120,7 @@ public class Client {
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
 			}
+			CloudData.sampler.setSeed(seed).setConfig(CONFIG);
 		});
 
 		//weather receiver
@@ -114,9 +133,15 @@ public class Client {
 
 		//upload request receiver & shared config sender
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
+			World world = MinecraftClient.getInstance().world;
+			if (world == null)
+				return;
+			String name = world.getRegistryKey().getValue().toString();
 			String configJson = CONFIG.toString();
-			NetworkManager.sendToServer(PACKET_SHARED_CONFIG, new PacketByteBuf(Unpooled.buffer())
+			NetworkManager.sendToServer(PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
+					.writeString(name)
 					.writeString(configJson)
+					.writeVarLong(0L)
 			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);
@@ -126,13 +151,21 @@ public class Client {
 	public static void applyConfigChange(boolean oldEnableDHCompat) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
+		CloudData.sampler.setConfig(CONFIG);
 	}
 
 	/**
-	 * @return true if this point is covered by SFC clouds, false if not.<br>
-	 * Note that if this point is above cloud, it always returns false.
+	 * For render (client) side, use {@link CloudData#isCloudCovered(double, double, double)} to calculate where is no cloud above<br>
+	 * Call from logical side is useless and may crash, {@link Common#isNoCloudCovered(World, double, double, double)} is recommended.
+	 * @param x Components of target world pos
+	 * @param y Components of target world pos
+	 * @param z Components of target world pos
+	 * @return {@code true} if this point is covered by SFC clouds, {@code false} if not.<br>
+	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */
 	public static boolean isNoCloudCovered(double x, double y, double z) {
-		return RENDERER == null || ! RENDERER.isCloudCovered(x, y, z);
+		if (! CONFIG.isEnableCloudRain() || RENDERER == null )
+			return false;
+		return ! RENDERER.isCloudCovered(x, y, z);
 	}
 }

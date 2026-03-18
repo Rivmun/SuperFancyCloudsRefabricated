@@ -1,9 +1,9 @@
 package com.rimo.sfcr.core;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 
@@ -45,7 +45,7 @@ public class CloudData {
 	}
 
 	public void tick() {
-		lifeTime -= MinecraftClient.getInstance().getLastFrameDuration() * 0.25f * 0.25f;
+		lifeTime -= Minecraft.getInstance().getDeltaFrameTime() * 0.25f * 0.25f;
 	}
 
 	private int minusCloudGridHeight(int y) {
@@ -57,11 +57,11 @@ public class CloudData {
 	public float getLifeTime() {return lifeTime;}
 
 	boolean isCloudCovered(double x, double y, double z) {
-		Vec3d camPos = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		int cbSize = CONFIG.getCloudBlockSize();
-		int gx = (int) (width / 2F - (camPos.getX() - x) / cbSize);
+		int gx = (int) (width / 2F - (camPos.x() - x) / cbSize);
 		int gy = (int) (y / cbSize * 2);
-		int gz = (int) (width / 2F - (camPos.getZ() - z) / cbSize);
+		int gz = (int) (width / 2F - (camPos.z() - z) / cbSize);
 		if (gx < 0 || gx >= width || gz < 0 || gz >= width)
 			return false;
 		for (int i = height - 1; i >= 0; i --) {
@@ -73,8 +73,8 @@ public class CloudData {
 	}
 
 	private void collectCloudData(int x, int z, float densityByWeather, float densityByBiome) {
-		World world = MinecraftClient.getInstance().world;
-		if (world == null)
+		Level level = Minecraft.getInstance().level;
+		if (level == null)
 			return;
 
 		final int sx = x - width / 2;  //sampling start pos
@@ -316,17 +316,17 @@ public class CloudData {
 	}
 
 	enum Facing {
-		EAST  (new Vec3i(1, 0, 0),  new Vec3d(0.95f, 0.9f,  0.9f)),
-		WEST  (new Vec3i(-1, 0, 0), new Vec3d(0.75f, 0.75f, 0.75f)),
-		TOP   (new Vec3i(0, 1, 0),  new Vec3d(1f,    1f,    1f)),
-		BOTTOM(new Vec3i(0, -1, 0), new Vec3d(0.6f,  0.6f,  0.6f)),
-		SOUTH (new Vec3i(0, 0, 1),  new Vec3d(0.92f, 0.85f, 0.85f)),
-		NORTH (new Vec3i(0, 0, -1), new Vec3d(0.8f,  0.8f,  0.8f));
+		EAST  (new Vec3i(1, 0, 0),  new Vec3(0.95f, 0.9f,  0.9f)),
+		WEST  (new Vec3i(-1, 0, 0), new Vec3(0.75f, 0.75f, 0.75f)),
+		TOP   (new Vec3i(0, 1, 0),  new Vec3(1f,    1f,    1f)),
+		BOTTOM(new Vec3i(0, -1, 0), new Vec3(0.6f,  0.6f,  0.6f)),
+		SOUTH (new Vec3i(0, 0, 1),  new Vec3(0.92f, 0.85f, 0.85f)),
+		NORTH (new Vec3i(0, 0, -1), new Vec3(0.8f,  0.8f,  0.8f));
 
 		final Vec3i normal;
-		final Vec3d color;
+		final Vec3 color;
 
-		Facing(Vec3i normal, Vec3d color) {
+		Facing(Vec3i normal, Vec3 color) {
 			this.normal = normal;
 			this.color = color;
 		}

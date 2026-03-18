@@ -22,7 +22,7 @@ public class Plugin implements IMixinConfigPlugin {
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("sfcr.mixins.json")) {
 			if (is != null) {
 				JsonObject config = JsonParser.parseReader(new InputStreamReader(is)).getAsJsonObject();
-				String head = "com.rimo.sfcr.mixin.";
+				String head = config.get("package").getAsString();
 
 				JsonArray mixins = config.getAsJsonArray("mixins");
 				if (mixins != null)

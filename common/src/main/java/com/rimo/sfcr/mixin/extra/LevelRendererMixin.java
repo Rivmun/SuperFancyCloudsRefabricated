@@ -3,20 +3,20 @@ package com.rimo.sfcr.mixin.extra;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.biome.Biome;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-@Mixin(WorldRenderer.class)
-public abstract class WorldRendererMixin {
+@Mixin(LevelRenderer.class)
+public abstract class LevelRendererMixin {
 
 	/* - - NO CLOUD NO RAIN - - */
 
-	@WrapOperation(method = "renderWeather", at = @At(
+	@WrapOperation(method = "renderSnowAndRain", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"
+			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
 		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
@@ -24,9 +24,9 @@ public abstract class WorldRendererMixin {
 		return original.call(instance, pos);
 	}
 
-	@WrapOperation(method = "tickRainSplashing", at = @At(
+	@WrapOperation(method = "tickRain", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/world/biome/Biome;getPrecipitation(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/biome/Biome$Precipitation;"
+			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationSplash(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
 		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))

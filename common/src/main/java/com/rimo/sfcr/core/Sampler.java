@@ -2,14 +2,14 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.noise.SimplexNoiseSampler;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
@@ -19,8 +19,8 @@ import static com.rimo.sfcr.Common.DATA;
  * @since 1.9
  */
 public class Sampler {
-	private World world;
-	private SimplexNoiseSampler cloudNoise;
+	private Level level;
+	private SimplexNoise cloudNoise;
 	private int cloudThick;
 	private int cloudBlockSize;
 	private float cloudHeight;
@@ -33,12 +33,12 @@ public class Sampler {
 	private float densityBySeason = 1F;
 
 	public Sampler setSeed(long seed) {
-		cloudNoise = new SimplexNoiseSampler(Random.create(seed));
+		cloudNoise = new SimplexNoise(RandomSource.create(seed));
 		return this;
 	}
 
-	public Sampler setWorld(World world) {
-		this.world = world;
+	public Sampler setLevel(Level level) {
+		this.level = level;
 		return this;
 	}
 
@@ -60,7 +60,7 @@ public class Sampler {
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
-		int gx = (int) Math.floor((x + world.getTime() * 0.03F) / cloudBlockSize);
+		int gx = (int) Math.floor((x + level.getGameTime() * 0.03F) / cloudBlockSize);
 		int gz = (int) Math.floor(z / cloudBlockSize + 0.33F);
 		for (int i = cloudThick - 1; i >= 0; i --) {
 			if (isGridHasCloud(gx, i, gz, Common.DATA.densityByWeather, 0.5F)) {
@@ -84,7 +84,7 @@ public class Sampler {
 	 * @see CloudData#collectCloudData(int, int, float, float)
 	 */
 	boolean isGridHasCloud(int x, int y, int z, float densityByWeather, float densityByBiome) {
-		if (world == null || cloudNoise == null || Float.isNaN(cloudHeight))
+		if (level == null || cloudNoise == null || Float.isNaN(cloudHeight))
 			return false;
 
 		if (oldX != x || oldZ != z) {
@@ -95,8 +95,8 @@ public class Sampler {
 			time = 0.0;
 			f = threshold;
 			if (isEnableDynamic) {
-				densityMultiplier = getDensityMultiplier(world.getTime());
-				time = world.getTime() / 20.0;
+				densityMultiplier = getDensityMultiplier(level.getGameTime());
+				time = level.getGameTime() / 20.0;
 				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
 			}
 
@@ -104,21 +104,21 @@ public class Sampler {
 			int bz = z * cloudBlockSize;
 
 			// biome detect by chunk
-			if (isEnableDynamic && isBiomeByChunk && world.getChunkManager().isChunkLoaded(bx / 16, bz / 16)) {
+			if (isEnableDynamic && isBiomeByChunk && level.hasChunk(bx / 16, bz / 16)) {
 				BlockPos pos = new BlockPos(
 						bx,
-						world.getTopY(Heightmap.Type.MOTION_BLOCKING, bx, bz),
+						level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz),
 						bz
 				);
-				RegistryEntry<Biome> biome = world.getBiome(pos);
+				Holder<Biome> biome = level.getBiome(pos);
 				if (! CONFIG.isFilterListHasBiome(biome))
-					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitation(pos)));
+					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
 			}
 		}
 
 		return getCloudSampleProxy(time, steps, x, y, z) * densityMultiplier > f && (
 				// terrain dodge (detect light level)
-				! isEnableTerrainDodge || world.getLightLevel(LightType.SKY, new BlockPos(
+				! isEnableTerrainDodge || level.getBrightness(LightLayer.SKY, new BlockPos(
 						x,
 						(int) (cloudHeight + (y - 2) * cloudBlockSize / 2f),  //turns to exactly height
 						z
@@ -139,7 +139,7 @@ public class Sampler {
 
 	private double getCloudSampleProxy(double timeOffset, int steps, double cx, double cy, double cz) {
 		double sample = getCloudSample(timeOffset, steps, cx, cy, cz);
-		if (world.isRaining() && CONFIG.isEnableDynamic()) {  //make cloud top more continuous when rain
+		if (level.isRaining() && CONFIG.isEnableDynamic()) {  //make cloud top more continuous when rain
 			float clearDensity = CONFIG.getCloudDensityPercent() / 100f + 1;
 			float currentDensity = DATA.densityByWeather + 1;
 			float cyMax = CONFIG.getCloudLayerThickness();
@@ -166,20 +166,20 @@ public class Sampler {
 	}
 
 	private double getCloudSample(double timeOffset, int steps, double cx, double cy, double cz) {
-		double cloudVal = cloudNoise.sample(
+		double cloudVal = cloudNoise.getValue(
 				(cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				cz * baseFreq
 		);
 		if (steps > 1) {
-			double cloudVal1 = cloudNoise.sample(
+			double cloudVal1 = cloudNoise.getValue(
 					(cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					cz * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (steps > 2) {
-				cloudVal2 = cloudNoise.sample(
+				cloudVal2 = cloudNoise.getValue(
 						(cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
 						cz * l2Freq

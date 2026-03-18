@@ -12,13 +12,13 @@ import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,18 +35,18 @@ public class Common {
 	/**
 	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
 	 */
-	public static final Identifier PACKET_WEATHER = new Identifier(MOD_ID, "weather_s2c");
+	public static final ResourceLocation PACKET_WEATHER = new ResourceLocation(MOD_ID, "weather_s2c");
 	/**
 	 * Contains:<br>
 	 * 1.String dimensionName - use to load specific config, sent when player join at first time and dimension change. <br>
 	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled<br>
 	 * 3.Long seed - use to init sampler.
 	 */
-	public static final Identifier PACKET_DIMENSION = new Identifier(MOD_ID, "dimension");
+	public static final ResourceLocation PACKET_DIMENSION = new ResourceLocation(MOD_ID, "dimension");
 	/**
 	 * an empty packet to notice client upload its config
 	 */
-	public static final Identifier PACKET_UPLOAD_REQUEST = new Identifier(MOD_ID, "upload_request_s2c");
+	public static final ResourceLocation PACKET_UPLOAD_REQUEST = new ResourceLocation(MOD_ID, "upload_request_s2c");
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
@@ -68,8 +68,8 @@ public class Common {
 
 		// dimension cache system
 		LifecycleEvent.SERVER_LEVEL_LOAD.register(Common::loadDimensionData);
-		LifecycleEvent.SERVER_LEVEL_UNLOAD.register(world -> {
-			String name = world.getRegistryKey().getValue().toString();
+		LifecycleEvent.SERVER_LEVEL_UNLOAD.register(level -> {
+			String name = level.dimension().location().toString();
 			DIMENSION_CACHE.remove(name);
 		});
 
@@ -77,35 +77,35 @@ public class Common {
 		PlayerEvent.PLAYER_JOIN.register(player -> {
 			MinecraftServer server = player.getServer();
 			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
-			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
+			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
 				return;
-			sendDimensionPacket(player, player.getServerWorld().getRegistryKey());
+			sendDimensionPacket(player, player.serverLevel().dimension());
 		});
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
 			MinecraftServer server = player.getServer();
-			if (! CONFIG.isEnableServer() && server != null && ! server.isHost(player.getGameProfile()))
+			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
 				return;
 			sendDimensionPacket(player, newLevel);
 		});
 
 		TickEvent.SERVER_POST.register(server -> {
-			if (server.getTicks() % 20 != 0)
+			if (server.getTickCount() % 20 != 0)
 				return;
-			// Weather is a common stat between different world, just check once
-			ServerWorld world = server.getOverworld();
+			// Weather is a common stat between different level, just check once
+			ServerLevel level = server.overworld();
 			// Sender
-			if (DATA.updateWeather(world)) {  // always update
+			if (DATA.updateWeather(level)) {  // always update
 				if (! CONFIG.isEnableServer())
 					return;
 				Data.Weather nextWeather = DATA.getNextWeather();
-				NetworkManager.sendToPlayers(server.getPlayerManager().getPlayerList(), PACKET_WEATHER, new PacketByteBuf(Unpooled.buffer())
-						.writeEnumConstant(nextWeather)
+				NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), PACKET_WEATHER, new FriendlyByteBuf(Unpooled.buffer())
+						.writeEnum(nextWeather)
 				);
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 			}
 			// update
-			DATA.updateWeatherDensity(world);
+			DATA.updateWeatherDensity(level);
 
 			//debug
 			if (! apiDebugTime.isEmpty()) {
@@ -119,49 +119,49 @@ public class Common {
 
 		if (seasonHandler == null)
 			return;
-		TickEvent.SERVER_LEVEL_POST.register(world -> {
-			if (world.getTime() % 24000 != 0)
+		TickEvent.SERVER_LEVEL_POST.register(level -> {
+			if (level.getGameTime() % 24000 != 0)
 				return;
-			// season base on time, but different world may have different time, so we must update it in level tick instead of server.
-			DimensionData data = DIMENSION_CACHE.get(world.getRegistryKey().getValue().toString());
+			// season base on time, but different level may have different time, so we must update it in level tick instead of server.
+			DimensionData data = DIMENSION_CACHE.get(level.dimension().location().toString());
 			if (data == null)
 				return;
-			data.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
+			data.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 		});
 	}
 
 	// Dimension Packet Sender
-	private static void sendDimensionPacket(ServerPlayerEntity player, RegistryKey<World> key) {
-		String name = key.getValue().toString();
-		DimensionData data = loadDimensionData(player.getServerWorld());
-		NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
-				.writeString(name)
-				.writeString(data.configJson)
+	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+		String name = key.location().toString();
+		DimensionData data = loadDimensionData(player.serverLevel());
+		NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new FriendlyByteBuf(Unpooled.buffer())
+				.writeUtf(name)
+				.writeUtf(data.configJson)
 				.writeVarLong(data.seed)
 		);
 		if (CONFIG.isEnableDebug())
 			LOGGER.info("{} send dimension '{}' packet to {}", MOD_ID, name, player.getName().getString());
 	}
 
-	private static long getSeed(ServerWorld world) {
-		return world.getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
+	private static long getSeed(ServerLevel level) {
+		return level.getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
 	}
 
 	/**
 	 * Load a dimension config into cache, or refresh its config and sampler.
-	 * @return the newest cache of this world.
+	 * @return the newest cache of this Level.
 	 */
-	private static DimensionData loadDimensionData(ServerWorld world) {
-		String name = world.getRegistryKey().getValue().toString();
+	private static DimensionData loadDimensionData(ServerLevel Level) {
+		String name = Level.dimension().location().toString();
 		Config config = new Config();
 		String configJson = config.load(name) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
-				long seed = getSeed(world);
-				Sampler sampler = new Sampler().setSeed(seed).setWorld(world).setConfig(config);
+				long seed = getSeed(Level);
+				Sampler sampler = new Sampler().setSeed(seed).setLevel(Level).setConfig(config);
 				return new DimensionData(seed, configJson, sampler);
 			} else {
-				existing.sampler.setConfig(config).setWorld(world);
+				existing.sampler.setConfig(config).setLevel(Level);
 				return new DimensionData(existing.seed(), configJson, existing.sampler());
 			}
 		});
@@ -201,26 +201,26 @@ public class Common {
 	/**
 	 * For logical side, use {@link Sampler#isCloudCovered(double, double, double)} from {@link #DIMENSION_CACHE} to calculate where is no cloud above.<br>
 	 * If you are client, {@link Client#isNoCloudCovered(double, double, double)} is recommended.
-	 * @param world Current world/level
-	 * @param x Components of target world pos
-	 * @param y Components of target world pos
-	 * @param z Components of target world pos
-	 * @return Always {@code false} if this point above cloud, or cache of this world not found, or 'NCNR logical' function disabled.
+	 * @param level Current level/level
+	 * @param x Components of target level pos
+	 * @param y Components of target level pos
+	 * @param z Components of target level pos
+	 * @return Always {@code false} if this point above cloud, or cache of this level not found, or 'NCNR logical' function disabled.
 	 */
-	public static boolean isNoCloudCovered(World world, double x, double y, double z) {
+	public static boolean isNoCloudCovered(Level level, double x, double y, double z) {
 		long time = System.nanoTime();
-		boolean result = _isNoCloudCovered(world, x, y, z);
+		boolean result = _isNoCloudCovered(level, x, y, z);
 		apiDebugTime.add(System.nanoTime() - time);
 		return result;
 	}
-	private static boolean _isNoCloudCovered(World world, double x, double y, double z) {
+	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
 		if (! CONFIG.isCloudRainLogically())
 			return false;
-		String name = world.getRegistryKey().getValue().toString();
+		String name = level.dimension().location().toString();
 		DimensionData data = DIMENSION_CACHE.get(name);
 		if (data == null) {
-			if (world instanceof ServerWorld serverWorld) {
-				data = loadDimensionData(serverWorld);
+			if (level instanceof ServerLevel serverLevel) {
+				data = loadDimensionData(serverLevel);
 			} else {
 				return false;
 			}

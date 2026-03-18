@@ -13,11 +13,11 @@ import dev.architectury.platform.Platform;
 import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.text.Text;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
 
 import java.util.Random;
 
@@ -43,9 +43,9 @@ public class Client {
 			if (! hasServer)
 				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
 		});
-		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(world -> {
-			Sampler sampler = CloudData.sampler.setWorld(world);
-			String dimensionName = world.getRegistryKey().getValue().toString();
+		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(level -> {
+			Sampler sampler = CloudData.sampler.setLevel(level);
+			String dimensionName = level.dimension().location().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
 				if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
 					isCustomDimensionConfig = true;
@@ -53,23 +53,23 @@ public class Client {
 				sampler.setConfig(CONFIG);
 			}
 			if (seasonHandler != null)
-				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 		});
 
 		// Update data
 		ClientTickEvent.CLIENT_POST.register(client -> {
-			ClientWorld world = client.world;
-			if (! CONFIG.isEnableRender() || world == null || world.getTime() % 20 != 0)
+			ClientLevel level = client.level;
+			if (! CONFIG.isEnableRender() || level == null || level.getGameTime() % 20 != 0)
 				return;
-			if (! client.isIntegratedServerRunning()) {
+			if (! client.isLocalServer()) {
 				if (! hasServer)
-					DATA.updateWeatherClient(world);
-				DATA.updateWeatherDensity(world);
+					DATA.updateWeatherClient(level);
+				DATA.updateWeatherDensity(level);
 			}
 			if (client.player != null)
 				DATA.updateBiomeDensity(client.player);
-			if (seasonHandler != null && world.getTime() % 24000 == 0)
-				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(world));
+			if (seasonHandler != null && level.getGameTime() % 24000 == 0)
+				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 		});
 
 		// Quit reset
@@ -86,10 +86,10 @@ public class Client {
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
 				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {
-						MinecraftClient client = MinecraftClient.getInstance();
+						Minecraft client = Minecraft.getInstance();
 						client.execute(() -> client.setScreen(new ConfigScreen().build()));
 					} else {
-						context.getSource().arch$sendFailure(Text.translatable("text.sfcr.requiredCloth"));
+						context.getSource().arch$sendFailure(Component.translatable("text.sfcr.requiredCloth"));
 					}
 					return 1;
 				}))
@@ -98,13 +98,13 @@ public class Client {
 		//dimension packet receiver
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
 			hasServer = true;
-			String name = buf.readString();
-			String configJson = buf.readString();
+			String name = buf.readUtf();
+			String configJson = buf.readUtf();
 			long seed = buf.readVarLong();
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
-					if (! MinecraftClient.getInstance().isIntegratedServerRunning())  //singleplayer override itself? ur joking...
+					if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
 						isConfigHasBeenOverride = true;
 					if (! name.equals(Config.OVERWORLD))
 						isCustomDimensionConfig = true;
@@ -125,7 +125,7 @@ public class Client {
 
 		//weather receiver
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_WEATHER, (buf, context) -> {
-			Data.Weather weather = buf.readEnumConstant(Data.Weather.class);
+			Data.Weather weather = buf.readEnum(Data.Weather.class);
 			DATA.setNextWeather(weather);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive weather: {}", MOD_ID, weather);
@@ -133,14 +133,14 @@ public class Client {
 
 		//upload request receiver & shared config sender
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
-			World world = MinecraftClient.getInstance().world;
-			if (world == null)
+			Level level = Minecraft.getInstance().level;
+			if (level == null)
 				return;
-			String name = world.getRegistryKey().getValue().toString();
+			String name = level.dimension().location().toString();
 			String configJson = CONFIG.toString();
-			NetworkManager.sendToServer(PACKET_DIMENSION, new PacketByteBuf(Unpooled.buffer())
-					.writeString(name)
-					.writeString(configJson)
+			NetworkManager.sendToServer(PACKET_DIMENSION, new FriendlyByteBuf(Unpooled.buffer())
+					.writeUtf(name)
+					.writeUtf(configJson)
 					.writeVarLong(0L)
 			);
 			if (CONFIG.isEnableDebug())
@@ -156,10 +156,10 @@ public class Client {
 
 	/**
 	 * For render (client) side, use {@link CloudData#isCloudCovered(double, double, double)} to calculate where is no cloud above<br>
-	 * Call from logical side is useless and may crash, {@link Common#isNoCloudCovered(World, double, double, double)} is recommended.
-	 * @param x Components of target world pos
-	 * @param y Components of target world pos
-	 * @param z Components of target world pos
+	 * Call from logical side is useless and may crash, {@link Common#isNoCloudCovered(Level, double, double, double)} is recommended.
+	 * @param x Components of target Level pos
+	 * @param y Components of target Level pos
+	 * @param z Components of target Level pos
 	 * @return {@code true} if this point is covered by SFC clouds, {@code false} if not.<br>
 	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */

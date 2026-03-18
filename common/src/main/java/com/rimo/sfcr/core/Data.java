@@ -1,14 +1,14 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.mixin.ServerWorldAccessor;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.level.ServerWorldProperties;
+import com.rimo.sfcr.mixin.ServerLevelAccessor;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.storage.ServerLevelData;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -38,14 +38,14 @@ public class Data {
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
 	}
 
-	public boolean updateWeather(ServerWorld world) {
+	public boolean updateWeather(ServerLevel level) {
 		// Weather Pre-detect
-		ServerWorldProperties worldProperties = ((ServerWorldAccessor) world).getWorldProperties();
-		int rainTime = worldProperties.getRainTime();
-		int thunderTime = worldProperties.getThunderTime();
+		ServerLevelData levelData = ((ServerLevelAccessor) level).getServerLevelData();
+		int rainTime = levelData.getRainTime();
+		int thunderTime = levelData.getThunderTime();
 		int preDetectTime = CONFIG.getWeatherPreDetectTime();
-		if (worldProperties.isRaining()) {
-			if (worldProperties.isThundering()) {
+		if (levelData.isRaining()) {
+			if (levelData.isThundering()) {
 				nextWeather = thunderTime / 20 < preDetectTime ? Weather.RAIN : Weather.THUNDER;
 			} else {
 				nextWeather = thunderTime / 20 < preDetectTime && thunderTime != rainTime ?
@@ -53,7 +53,7 @@ public class Data {
 						rainTime / 20 < preDetectTime ? Weather.CLEAR : Weather.RAIN;
 			}
 		} else {
-			int clearWeatherTime = worldProperties.getClearWeatherTime();
+			int clearWeatherTime = levelData.getClearWeatherTime();
 			if (clearWeatherTime != 0) {
 				nextWeather = clearWeatherTime / 20 < preDetectTime ? Weather.RAIN : Weather.CLEAR;
 			} else {
@@ -72,24 +72,24 @@ public class Data {
 	/**
 	 * Should run when connected to a server but without sync
 	 */
-	public void updateWeatherClient(World world) {
-		nextWeather = world.isThundering() ? Weather.THUNDER : world.isRaining() ? Weather.RAIN : Weather.CLEAR;
+	public void updateWeatherClient(Level level) {
+		nextWeather = level.isThundering() ? Weather.THUNDER : level.isRaining() ? Weather.RAIN : Weather.CLEAR;
 	}
 
 	/**
 	 * !! Only call in client because server is multiplayer that cannot ensure what pos will use.
 	 */
-	public void updateBiomeDensity(PlayerEntity player) {
-		World world = player.getWorld();
+	public void updateBiomeDensity(Player player) {
+		Level level = player.level();
 		boolean isDynamic = CONFIG.isEnableDynamic();
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 
 		if (isDynamic) {  //Detect Biome Change
 			if (! isBiomeByChunk) {		//Hasn't effected if use chunk data.
-				BlockPos pos = player.getBlockPos();
-				RegistryEntry<Biome> biome = world.getBiome(pos);
+				BlockPos pos = player.blockPosition();
+				Holder<Biome> biome = level.getBiome(pos);
 				if (CONFIG.isFilterListHasBiome(biome))
-					targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitation(pos));
+					targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitationAt(pos));
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {
@@ -110,7 +110,7 @@ public class Data {
 	/**
 	 * Run on both side, but be careful to run twice in single tick.
 	 */
-	public void updateWeatherDensity(World world) {
+	public void updateWeatherDensity(Level level) {
 		float thunderDensity = CONFIG.getThunderDensityPercent() / 100f;
 		float rainDensity = CONFIG.getRainDensityPercent() / 100f;
 		float clearDensity = CONFIG.getCloudDensityPercent() / 100f;
@@ -118,9 +118,9 @@ public class Data {
 
 		if (enableDynamic) {
 			boolean isPreDetectOn = CONFIG.getWeatherPreDetectTime() != 0;
-			if (world.isThundering()) {
+			if (level.isThundering()) {
 				isWeatherChange = nextWeather != Weather.THUNDER && isPreDetectOn || densityByWeather < thunderDensity;
-			} else if (world.isRaining()) {
+			} else if (level.isRaining()) {
 				isWeatherChange = nextWeather != Weather.RAIN && isPreDetectOn || densityByWeather != rainDensity;
 			} else {		//Clear...
 				isWeatherChange = nextWeather != Weather.CLEAR && isPreDetectOn || densityByWeather > clearDensity;

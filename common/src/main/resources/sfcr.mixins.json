@@ -5,17 +5,17 @@
   "plugin": "com.rimo.sfcr.mixin.Plugin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ServerWorldAccessor",
-    "extra.ServerWorldMixin",
-    "extra.WorldMixin"
+    "ServerLevelAccessor",
+    "extra.ServerLevelMixin",
+    "extra.LevelMixin"
   ],
   "client": [
-    "DebugHudMixin",
-    "GameOptionsMixin",
+    "DebugScreenOverlayMixin",
+    "OptionsMixin",
     "GameRendererMixin",
-    "WorldRendererMixin",
+    "LevelRendererMixin",
     "extra.LeavesBlockMixin",
-    "extra.WorldRendererMixin",
+    "extra.LevelRendererMixin",
     "particlerain.ParticleSpawnerMixin"
   ],
   "server": [],

@@ -3,7 +3,7 @@ package com.rimo.sfcr.core;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.ConfigScreen;
 import dev.architectury.platform.Platform;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -157,10 +157,10 @@ public abstract class AbstractSeasonCompat {
 		return (int) Math.round(y1 + t * (y2 - y1));
 	}
 
-	protected abstract Enum<?> getSeason(World world);
+	protected abstract Enum<?> getSeason(Level level);
 
-	public int getSeasonDensityPercent(World world) {
-		return getDensityValue(getSeason(world));
+	public int getSeasonDensityPercent(Level level) {
+		return getDensityValue(getSeason(level));
 	}
 
 	/*
@@ -177,7 +177,7 @@ public abstract class AbstractSeasonCompat {
 				season = Class.forName("sereneseasons.api.season.Season$SubSeason").asSubclass(Enum.class);
 				setDensityMapFromString(config.getSeasonDensityPercentMap().get(0));  //should call after seasonClass get
 				getSeasonState = Class.forName("sereneseasons.api.season.SeasonHelper")
-						.getDeclaredMethod("getSeasonState", World.class);
+						.getDeclaredMethod("getSeasonState", Level.class);
 				getSubSeason = Class.forName("sereneseasons.api.season.ISeasonState")
 						.getDeclaredMethod("getSubSeason");
 			} catch (Exception e) {
@@ -186,9 +186,9 @@ public abstract class AbstractSeasonCompat {
 		}
 
 		@Override
-		protected Enum<?> getSeason(World world) {
+		protected Enum<?> getSeason(Level level) {
 			try {
-				Object objSeasonState = getSeasonState.invoke(null, world);
+				Object objSeasonState = getSeasonState.invoke(null, level);
 				Object objSubSeason = getSubSeason.invoke(objSeasonState);
 				return (Enum<?>) objSubSeason;
 			} catch (Exception e) {
@@ -204,16 +204,16 @@ public abstract class AbstractSeasonCompat {
 				season = Class.forName("io.github.lucaargolo.seasons.utils.Season").asSubclass(Enum.class);
 				setDensityMapFromString(config.getSeasonDensityPercentMap().get(0));
 				getCurrentSeason = Class.forName("io.github.lucaargolo.seasons.FabricSeasons")
-						.getMethod("getCurrentSeason", World.class);
+						.getMethod("getCurrentSeason", Level.class);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
 
 		@Override
-		protected Enum<?> getSeason(World world) {
+		protected Enum<?> getSeason(Level level) {
 			try {
-				Object objSeason = getCurrentSeason.invoke(null, world);
+				Object objSeason = getCurrentSeason.invoke(null, level);
 				return (Enum<?>) objSeason;
 			} catch (Exception e) {
 				return null;

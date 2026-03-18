@@ -3,24 +3,24 @@ package com.rimo.sfcr.mixin.extra;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.LeavesBlock;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(LeavesBlock.class)
 public abstract class LeavesBlockMixin {
-	@WrapOperation(method = "randomDisplayTick", at = @At(
+	@WrapOperation(method = "animateTick", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/util/ParticleUtil;spawnParticle(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/random/Random;Lnet/minecraft/particle/ParticleEffect;)V"
+			target = "Lnet/minecraft/util/ParticleUtils;spawnParticleBelow(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/particles/ParticleOptions;)V"
 	))
-	private void sfcr$disableDrippingWater(World world, BlockPos pos, Random random, ParticleEffect effect, Operation<Void> original) {
-		if (effect == ParticleTypes.DRIPPING_WATER && Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
+	private void sfcr$disableDrippingWater(Level level, BlockPos pos, RandomSource random, ParticleOptions particle, Operation<Void> original) {
+		if (particle == ParticleTypes.DRIPPING_WATER && Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
 			return;
-		original.call(world, pos, random, effect);
+		original.call(level, pos, random, particle);
 	}
 }

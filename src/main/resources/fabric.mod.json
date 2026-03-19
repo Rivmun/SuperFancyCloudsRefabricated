@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contributors": [
+    "${mod_contributor}"
+  ],
+  "contact": {
+    "homepage": "${mod_homepage}",
+    "sources": "${mod_source}",
+    "issues": "${mod_issues}"
+  },
+  "license": "${mod_license}",
+  "icon": "${mod_icon}",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+    ],
+    "client": [
+      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+    ],
+    "server": [
+      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+    ],
+    "modmenu": [
+      "${mod_group}.${mod_id}.loaders.fabric.SFCReModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json"
+  ],
+  "depends": {
+    "fabric": "*",
+    "minecraft": "${version_range_fabric}",
+    "architectury": ">=${arch-api}"
+  },
+  "suggests": {
+    "cloth-config2":">=${cloth}",
+    "modmenu": "*",
+    "distanthorizons": ">=${distanthorizons_min_version}",
+    "particlerain": ">=${particlerain_min_version}",
+    "sereneseasons": ">=${sereneseasons}",
+    "seasons": ">=${fabricseasons_min_version}"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.modrinth": "${mod_modrinth}",
+        "MCMOD.cn": "${mod_mcmod}"
+      }
+    }
+  }
+}

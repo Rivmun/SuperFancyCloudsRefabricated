@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.rimo.sfcr.mixin",
+  "plugin": "sfcr.mixin.Plugin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "sfcr.mixin.ServerLevelAccessor",
+    "sfcr.mixin.extra.ServerLevelMixin",
+    "sfcr.mixin.extra.LevelMixin"
+  ],
+  "client": [
+    "sfcr.mixin.DebugScreenOverlayMixin",
+    "sfcr.mixin.OptionsMixin",
+    "sfcr.mixin.GameRendererMixin",
+    "sfcr.mixin.LevelRendererMixin",
+    "sfcr.mixin.extra.LeavesBlockMixin",
+    "sfcr.mixin.extra.LevelRendererMixin",
+    "sfcr.mixin.particlerain.ParticleSpawnerMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

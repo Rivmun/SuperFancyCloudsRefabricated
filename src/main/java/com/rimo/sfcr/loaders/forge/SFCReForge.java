@@ -1,4 +1,5 @@
-package com.rimo.sfcr.loaders.forge;
+//? if forge {
+/*package com.rimo.sfcr.loaders.forge;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
@@ -37,3 +38,4 @@ public class SFCReForge {
 		}));
 	}
 }
+*///? }

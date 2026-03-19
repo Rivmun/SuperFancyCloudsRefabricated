@@ -1,4 +1,5 @@
-package com.rimo.sfcr.mixin.particlerain;
+//? if > 1.20 {
+/*package com.rimo.sfcr.mixin.particlerain;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -76,3 +77,4 @@ public abstract class ParticleSpawnerMixin {
 		return d;
 	}
 }
+*///? }

@@ -11,10 +11,8 @@ import dev.architectury.event.events.common.LifecycleEvent;
 import dev.architectury.event.events.common.PlayerEvent;
 import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
-import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,6 +20,14 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//? if < 1.21 {
+import net.minecraft.resources.ResourceLocation;
+import io.netty.buffer.Unpooled;
+//? } else {
+/*import org.jetbrains.annotations.NotNull;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+*///? }
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,18 +41,64 @@ public class Common {
 	/**
 	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
 	 */
-	public static final ResourceLocation PACKET_WEATHER = new ResourceLocation(MOD_ID, "weather_s2c");
+	//? if < 1.21 {
+	public static final ResourceLocation PACKET_WEATHER = VersionUtil.getId("weather_s2c");
+	//? } else {
+	/*public record WeatherPayload(Data.Weather weather) implements CustomPacketPayload {
+		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("weather_s2c"));
+		public static final StreamCodec<FriendlyByteBuf, WeatherPayload> CODEC = StreamCodec.of(
+				(buf, value) -> buf.writeEnum(value.weather),
+				buf -> new WeatherPayload(buf.readEnum(Data.Weather.class))
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+	*///? }
 	/**
 	 * Contains:<br>
 	 * 1.String dimensionName - use to load specific config, sent when player join at first time and dimension change. <br>
 	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled<br>
 	 * 3.Long seed - use to init sampler.
 	 */
-	public static final ResourceLocation PACKET_DIMENSION = new ResourceLocation(MOD_ID, "dimension");
+	//? if < 1.21 {
+	public static final ResourceLocation PACKET_DIMENSION = VersionUtil.getId("dimension");
+	//? } else {
+	/*public record DimensionPayload(String name, String sharedConfigJson, long seed) implements CustomPacketPayload {
+		public static final Type<DimensionPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("dimension"));
+		public static final StreamCodec<FriendlyByteBuf, DimensionPayload> CODEC = StreamCodec.of(
+				((buf, value) -> {
+					buf.writeUtf(value.name);
+					buf.writeUtf(value.sharedConfigJson);
+					buf.writeLong(value.seed);
+				}),
+				buf -> new DimensionPayload(buf.readUtf(), buf.readUtf(), buf.readLong())
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+	*///? }
 	/**
 	 * an empty packet to notice client upload its config
 	 */
-	public static final ResourceLocation PACKET_UPLOAD_REQUEST = new ResourceLocation(MOD_ID, "upload_request_s2c");
+	//? if < 1.21 {
+	public static final ResourceLocation PACKET_UPLOAD_REQUEST = VersionUtil.getId("upload_request_s2c");
+	//? } else {
+	/*public record UploadRequestPayload() implements CustomPacketPayload {
+		public static final Type<UploadRequestPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("upload_request_s2c"));
+		public static final StreamCodec<FriendlyByteBuf, UploadRequestPayload> CODEC = StreamCodec.of(
+				((buf, value) -> {}),
+				buf -> new UploadRequestPayload()
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+	*///? }
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
@@ -79,7 +131,8 @@ public class Common {
 			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
 			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
 				return;
-			sendDimensionPacket(player, player.serverLevel().dimension());
+			//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
+			sendDimensionPacket(player, player.getLevel().dimension());
 		});
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
 			MinecraftServer server = player.getServer();
@@ -98,9 +151,13 @@ public class Common {
 				if (! CONFIG.isEnableServer())
 					return;
 				Data.Weather nextWeather = DATA.getNextWeather();
+				//? if < 1.21 {
 				NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), PACKET_WEATHER, new FriendlyByteBuf(Unpooled.buffer())
 						.writeEnum(nextWeather)
 				);
+				//? } else {
+				/*NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), new WeatherPayload(nextWeather));
+				*///? }
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 			}
@@ -133,12 +190,21 @@ public class Common {
 	// Dimension Packet Sender
 	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
 		String name = key.location().toString();
-		DimensionData data = loadDimensionData(player.serverLevel());
+		//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
+		DimensionData data = loadDimensionData(player.getLevel());
+		//? if < 1.21 {
 		NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new FriendlyByteBuf(Unpooled.buffer())
 				.writeUtf(name)
 				.writeUtf(data.configJson)
 				.writeVarLong(data.seed)
 		);
+		//? } else {
+		/*NetworkManager.sendToPlayer(player, new DimensionPayload(
+				name,
+				data.configJson,
+				data.seed
+		));
+		*///? }
 		if (CONFIG.isEnableDebug())
 			LOGGER.info("{} send dimension '{}' packet to {}", MOD_ID, name, player.getName().getString());
 	}

@@ -112,7 +112,11 @@ public class Sampler {
 				);
 				Holder<Biome> biome = level.getBiome(pos);
 				if (! CONFIG.isFilterListHasBiome(biome))
-					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
+					//? if > 1.20 {
+					/*f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
+					*///? } else {
+					f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().getDownfall());
+					//? }
 			}
 		}
 

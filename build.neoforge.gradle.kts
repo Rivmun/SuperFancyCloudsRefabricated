@@ -2,7 +2,7 @@ plugins {
     id("dev.architectury.loom")
 }
 
-val minecraft = property("deps.minecraft") as String;
+val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
@@ -33,7 +33,7 @@ tasks.named<ProcessResources>("processResources") {
         this["arch-api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-        this["particlerain_min_version"] = prop("particlerain_min_version")
+        this["particlerain_min_version"] = if (sc.current.parsed <= "1.21.1") prop("particlerain_min_version") else ""
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
@@ -49,6 +49,7 @@ base.archivesName = property("mod.id") as String
 
 repositories {
     mavenLocal()
+    maven("https://maven.neoforged.net/releases/")
     maven("https://maven.architectury.dev/")
     maven("https://maven.shedaniel.me/")
     maven("https://api.modrinth.com/maven")
@@ -56,9 +57,7 @@ repositories {
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
-    mappings(loom.layered {
-        officialMojangMappings()
-    })
+    mappings(loom.officialMojangMappings())
     implementation("com.google.code.gson:gson:2.10.1")
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
@@ -74,7 +73,10 @@ dependencies {
     modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //particle rain
-    modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    if (sc.current.parsed eq "1.21.1") {
+        modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    }
+
     //serene seasons
     modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
 }
@@ -82,6 +84,9 @@ dependencies {
 tasks {
     processResources {
         exclude("**/fabric.mod.json", "**/mods.toml")
+        if (sc.current.parsed <= "1.21.1") {
+            exclude("**/*.vsh")
+        }
     }
 
     register<Copy>("buildAndCollect") {

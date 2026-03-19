@@ -201,7 +201,8 @@ public class SharedConfig {
 		return isHas;
 	}
 
-	public float getDownfall(Biome.Precipitation i) {
+	//? if > 1.20 {
+	/*public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;
 		} else if (i.equals(Biome.Precipitation.RAIN)) {
@@ -210,6 +211,7 @@ public class SharedConfig {
 			return this.getNoneDensity() / 100f;
 		}
 	}
+	*///? }
 
 	/**
 	 * @return a SharedConfig JSON string

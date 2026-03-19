@@ -80,7 +80,7 @@ public class Data {
 	 * !! Only call in client because server is multiplayer that cannot ensure what pos will use.
 	 */
 	public void updateBiomeDensity(Player player) {
-		Level level = player.level();
+		Level level = player.level;
 		boolean isDynamic = CONFIG.isEnableDynamic();
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 
@@ -89,7 +89,11 @@ public class Data {
 				BlockPos pos = player.blockPosition();
 				Holder<Biome> biome = level.getBiome(pos);
 				if (CONFIG.isFilterListHasBiome(biome))
-					targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitationAt(pos));
+					//? if > 1.20 {
+					/*targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitationAt(pos));
+					*///? } else {
+					targetDownFall = biome.value().getDownfall();
+					//? }
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {

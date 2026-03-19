@@ -5,19 +5,18 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.config.Config;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.networking.NetworkManager;
-import io.netty.buffer.Unpooled;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+//? if < 1.21 {
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
+//? }
 
 import static com.rimo.sfcr.Common.*;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-@Environment(EnvType.SERVER)
 public class DedicatedServer {
 	public static void init() {
 		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
@@ -94,19 +93,34 @@ public class DedicatedServer {
 										context.getSource().sendSystemMessage(Component.nullToEmpty("§4[SFCRe] Please cast it from client!"));
 										return 1;
 									}
+									//? if < 1.21 {
 									NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new FriendlyByteBuf(Unpooled.buffer()));
+									//? } else
+									//NetworkManager.sendToPlayer(player, new UploadRequestPayload());
 									return 1;
 								})
 						)
 				)
 		);
 
+		//? if >= 1.21 {
+		/*NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
+		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
+		*///? }
+
 		// Shared Config Receiver
 		// allows server can get a new dimension config uploaded by player
-		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, ((buf, context) -> {
+		//? if < 1.21 {
+		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, (buf, context) -> {
 			String name = buf.readUtf();
 			String configJson = buf.readUtf();
 			long l = buf.readVarLong();
+		//? } else {
+		/*NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
+			String name = payload.name();
+			String configJson = payload.sharedConfigJson();
+			long l = payload.seed();
+		*///? }
 			Player player = context.getPlayer();
 			if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
 				player.sendSystemMessage(Component.nullToEmpty("§4[SFCRe] Your permission is not enough to upload config!"));
@@ -126,6 +140,6 @@ public class DedicatedServer {
 			setDimensionConfigJson(name, configJson);
 			player.sendSystemMessage(Component.nullToEmpty("[SFCRe] Config was successful upload!"));
 			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
-		}));
+		});
 	}
 }

@@ -10,20 +10,19 @@ import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
-import io.netty.buffer.Unpooled;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
+//? if < 1.21 {
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
+//? }
 
 import java.util.Random;
 
 import static com.rimo.sfcr.Common.*;
 
-@Environment(EnvType.CLIENT)
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
@@ -85,6 +84,7 @@ public class Client {
 		// client command for configScreen
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
 				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
+					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {
 						Minecraft client = Minecraft.getInstance();
 						client.execute(() -> client.setScreen(new ConfigScreen().build()));
@@ -96,11 +96,18 @@ public class Client {
 		);
 
 		//dimension packet receiver
+		//? if < 1.21 {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
-			hasServer = true;
 			String name = buf.readUtf();
 			String configJson = buf.readUtf();
 			long seed = buf.readVarLong();
+		//? } else {
+		/*NetworkManager.registerReceiver(NetworkManager.Side.S2C, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
+			String name = payload.name();
+			String configJson = payload.sharedConfigJson();
+			long seed = payload.seed();
+		*///? }
+			hasServer = true;
 			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
 				try {
 					CONFIG.fromString(configJson);
@@ -124,25 +131,41 @@ public class Client {
 		});
 
 		//weather receiver
+		//? if < 1.21 {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_WEATHER, (buf, context) -> {
 			Data.Weather weather = buf.readEnum(Data.Weather.class);
+		//? } else {
+		/*NetworkManager.registerReceiver(NetworkManager.Side.S2C, WeatherPayload.TYPE, WeatherPayload.CODEC, (payload, context) -> {
+			Data.Weather weather = payload.weather();
+		*///? }
 			DATA.setNextWeather(weather);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive weather: {}", MOD_ID, weather);
 		});
 
 		//upload request receiver & shared config sender
+		//? if < 1.21 {
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_UPLOAD_REQUEST, (buf, context) -> {
+		//? } else
+		//NetworkManager.registerReceiver(NetworkManager.Side.S2C, UploadRequestPayload.TYPE, UploadRequestPayload.CODEC, (payload, context) -> {
 			Level level = Minecraft.getInstance().level;
 			if (level == null)
 				return;
 			String name = level.dimension().location().toString();
 			String configJson = CONFIG.toString();
+			//? if < 1.21 {
 			NetworkManager.sendToServer(PACKET_DIMENSION, new FriendlyByteBuf(Unpooled.buffer())
 					.writeUtf(name)
 					.writeUtf(configJson)
 					.writeVarLong(0L)
 			);
+			//? } else {
+			/*NetworkManager.sendToServer(new DimensionPayload(
+					name,
+					configJson,
+					0L
+			));
+			*///? }
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);
 		});

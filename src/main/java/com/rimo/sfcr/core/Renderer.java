@@ -4,23 +4,37 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.rimo.sfcr.Common;
+import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+//? if < 1.20 {
+import com.mojang.math.Matrix4f;
+// } else {
+/*import org.joml.Matrix4f;
+*///? }
+//? if < 1.21.1 {
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.GameRenderer;
+//? } else {
+/*import net.minecraft.client.renderer.*;
+import static net.minecraft.client.renderer.RenderStateShard.*;
+*///? }
 
 import java.util.ArrayList;
 
 import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
-	private final ResourceLocation whiteTexture = new ResourceLocation(MOD_ID, "white.png");
+	private static final ResourceLocation whiteTexture = VersionUtil.getId("white.png");
+	//? if = 1.21.1 {
+	/*private static final RenderType SFCR = createCustomCloudRenderType(false);
+	private static final RenderType SFCR_DEPTH_ONLY = createCustomCloudRenderType(true);
+	*///? }
 	private final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
@@ -39,8 +53,37 @@ public class Renderer {
 		renderer.stop();
 	}
 
+	/*
+	 * since 1.21.1: vanilla RenderType is blinding with vanilla texture that let our uv always pointing to an empty pixel.
+	 * it's causing our clouds cannot render. we must modify it to our whiteTexture.
+	 */
+	//? if = 1.21.1 {
+	/*private static RenderType createCustomCloudRenderType(boolean bl) {
+		return RenderType.create(
+				"clouds",
+				DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL,
+				VertexFormat.Mode.QUADS,
+				786432,
+				false,
+				false,
+				RenderType.CompositeState.builder()
+						.setShaderState(RENDERTYPE_CLOUDS_SHADER)
+						.setTextureState(new RenderStateShard.TextureStateShard(whiteTexture, false, false))  //modify it
+						.setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+						.setCullState(NO_CULL)
+						.setWriteMaskState(bl ? DEPTH_WRITE : COLOR_DEPTH_WRITE)
+						.setOutputState(CLOUDS_TARGET)
+						.createCompositeState(true)
+		);
+	}
+	*///? }
+
 	//Rewrite of vanilla renderClouds invoke by mixin
+	//? if < 1.21.1 {
 	public void render(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	//? } else {
+	/*public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	*///? }
 	                   ClientLevel level) {
 		float cloudHeight = level.effects().getCloudHeight();
 		if (Float.isNaN(cloudHeight))
@@ -76,7 +119,7 @@ public class Renderer {
 		int cameraGridY = (int) (cameraY / CLOUD_BLOCK_HEIGHT);
 
 		//refresh check
-		resamplingTimer += Minecraft.getInstance().getDeltaFrameTime() * 0.25 * 0.25;
+		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
 		if (! isPause && ! isResampling) {
 			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.distanceToSqr(cloudColor) > 2.0E-4) {
 				isResampling = true;
@@ -126,12 +169,20 @@ public class Renderer {
 		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
+			//? if < 1.21.1 {
 			BufferBuilder.RenderedBuffer cb = rebuildCloudMesh(Tesselator.getInstance().getBuilder(), cloudColor, xOffsetInGrid, cloudHeight);
+			//? } else {
+			/*MeshData cb = rebuildCloudMesh(Tesselator.getInstance(), cloudColor, xOffsetInGrid, cloudHeight);
+			*///? }
 			debugRebuildTime = (System.nanoTime() - debugRebuildTime) / 1000000;
 			if (cb != null) {
 				if (cloudsBuffer != null)
 					cloudsBuffer.close();
-				cloudsBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+				//? if > 1.20 {
+				/*cloudsBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+				*///? } else {
+				cloudsBuffer = new VertexBuffer();
+				//? }
 				cloudsBuffer.bind();
 				debugUploadTime = System.nanoTime();
 				cloudsBuffer.upload(cb);
@@ -141,8 +192,10 @@ public class Renderer {
 		}
 
 		//Setup shader
+		//? if < 1.21.1 {
 		RenderSystem.setShader(GameRenderer::getPositionTexColorNormalShader);
 		RenderSystem.setShaderTexture(0, whiteTexture);
+		//? }
 		if (CONFIG.isEnableFog()) {
 			FogRenderer.levelFogColor();
 			if (!CONFIG.isFogAutoDistance()) {
@@ -156,6 +209,8 @@ public class Renderer {
 			FogRenderer.setupNoFog();
 		}
 		poseStack.pushPose();
+		//? if = 1.21.1
+		//poseStack.mulPose(matrix4f2);
 		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
 		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
@@ -163,12 +218,20 @@ public class Renderer {
 		if (cloudsBuffer != null) {
 			cloudsBuffer.bind();
 			for (int s = 0; s < 2; ++s) {
+				//? if < 1.21.1 {
 				if (s == 0) {
 					RenderSystem.colorMask(false, false, false, false);
 				} else {
 					RenderSystem.colorMask(true, true, true, true);
 				}
 				cloudsBuffer.drawWithShader(poseStack.last().pose(), projectionMatrix, RenderSystem.getShader());
+				//? } else {
+				/*RenderType renderType = s == 0 ? SFCR_DEPTH_ONLY : SFCR;
+				renderType.setupRenderState();
+				ShaderInstance shaderInstance = RenderSystem.getShader();
+				cloudsBuffer.drawWithShader(poseStack.last().pose(), matrix4f2, shaderInstance);
+				renderType.clearRenderState();
+				*///? }
 			}
 			VertexBuffer.unbind();
 		}
@@ -176,9 +239,11 @@ public class Renderer {
 		//Restore render system
 		RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 		poseStack.popPose();
+		//? if < 1.21.1 {
 		RenderSystem.enableCull();
 		RenderSystem.disableBlend();
 		RenderSystem.defaultBlendFunc();
+		//? }
 	}
 
 	public void markForRebuild() {
@@ -196,7 +261,11 @@ public class Renderer {
 	}
 
 	// Building mesh
+	//? if < 1.21.1 {
 	private @Nullable BufferBuilder.RenderedBuffer rebuildCloudMesh(BufferBuilder builder, Vec3 cloudColor, double offset, float cloudHeight) {
+	//? } else {
+	/*private @Nullable MeshData rebuildCloudMesh(Tesselator tesselator, Vec3 cloudColor, double offset, float cloudHeight) {
+	*///? }
 		Minecraft client = Minecraft.getInstance();
 		Camera camera = client.gameRenderer.getMainCamera();
 
@@ -217,8 +286,17 @@ public class Renderer {
 		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
 			cloudColor = cloudColor.multiply(getBlushColorByTime(client.level.getDayTime()));
 
+		//? if < 1.21 {
 		builder.clear();
 		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
+		for (int i = 0; i < 4; i ++)
+			builder.vertex(i, -99, i).uv(0.5f, 0.5f).color(0).normal(0, -1, 0).endVertex();
+		//? } else {
+		/*BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
+		for (int i = 0; i < 4; i ++)  // empty builder will lead game crash... we draw a holder face to prevent that.
+			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
+		*///? }
+
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
@@ -276,11 +354,18 @@ public class Renderer {
 						int ny = facing.normal.getY();
 						int nz = facing.normal.getZ();
 						for (int k = 0; k < 4; k++) {
+							//? if < 1.21 {
 							builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
 									.uv(0.5f, 0.5f)
 									.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
 									.normal(nx, ny, nz)
 									.endVertex();
+							//? } else {
+							/*builder.addVertex(verCache[k][0], verCache[k][1], verCache[k][2])
+									.setUv(0.5f, 0.5f)
+									.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+									.setNormal(nx, ny, nz);
+							*///? }
 						}
 						isDrawn = true;
 						break;
@@ -308,7 +393,10 @@ public class Renderer {
 				}
 			}
 
+			//? if < 1.21.1 {
 			return builder.end();
+			//? } else
+			//return builder.buildOrThrow();
 		} catch (Exception e) {
 			exceptionCatcher(e);
 			return null;

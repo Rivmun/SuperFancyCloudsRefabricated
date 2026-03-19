@@ -20,7 +20,7 @@ stonecutter {
     create(rootProject) {
         fun mc(version: String, vararg loaders: String) = loaders
             .forEach {
-                if (it == "fabric" && sc.eval(version, ">=26.1")) {
+                if (sc.eval(version, ">=26.1")) {
                     version("$version-$it", version).buildscript = "build.$it-unobf.gradle.kts"
                 } else {
                     version("$version-$it", version).buildscript = "build.$it.gradle.kts"
@@ -28,13 +28,13 @@ stonecutter {
             }
 
 //        mc("26.1",   "fabric")
-//        mc("1.21.11","fabric", "neoforge")
-//        mc("1.21.1", "fabric", "neoforge")
+        mc("1.21.11","fabric", "neoforge")
+        mc("1.21.1", "fabric", "neoforge")
         mc("1.20.1", "fabric", "forge")
-//        mc("1.19.2", "fabric", "forge")
+        mc("1.19.2", "fabric", "forge")
 //        mc("1.18.2", "fabric", "forge")
 //        mc("1.16.5", "fabric", "forge")
 
-        vcsVersion = "1.20.1-fabric"
+        vcsVersion = "1.21.1-fabric"
     }
 }

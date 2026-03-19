@@ -2,7 +2,7 @@ plugins {
     id("dev.architectury.loom")
 }
 
-val minecraft = property("deps.minecraft") as String;
+val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
@@ -40,10 +40,11 @@ tasks.named<ProcessResources>("processResources") {
         this["arch-api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-        this["particlerain_min_version"] = prop("particlerain_min_version")
+        this["particlerain_min_version"] = if (sc.current.parsed > "1.20") prop("particlerain_min_version") else ""
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
+        this["particlerain_mixin"] = if (sc.current.parsed > "1.20") "\"particlerain.ParticleSpawnerMixin\"," else ""
     }
 
     filesMatching(listOf("META-INF/mods.toml", "${prop("mod.id")}.mixins.json")) {
@@ -63,11 +64,13 @@ repositories {
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
-    mappings(loom.layered {
-        officialMojangMappings()
-    })
+    mappings(loom.officialMojangMappings())
     implementation("com.google.code.gson:gson:2.10.1")
     forge("net.minecraftforge:forge:${property("deps.forge")}")
+
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")!!)
+    implementation("io.github.llamalad7:mixinextras-forge:0.5.0") {}
 
     // Arch-api
     modApi("dev.architectury:architectury-forge:${property("deps.arch-api")}")
@@ -81,7 +84,9 @@ dependencies {
     modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //particle rain
-    modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    if (sc.current.parsed > "1.20") {
+        modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    }
     //serene seasons
     modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
 }

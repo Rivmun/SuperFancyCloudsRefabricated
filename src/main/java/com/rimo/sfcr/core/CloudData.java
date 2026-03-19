@@ -1,5 +1,6 @@
 package com.rimo.sfcr.core;
 
+import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.Level;
@@ -45,7 +46,7 @@ public class CloudData {
 	}
 
 	public void tick() {
-		lifeTime -= Minecraft.getInstance().getDeltaFrameTime() * 0.25f * 0.25f;
+		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f;
 	}
 
 	private int minusCloudGridHeight(int y) {

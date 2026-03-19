@@ -2,6 +2,7 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.rimo.sfcr.Common;
+import com.rimo.sfcr.VersionUtil;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
@@ -12,7 +13,11 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShad
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
+//? if > 1.20 {
+/*import org.joml.Matrix4f;
+*///? } else {
+import com.mojang.math.Matrix4f;
+//? }
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -194,7 +199,11 @@ public class RendererDHCompat extends Renderer {
 
 	//update cloud invoked by mixin (instead of manual call in 2.0)
 	@Override
+	//? if < 1.21.1 {
 	public void render(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	//? } else {
+	/*public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	*///? }
 	                   ClientLevel level) {
 		float cloudHeight = level.effects().getCloudHeight();
 		if (Float.isNaN(cloudHeight))
@@ -219,7 +228,7 @@ public class RendererDHCompat extends Renderer {
 		cloudColor = getBrightMultiplier(cloudColor);
 
 		//refresh check
-		resamplingTimer += Minecraft.getInstance().getDeltaFrameTime() * 0.25 * 0.25;
+		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
 		if (! Minecraft.getInstance().isPaused() && ! isResampling &&
 				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ)) {
 			isResampling = true;

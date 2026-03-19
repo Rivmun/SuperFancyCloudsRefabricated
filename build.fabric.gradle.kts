@@ -2,7 +2,7 @@ plugins {
     id("dev.architectury.loom")
 }
 
-val minecraft = property("deps.minecraft") as String;
+val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
@@ -33,13 +33,14 @@ tasks.named<ProcessResources>("processResources") {
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["particlerain_min_version"] = prop("particlerain_min_version")
-        this["sereneseasons"] = prop("deps.sereneseasons")
-        this["fabricseasons_min_version"] = prop("fabricseasons_min_version")
+        this["sereneseasons"] = if (sc.current.parsed > "1.20") prop("deps.sereneseasons") else ""
+        this["fabricseasons_min_version"] = if (sc.current.parsed <= "1.21.1") prop("fabricseasons_min_version") else ""
 
         this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
-//        this["RegistrySyncManagerMixin" ] = if (sc.current.parsed  > "1.20.1") "\"fabric.RegistrySyncManagerMixin\"," else ""
+        this["particlerain_mixin"] = if (sc.current.parsed > "1.20") "\"particlerain.ParticleSpawnerMixin\"," else
+            if (sc.current.parsed > "1.19") "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\"," else ""
     }
 
     filesMatching(listOf("fabric.mod.json", "${prop("mod.id")}.mixins.json")) {
@@ -56,13 +57,14 @@ repositories {
     maven("https://maven.shedaniel.me/")
     maven("https://api.modrinth.com/maven")
     maven("https://maven.terraformersmc.com/")
+    if (sc.current.parsed < "1.20") {
+        maven("https://cursemaven.com")
+    }
 }
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
-    mappings(loom.layered {
-        officialMojangMappings()
-    })
+    mappings(loom.officialMojangMappings())
     implementation("com.google.code.gson:gson:2.10.1")
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
@@ -81,16 +83,27 @@ dependencies {
     modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //particle rain
-    modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    if (sc.current.parsed > "1.20") {
+        modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    } else {
+        modCompileOnly("curse.maven:particle-rain-421897:${property("deps.particlerain")}")
+    }
     //serene seasons
-    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    if (sc.current.parsed > "1.20") {
+        modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    }
     //fabric seasons
-    modCompileOnly("maven.modrinth:fabric-seasons:${property("deps.fabric_seasons")}")
+    if (stonecutter.current.parsed <= "1.21.1") {
+        modCompileOnly("maven.modrinth:fabric-seasons:${property("deps.fabric_seasons")}")
+    }
 }
 
 tasks {
     processResources {
         exclude("**/neoforge.mods.toml", "**/mods.toml")
+        if (sc.current.parsed <= "1.21.1") {
+            exclude("**/*.vsh")
+        }
     }
 
     register<Copy>("buildAndCollect") {

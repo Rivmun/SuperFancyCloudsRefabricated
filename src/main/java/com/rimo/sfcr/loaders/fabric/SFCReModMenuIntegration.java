@@ -1,3 +1,4 @@
+//? if fabric {
 package com.rimo.sfcr.loaders.fabric;
 
 import com.rimo.sfcr.config.ConfigScreen;
@@ -15,3 +16,4 @@ public class SFCReModMenuIntegration implements ModMenuApi {
 		}
 	}
 }
+//? }

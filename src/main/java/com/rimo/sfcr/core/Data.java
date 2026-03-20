@@ -81,7 +81,7 @@ public class Data {
 	 * !! Only call in client because server is multiplayer that cannot ensure what pos will use.
 	 */
 	public void updateBiomeDensity(Player player) {
-		//~ if > 1.19 '.level' -> '.level()'
+		//~ if > 1.20 '.level' -> '.level()'
 		Level level = player.level();
 		boolean isDynamic = CONFIG.isEnableDynamic();
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();

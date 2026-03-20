@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "${mod_group}.${mod_id}.mixin",
+  "plugin": "${mod_group}.${mod_id}.mixin.Plugin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "ServerLevelAccessor",
+    "extra.ServerLevelMixin",
+    "extra.LevelMixin"
+  ],
+  "client": [
+    ${particlerain_mixin}
+    "DebugScreenOverlayMixin",
+    "OptionsMixin",
+    "GameRendererMixin",
+    "LevelRendererMixin",
+    "extra.LeavesBlockMixin",
+    "extra.LevelRendererMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

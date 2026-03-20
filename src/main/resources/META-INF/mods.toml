@@ -1,0 +1,57 @@
+modLoader = "javafml"
+loaderVersion = "[${forge_min_version},)"
+issueTrackerURL = "${mod_issues}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+authors = "${mod_author}"
+credits = "${mod_contributor}"
+description = '''${mod_description}'''
+logoFile = "${mod_icon}"
+
+[[dependencies.${mod_id}]]
+modId = "forge"
+mandatory = true
+versionRange = "[${forge_min_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+mandatory = true
+versionRange = "${version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "architectury"
+mandatory = true
+versionRange = "[${arch_api},)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "${cloth_id}"
+mandatory = false
+versionRange = "[${cloth},)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[denpendencies.${mod_id}]]
+modId = "distanthorizons"
+mandatory = false
+versionRange = "[${distanthorizons_min_version},)"
+ordering = "NONE"
+side = "CLIENT"
+
+${particlerain_deps}
+
+[[denpendencies.${mod_id}]]
+modId = "sereneseasons"
+mandatory = false
+versionRange = "[${sereneseasons},)"
+ordering = "NONE"
+side = "CLIENT"

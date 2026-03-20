@@ -26,14 +26,14 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
-versionRange="${version_range_neoforge}"
+versionRange="${version_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="architectury"
 type="optional"
-versionRange="[${arch-api},)"
+versionRange="[${arch_api},)"
 ordering="AFTER"
 side="BOTH"
 

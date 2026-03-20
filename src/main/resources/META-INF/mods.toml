@@ -5,7 +5,7 @@ license = "${mod_license}"
 
 [[mods]]
 modId = "${mod_id}"
-version = "${version}"
+version = "${mod_version}"
 displayName = "${mod_name}"
 authors = "${mod_author}"
 credits = "${mod_contributor}"
@@ -22,14 +22,14 @@ side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "minecraft"
 mandatory = true
-versionRange = "${version_range_forge}"
+versionRange = "${version_range}"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "architectury"
 mandatory = true
-versionRange = "[${arch-api},)"
+versionRange = "[${arch_api},)"
 ordering = "AFTER"
 side = "BOTH"
 
@@ -47,12 +47,7 @@ versionRange = "[${distanthorizons_min_version},)"
 ordering = "NONE"
 side = "CLIENT"
 
-[[denpendencies.${mod_id}]]
-modId = "particlerain"
-mandatory = false
-versionRange = "[${particlerain_min_version},)"
-ordering = "NONE"
-side = "CLIENT"
+${particlerain_deps}
 
 [[denpendencies.${mod_id}]]
 modId = "sereneseasons"

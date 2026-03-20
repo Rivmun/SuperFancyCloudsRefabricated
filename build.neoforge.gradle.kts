@@ -9,6 +9,13 @@ loom {
     accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
+sourceSets.main {
+    resources {
+        // Oh, my dear arch-loom, why you change src dir only for forge-like platform...
+        setSrcDirs(listOf(rootProject.file("src/main/resources")))
+    }
+}
+
 tasks.named<ProcessResources>("processResources") {
     fun prop(name: String) = project.property(name) as String
 
@@ -30,7 +37,7 @@ tasks.named<ProcessResources>("processResources") {
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
-        this["arch-api"] =      prop("deps.arch-api")
+        this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["particlerain_min_version"] = if (sc.current.parsed <= "1.21.1") prop("particlerain_min_version") else ""
@@ -83,9 +90,9 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/mods.toml")
+        exclude("**/fabric.mod.json", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener")
         if (sc.current.parsed <= "1.21.1") {
-            exclude("**/*.vsh")
+            exclude("**/*.vsh", "**/${project.property("mod.id")}.accesswidener")
         }
     }
 

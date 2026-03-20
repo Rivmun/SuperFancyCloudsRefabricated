@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "${mod_id}",
-  "version": "${version}",
+  "version": "${mod_version}",
   "name": "${mod_name}",
   "description": "${mod_description}",
   "authors": [
@@ -12,7 +12,7 @@
   ],
   "contact": {
     "homepage": "${mod_homepage}",
-    "sources": "${mod_source}",
+    "sources": "${mod_sources}",
     "issues": "${mod_issues}"
   },
   "license": "${mod_license}",
@@ -37,15 +37,15 @@
   ],
   "depends": {
     "fabric": "*",
-    "minecraft": "${version_range_fabric}",
-    "architectury": ">=${arch-api}"
+    "minecraft": "${version_range}",
+    "architectury": ">=${arch_api}"
   },
   "suggests": {
     "cloth-config2":">=${cloth}",
     "modmenu": "*",
     "distanthorizons": ">=${distanthorizons_min_version}",
-    "particlerain": ">=${particlerain_min_version}",
-    "sereneseasons": ">=${sereneseasons}",
+    ${particlerain_deps}
+    ${sereneseasons_deps}
     "seasons": ">=${fabricseasons_min_version}"
   },
   "custom": {

@@ -6,7 +6,7 @@ val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
-    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+    if (sc.current.parsed > "1.21.1") accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
 tasks.named<ProcessResources>("processResources") {
@@ -29,18 +29,20 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_icon"] =      prop("mod.icon")
 
         this["version_range"] = prop("version_range")
-        this["arch-api"] =      prop("deps.arch-api")
+        this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-        this["particlerain_min_version"] = prop("particlerain_min_version")
-        this["sereneseasons"] = if (sc.current.parsed > "1.20") prop("deps.sereneseasons") else ""
-        this["fabricseasons_min_version"] = if (sc.current.parsed <= "1.21.1") prop("fabricseasons_min_version") else ""
+        this["fabricseasons_min_version"] = prop("fabricseasons_min_version")
 
         this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
         this["particlerain_mixin"] = if (sc.current.parsed > "1.20") "\"particlerain.ParticleSpawnerMixin\"," else
             if (sc.current.parsed > "1.19") "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\"," else ""
+
+        // insert deps
+        this["particlerain_deps"] = if (! sc.current.parsed.eq("1.18.2")) "\"particlerain\": \">=${prop("particlerain_min_version")}\"," else ""
+        this["sereneseasons_deps"] = if (sc.current.parsed > "1.20") "\"sereneseasons\": \">=${prop("deps.sereneseasons")}\"," else ""
     }
 
     filesMatching(listOf("fabric.mod.json", "${prop("mod.id")}.mixins.json")) {
@@ -100,9 +102,9 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/mods.toml")
+        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener")
         if (sc.current.parsed <= "1.21.1") {
-            exclude("**/*.vsh")
+            exclude("**/*.vsh", "**/${project.property("mod.id")}.accesswidener")
         }
     }
 

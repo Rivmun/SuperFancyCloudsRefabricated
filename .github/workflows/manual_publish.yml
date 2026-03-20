@@ -1,0 +1,69 @@
+name: Manual Publish
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [
+          1.16.5-fabric, 1.16.5-forge,
+          1.18.2-fabric, 1.18.2-forge,
+          1.19.2-fabric, 1.19.2-forge,
+          1.20.1-fabric, 1.20.1-forge,
+          1.21.1-fabric, 1.21.1-neoforge
+        ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v3
+
+      - uses: burrunan/gradle-cache-action@v1
+        with:
+          gradle-distribution-sha-256-sum-warning: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          cache: gradle
+          java-version: 21
+
+      - run: chmod +x gradlew
+
+      - name: Get version from gradle.properties
+        id: get_version
+        run: |
+          VERSION=$(grep "^mod.version=" gradle.properties | cut -d'=' -f2)
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep "^mod_version=" gradle.properties | cut -d'=' -f2)
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Version not found in gradle.properties"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Build ${{ matrix.version }}
+        run: ./gradlew ${{ matrix.version }}:build --no-daemon
+
+      - name: Publish to Modrinth & CurseForge
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: Hoop89kN
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 820317
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          files: versions/${{ matrix.version }}/build/libs/*.jar
+          name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
+          version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}
+          changelog-file: CHANGELOG.md

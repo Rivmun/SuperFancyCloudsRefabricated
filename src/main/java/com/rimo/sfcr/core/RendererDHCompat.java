@@ -14,10 +14,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.phys.Vec3;
 //? if > 1.20 {
-/*import org.joml.Matrix4f;
-*///? } else {
-import com.mojang.math.Matrix4f;
-//? }
+import org.joml.Matrix4f;
+//? } else if ! 1.16.5 {
+/*import com.mojang.math.Matrix4f;
+*///? }
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -199,11 +199,13 @@ public class RendererDHCompat extends Renderer {
 
 	//update cloud invoked by mixin (instead of manual call in 2.0)
 	@Override
-	//? if < 1.21.1 {
-	public void render(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	//? } else {
-	/*public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
-	*///? }
+	//? if = 1.16.5 {
+	/*public void render(PoseStack poseStack, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	*///? } else if < 1.21.1 {
+	/*public void render(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	*///? } else {
+	public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
+	//? }
 	                   ClientLevel level) {
 		float cloudHeight = level.effects().getCloudHeight();
 		if (Float.isNaN(cloudHeight))

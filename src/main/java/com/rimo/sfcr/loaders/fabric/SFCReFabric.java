@@ -1,5 +1,5 @@
 //? if fabric {
-/*package com.rimo.sfcr.loaders.fabric;
+package com.rimo.sfcr.loaders.fabric;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
@@ -24,4 +24,4 @@ public class SFCReFabric implements ModInitializer, ClientModInitializer, Dedica
 		DedicatedServer.init();
 	}
 }
-*///? }
+//? }

@@ -7,16 +7,16 @@ import net.minecraft.world.level.biome.Biome;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 //? if < 1.20 {
-import net.minecraft.data.BuiltinRegistries;
+/*import net.minecraft.data.BuiltinRegistries;
 import net.minecraft.world.level.biome.Biomes;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
-//? } else {
-/*import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+*///? } else {
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-*///? }
+//? }
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -24,7 +24,7 @@ public abstract class LevelRendererMixin {
 	/* - - NO CLOUD NO RAIN - - */
 
 	//? if > 1.20 {
-	/*@WrapOperation(method = "renderSnowAndRain", at = @At(
+	@WrapOperation(method = "renderSnowAndRain", at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
@@ -43,12 +43,13 @@ public abstract class LevelRendererMixin {
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}
-	*///? } else {
-	@Unique
+	//? } else {
+	/*@Unique
 	private double sfcr$x, sfcr$y, sfcr$z;
 
 	@ModifyArgs(method = "renderSnowAndRain", at = @At(
 			value = "INVOKE",
+			//~ if ! 1.16.5 'III' -> 'DDD'
 			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;"
 	))
 	private void sfcr$getRenderWeatherPos(Args args) {
@@ -78,5 +79,5 @@ public abstract class LevelRendererMixin {
 			return BuiltinRegistries.BIOME.get(Biomes.SAVANNA);
 		return biome;
 	}
-	//? }
+	*///? }
 }

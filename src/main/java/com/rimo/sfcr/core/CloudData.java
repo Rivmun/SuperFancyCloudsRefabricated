@@ -190,42 +190,42 @@ public class CloudData {
 	 */
 	private void encodeFace(ArrayList<Integer> meshData, int x, int y, int z, Facing facing, int thickness) {
 		switch (facing) {
-			case EAST -> {
+			case EAST:
 				meshData.add(compressToHead(compressVertex(x + 1, y, z), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x + 1, y, z + 1), thickness));
 				meshData.add(compressVertex(x + 1, y + 1, z + 1));
 				meshData.add(compressVertex(x + 1, y + 1, z));
-			}
-			case WEST -> {
+			break;
+			case WEST:
 				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x, y, z + 1), thickness));
 				meshData.add(compressVertex(x, y + 1, z + 1));
 				meshData.add(compressVertex(x, y + 1, z));
-			}
-			case TOP -> {
+			break;
+			case TOP:
 				meshData.add(compressToHead(compressVertex(x, y + 1, z), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x + 1, y + 1, z), thickness));
 				meshData.add(compressVertex(x + 1, y + 1, z + 1));
 				meshData.add(compressVertex(x, y + 1, z + 1));
-			}
-			case BOTTOM -> {
+			break;
+			case BOTTOM:
 				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x + 1, y, z), thickness));
 				meshData.add(compressVertex(x + 1, y, z + 1));
 				meshData.add(compressVertex(x, y, z + 1));
-			}
-			case SOUTH -> {
+			break;
+			case SOUTH:
 				meshData.add(compressToHead(compressVertex(x, y, z + 1), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x + 1, y, z + 1), thickness));
 				meshData.add(compressVertex(x + 1, y + 1, z + 1));
 				meshData.add(compressVertex(x, y + 1, z + 1));
-			}
-			case NORTH -> {
+			break;
+			case NORTH:
 				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
 				meshData.add(compressToHead(compressVertex(x + 1, y, z), thickness));
 				meshData.add(compressVertex(x + 1, y + 1, z));
 				meshData.add(compressVertex(x, y + 1, z));
-			}
+			break;
 		}
 	}
 	private static int compressVertex(int x, int y, int z) {

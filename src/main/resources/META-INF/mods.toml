@@ -34,7 +34,7 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
-modId = "cloth_config"
+modId = "${cloth_id}"
 mandatory = false
 versionRange = "[${cloth},)"
 ordering = "AFTER"

@@ -2,16 +2,20 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
+//? if < 1.19
+//import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.rimo.sfcr.config.Config;
+//~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
+//~ if = 1.16.5 'events.common' -> 'events'
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.networking.NetworkManager;
+//~ }
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 //? if < 1.21 {
-import io.netty.buffer.Unpooled;
+/*import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
-//? }
+*///? }
 
 import static com.rimo.sfcr.Common.*;
 import static net.minecraft.commands.Commands.argument;
@@ -20,7 +24,7 @@ import static net.minecraft.commands.Commands.literal;
 public class DedicatedServer {
 	public static void init() {
 		//~ if > 1.19 'access' -> 'access, env'
-		CommandRegistrationEvent.EVENT.register((dispatcher, access) -> dispatcher
+		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
 				.register(literal(MOD_ID)
 						.then(literal("help")
 							.requires(source -> source.hasPermission(2))
@@ -90,21 +94,21 @@ public class DedicatedServer {
 								.requires(source -> source.hasPermission(4))
 								.executes(context -> {
 									//? if > 1.19 {
-									/*ServerPlayer player = context.getSource().getPlayer();
+									ServerPlayer player = context.getSource().getPlayer();
 									if (player == null) {
-									*///? } else {
-									ServerPlayer player;
+									//? } else {
+									/*ServerPlayer player;
 									try {
 										player = context.getSource().getPlayerOrException();
 									} catch (CommandSyntaxException e) {
-									//? }
+									*///? }
 										VersionUtil.sendSystemMessage(context, "§4[SFCRe] Please cast it from client!");
 										return 1;
 									}
 									//? if < 1.21 {
-									NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new FriendlyByteBuf(Unpooled.buffer()));
-									//? } else
-									//NetworkManager.sendToPlayer(player, new UploadRequestPayload());
+									/*NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new FriendlyByteBuf(Unpooled.buffer()));
+									*///? } else
+									NetworkManager.sendToPlayer(player, new UploadRequestPayload());
 									return 1;
 								})
 						)
@@ -112,23 +116,23 @@ public class DedicatedServer {
 		);
 
 		//? if >= 1.21 {
-		/*NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
+		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
 		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
-		*///? }
+		//? }
 
 		// Shared Config Receiver
 		// allows server can get a new dimension config uploaded by player
 		//? if < 1.21 {
-		NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, (buf, context) -> {
+		/*NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, (buf, context) -> {
 			String name = buf.readUtf();
 			String configJson = buf.readUtf();
 			long l = buf.readVarLong();
-		//? } else {
-		/*NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
+		*///? } else {
+		NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
 			String name = payload.name();
 			String configJson = payload.sharedConfigJson();
 			long l = payload.seed();
-		*///? }
+		//? }
 			Player player = context.getPlayer();
 			if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
 				VersionUtil.sendMessage(player, "§4[SFCRe] Your permission is not enough to upload config!");

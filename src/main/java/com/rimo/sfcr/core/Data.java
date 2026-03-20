@@ -3,6 +3,7 @@ package com.rimo.sfcr.core;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.mixin.ServerLevelAccessor;
 import net.minecraft.core.BlockPos;
+//? if ! 1.16.5
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -80,20 +81,27 @@ public class Data {
 	 * !! Only call in client because server is multiplayer that cannot ensure what pos will use.
 	 */
 	public void updateBiomeDensity(Player player) {
-		Level level = player.level;
+		//~ if > 1.19 '.level' -> '.level()'
+		Level level = player.level();
 		boolean isDynamic = CONFIG.isEnableDynamic();
 		boolean isBiomeByChunk = CONFIG.isBiomeDensityByChunk();
 
 		if (isDynamic) {  //Detect Biome Change
 			if (! isBiomeByChunk) {		//Hasn't effected if use chunk data.
 				BlockPos pos = player.blockPosition();
+				//? if ! 1.16.5 {
 				Holder<Biome> biome = level.getBiome(pos);
 				if (CONFIG.isFilterListHasBiome(biome))
+				//? } else {
+				/*Biome biome = level.getBiome(pos);
+				if (CONFIG.isFilterListHasBiome(biome.getBiomeCategory()))
+				*///? }
 					//? if > 1.20 {
-					/*targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitationAt(pos));
-					*///? } else {
+					targetDownFall = CONFIG.getDownfall(biome.value().getPrecipitationAt(pos));
+					//? } else {
+					/*//~ if ! 1.16.5 'biome.' -> 'biome.value().'
 					targetDownFall = biome.value().getDownfall();
-					//? }
+					*///? }
 				isBiomeChange = densityByBiome != targetDownFall;
 			}
 		} else {
@@ -137,15 +145,15 @@ public class Data {
 		if (enableDynamic) {
 			if (isWeatherChange) {
 				switch (nextWeather) {
-					case THUNDER -> densityByWeather = stepDensity(thunderDensity, densityByWeather, densityChangingSpeed);
-					case RAIN -> densityByWeather = stepDensity(rainDensity, densityByWeather, densityChangingSpeed);
-					case CLEAR -> densityByWeather = stepDensity(clearDensity, densityByWeather, densityChangingSpeed);
+					case THUNDER: densityByWeather = stepDensity(thunderDensity, densityByWeather, densityChangingSpeed); break;
+					case RAIN: densityByWeather = stepDensity(rainDensity, densityByWeather, densityChangingSpeed); break;
+					case CLEAR: densityByWeather = stepDensity(clearDensity, densityByWeather, densityChangingSpeed); break;
 				}
 			} else {
 				switch (nextWeather) {
-					case THUNDER -> densityByWeather = thunderDensity;
-					case RAIN -> densityByWeather = rainDensity;
-					case CLEAR -> densityByWeather = clearDensity;
+					case THUNDER: densityByWeather = thunderDensity; break;
+					case RAIN: densityByWeather = rainDensity; break;
+					case CLEAR: densityByWeather = clearDensity; break;
 				}
 			}
 		} else {		//Initialize if disabled detect in rain/thunder.

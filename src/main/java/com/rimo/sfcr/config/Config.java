@@ -3,6 +3,7 @@ package com.rimo.sfcr.config;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
+//~ if ! 1.16.5 'me.shedaniel.' -> 'dev.'
 import dev.architectury.platform.Platform;
 
 import java.io.BufferedReader;

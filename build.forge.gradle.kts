@@ -46,6 +46,7 @@ tasks.named<ProcessResources>("processResources") {
         this["version_range"] = prop("version_range")
         this["forge_min_version"] = prop("forge_min_version")
         this["arch_api"] =      prop("deps.arch-api")
+        this["cloth_id"] =      if (sc.current.parsed > "1.18") "cloth_config" else "cloth-config"
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["sereneseasons"] = prop("deps.sereneseasons")
@@ -79,12 +80,16 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     forge("net.minecraftforge:forge:${property("deps.forge")}")
 
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+//    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")!!)
     implementation("io.github.llamalad7:mixinextras-forge:0.5.0") {}
 
     // Arch-api
-    modApi("dev.architectury:architectury-forge:${property("deps.arch-api")}")
+    if (sc.current.parsed > "1.18") {
+        modApi("dev.architectury:architectury-forge:${property("deps.arch-api")}")
+    } else {
+        modApi("me.shedaniel:architectury-forge:${property("deps.arch-api")}")
+    }
     // cloth
     modApi("me.shedaniel.cloth:cloth-config-forge:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")
@@ -109,8 +114,8 @@ tasks {
 
     register<Copy>("buildAndCollect") {
         group = "build"
-        from(jar.map { it.archiveFile })
-        into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+        from(remapJar.map { it.archiveFile })
+        into(rootProject.layout.buildDirectory.file("libs"))
         dependsOn("build")
     }
 

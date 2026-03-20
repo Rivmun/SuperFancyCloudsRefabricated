@@ -3,16 +3,19 @@ package com.rimo.sfcr.core;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+//? if > 1.18
+import net.minecraft.core.Holder;
 //? if > 1.19 {
-/*import net.minecraft.util.RandomSource;
+import net.minecraft.util.RandomSource;
+//? } else if ! 1.16.5 {
+/*import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
 *///? } else
-import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
+//import java.util.Random;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
@@ -36,8 +39,12 @@ public class Sampler {
 	private float densityBySeason = 1F;
 
 	public Sampler setSeed(long seed) {
-		//~ if < 1.19 'RandomSource.create(seed)' -> 'new SingleThreadedRandomSource(seed)'
-		cloudNoise = new SimplexNoise(new SingleThreadedRandomSource(seed));
+		//? if > 1.19 {
+		cloudNoise = new SimplexNoise(RandomSource.create(seed));
+		//? } else if ! 1.16.5 {
+		/*cloudNoise = new SimplexNoise(new SingleThreadedRandomSource(seed));
+		*///? } else
+		//cloudNoise = new SimplexNoise(new Random(seed));
 		return this;
 	}
 
@@ -114,13 +121,19 @@ public class Sampler {
 						level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz),
 						bz
 				);
+				//? if ! 1.16.5 {
 				Holder<Biome> biome = level.getBiome(pos);
 				if (! CONFIG.isFilterListHasBiome(biome))
+				//? } else {
+				/*Biome biome = level.getBiome(pos);
+				if (! CONFIG.isFilterListHasBiome(biome.getBiomeCategory()))
+				*///? }
 					//? if > 1.20 {
-					/*f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
-					*///? } else {
+					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
+					//? } else {
+					/*//~ if ! 1.16.5 'biome.' -> 'biome.value().'
 					f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().getDownfall());
-					//? }
+					*///? }
 			}
 		}
 

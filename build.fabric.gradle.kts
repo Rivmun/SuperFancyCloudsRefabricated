@@ -37,8 +37,12 @@ tasks.named<ProcessResources>("processResources") {
         this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
-        this["particlerain_mixin"] = if (sc.current.parsed > "1.20") "\"particlerain.ParticleSpawnerMixin\"," else
-            if (sc.current.parsed > "1.19") "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\"," else ""
+        this["particlerain_mixin"] = when {
+             sc.current.parsed > "1.20" -> "\"particlerain.ParticleSpawnerMixin\","
+             sc.current.parsed > "1.19" -> "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\","
+            !sc.current.parsed.eq("1.18.2") -> "\"particlerain.WeatherParticleSpawnerMixin\","
+            else -> ""
+        }
 
         // insert deps
         this["particlerain_deps"] = if (! sc.current.parsed.eq("1.18.2")) "\"particlerain\": \">=${prop("particlerain_min_version")}\"," else ""
@@ -72,7 +76,11 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
 
     // Arch-api
-    modApi("dev.architectury:architectury-fabric:${property("deps.arch-api")}")
+    if (sc.current.parsed > "1.18") {
+        modApi("dev.architectury:architectury-fabric:${property("deps.arch-api")}")
+    } else {
+        modApi("me.shedaniel:architectury-fabric:${property("deps.arch-api")}")
+    }
     // cloth
     modApi("me.shedaniel.cloth:cloth-config-fabric:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")
@@ -102,7 +110,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener")
+        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener", "**/*.mcmeta")
         if (sc.current.parsed <= "1.21.1") {
             exclude("**/*.vsh", "**/${project.property("mod.id")}.accesswidener")
         }
@@ -110,8 +118,8 @@ tasks {
 
     register<Copy>("buildAndCollect") {
         group = "build"
-        from(jar.map { it.archiveFile })
-        into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+        from(remapJar.map { it.archiveFile })
+        into(rootProject.layout.buildDirectory.file("libs"))
         dependsOn("build")
     }
 }

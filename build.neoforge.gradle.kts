@@ -6,7 +6,7 @@ val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
-    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+//    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
 sourceSets.main {
@@ -44,6 +44,7 @@ tasks.named<ProcessResources>("processResources") {
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
+        this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
     }
 
     filesMatching(listOf("META-INF/neoforge.mods.toml", "${prop("mod.id")}.mixins.json")) {
@@ -98,8 +99,8 @@ tasks {
 
     register<Copy>("buildAndCollect") {
         group = "build"
-        from(jar.map { it.archiveFile })
-        into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+        from(remapJar.map { it.archiveFile })
+        into(rootProject.layout.buildDirectory.file("libs"))
         dependsOn("build")
     }
 

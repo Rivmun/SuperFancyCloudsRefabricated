@@ -1,3 +1,4 @@
+//? if ! 1.16.5 {
 package com.rimo.sfcr.mixin;
 
 import net.minecraft.client.renderer.GameRenderer;
@@ -18,3 +19,4 @@ public abstract class GameRendererMixin {
 			cir.setReturnValue(cir.getReturnValue() * (CONFIG.getAutoFogMaxDistance() + 2));
 	}
 }
+//? }

@@ -4,19 +4,22 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Common;
+//? if ! 1.16.5 {
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+//? }
+import net.minecraft.world.level.biome.Biome;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class SharedConfig {
 	protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	public static final List<String> DEF_BIOME_FILTER_LIST = List.of(
+	public static final List<String> DEF_BIOME_FILTER_LIST = Arrays.asList(
 			"#minecraft:is_river"
 	);
-	public static final List<String> DEF_SEASON_DENSITY_MAP = List.of(
+	public static final List<String> DEF_SEASON_DENSITY_MAP = Arrays.asList(
 			"MID_SUMMER=130,LATE_WINTER=70"
 	);
 
@@ -186,6 +189,7 @@ public class SharedConfig {
 		return (int) (cloudRenderDistance / 24f * cloudRenderDistance / 24f * getCloudBlockSize() / 16f);
 	}
 
+	//? if ! 1.16.5 {
 	public boolean isFilterListHasBiome(Holder<Biome> biome) {
 		boolean isHas = false;
 		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).location().toString())) {
@@ -200,9 +204,14 @@ public class SharedConfig {
 		}
 		return isHas;
 	}
+	//?} else {
+	/*public boolean isFilterListHasBiome(Biome.BiomeCategory biomeCategory) {
+		return this.getBiomeFilterList().contains(biomeCategory.toString());
+	}
+	*///? }
 
 	//? if > 1.20 {
-	/*public float getDownfall(Biome.Precipitation i) {
+	public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;
 		} else if (i.equals(Biome.Precipitation.RAIN)) {
@@ -211,7 +220,7 @@ public class SharedConfig {
 			return this.getNoneDensity() / 100f;
 		}
 	}
-	*///? }
+	//? }
 
 	/**
 	 * @return a SharedConfig JSON string

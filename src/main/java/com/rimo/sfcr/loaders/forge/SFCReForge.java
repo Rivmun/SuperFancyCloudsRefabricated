@@ -1,5 +1,5 @@
 //? if forge {
-/*package com.rimo.sfcr.loaders.forge;
+package com.rimo.sfcr.loaders.forge;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
@@ -7,7 +7,11 @@ import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.config.ConfigScreen;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.ConfigScreenHandler;
+//? if < 1.19 {
+import net.minecraftforge.client.ConfigGuiHandler;
+//? } else {
+/*import net.minecraftforge.client.ConfigScreenHandler;*/
+//? }
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModList;
@@ -33,9 +37,10 @@ public class SFCReForge {
 	}
 
 	public static void registerModsPage() {
-		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> {
+		//~ if < 1.19 'ConfigScreenHandler.ConfigScreenFactory' -> 'ConfigGuiHandler.ConfigGuiFactory'
+		ModLoadingContext.get().registerExtensionPoint(ConfigGuiHandler.ConfigGuiFactory.class, () -> new ConfigGuiHandler.ConfigGuiFactory((client, parent) -> {
 			return new ConfigScreen().build();
 		}));
 	}
 }
-*///? }
+//? }

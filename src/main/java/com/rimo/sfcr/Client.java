@@ -12,8 +12,9 @@ import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
+//~ if < 1.19 'Component' -> 'TranslatableComponent'
+import net.minecraft.network.chat.TranslatableComponent;
 //? if < 1.21 {
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
@@ -82,14 +83,16 @@ public class Client {
 		});
 
 		// client command for configScreen
-		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
+		//~ if > 1.19 'dispatcher' -> 'dispatcher, dedicated'
+		ClientCommandRegistrationEvent.EVENT.register((dispatcher) -> dispatcher
 				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
 					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isForge() && Platform.isModLoaded("cloth_config")) {
 						Minecraft client = Minecraft.getInstance();
 						client.execute(() -> client.setScreen(new ConfigScreen().build()));
 					} else {
-						context.getSource().arch$sendFailure(Component.translatable("text.sfcr.requiredCloth"));
+						//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'
+						context.getSource().arch$sendFailure(new TranslatableComponent("text.sfcr.requiredCloth"));
 					}
 					return 1;
 				}))

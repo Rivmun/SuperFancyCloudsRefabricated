@@ -3,7 +3,7 @@ plugins {
     id("co.uzzu.dotenv.gradle") version "4.0.0"
     id("dev.architectury.loom") version "1.13-SNAPSHOT" apply false
 }
-stonecutter active "1.19.2-fabric"
+stonecutter active "1.18.2-forge"
 
 stonecutter parameters {
 

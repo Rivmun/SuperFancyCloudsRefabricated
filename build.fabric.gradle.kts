@@ -87,7 +87,7 @@ dependencies {
     //particle rain
     if (sc.current.parsed > "1.20") {
         modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
-    } else {
+    } else if (! sc.current.parsed.eq("1.18.2")){
         modCompileOnly("curse.maven:particle-rain-421897:${property("deps.particlerain")}")
     }
     //serene seasons

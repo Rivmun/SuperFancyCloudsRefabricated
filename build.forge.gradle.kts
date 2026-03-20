@@ -18,7 +18,7 @@ loom {
 
 sourceSets.main {
     resources {
-        // Oh, my dear arch-loom, why you change src dir only for forge-like platform...
+        // Oh, my dear arch-loom, why you change this dir...
         setSrcDirs(listOf(rootProject.file("src/main/resources")))
     }
 }

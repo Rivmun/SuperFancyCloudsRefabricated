@@ -1,5 +1,5 @@
-//? if fabric && < 1.20 {
-package com.rimo.sfcr.mixin.particlerain;
+//? if fabric && = 1.19.2 {
+/*package com.rimo.sfcr.mixin.particlerain;
 
 import com.rimo.sfcr.Client;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -31,4 +31,4 @@ public abstract class WeatherParticleSpawnerMixin {
 			cir.setReturnValue(null);
 	}
 }
-//? }
+*///? }

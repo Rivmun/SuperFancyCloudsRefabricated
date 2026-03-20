@@ -4,12 +4,15 @@ import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+//? if > 1.19 {
+/*import net.minecraft.util.RandomSource;
+*///? } else
+import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
@@ -33,7 +36,8 @@ public class Sampler {
 	private float densityBySeason = 1F;
 
 	public Sampler setSeed(long seed) {
-		cloudNoise = new SimplexNoise(RandomSource.create(seed));
+		//~ if < 1.19 'RandomSource.create(seed)' -> 'new SingleThreadedRandomSource(seed)'
+		cloudNoise = new SimplexNoise(new SingleThreadedRandomSource(seed));
 		return this;
 	}
 

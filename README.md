@@ -1,6 +1,6 @@
 # SuperFancyClouds: Rearchitected
 
-![](common/src/main/resources/icon.png)
+![](src/main/resources/icon.png)
 
 A client/server side Minecraft mod makes your sky full of more stereoscopic and dynamic clouds.
 

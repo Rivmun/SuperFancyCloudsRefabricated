@@ -1,5 +1,5 @@
 //? if fabric {
-package com.rimo.sfcr.loaders.fabric;
+/*package com.rimo.sfcr.loaders.fabric;
 
 import com.rimo.sfcr.config.ConfigScreen;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
@@ -16,4 +16,4 @@ public class SFCReModMenuIntegration implements ModMenuApi {
 		}
 	}
 }
-//? }
+*///? }

@@ -2,9 +2,11 @@ package com.rimo.sfcr.mixin;
 
 import com.rimo.sfcr.Common;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.OptionInstance;
-import net.minecraft.client.Options;
+//? if > 1.19 {
+/*import net.minecraft.client.OptionInstance;
 import org.spongepowered.asm.mixin.Final;
+*///? }
+import net.minecraft.client.Options;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,13 +17,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Options.class)
 public abstract class OptionsMixin {
 
-	@Final @Shadow private OptionInstance<Integer> renderDistance;
+	//? if > 1.19 {
+	/*@Final @Shadow private OptionInstance<Integer> renderDistance;
+	*///? } else
+	@Shadow public int renderDistance;
 
 	//Update cloudRenderDistance when view distance is changed.
 	@Inject(method = "save", at = @At("RETURN"))
 	private void sfcr$updateCloudRenderDistance(CallbackInfo ci) {
 		if (Common.CONFIG.isCloudRenderDistanceFitToView()) {
-			Common.CONFIG.setCloudRenderDistance(renderDistance.get() * 12);
+			//~ if < 1.19 'renderDistance.get()' -> 'renderDistance'
+			Common.CONFIG.setCloudRenderDistance(renderDistance * 12);
 			Common.CONFIG.save();
 		}
 	}

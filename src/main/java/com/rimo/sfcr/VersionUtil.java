@@ -2,6 +2,12 @@ package com.rimo.sfcr;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+//? if < 1.19 {
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+//? }
 
 import static com.rimo.sfcr.Common.MOD_ID;
 
@@ -19,6 +25,22 @@ public class VersionUtil {
 		return Minecraft.getInstance().getDeltaFrameTime();
 		//? } else {
 		/*return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+		*///? }
+	}
+
+	public static void sendSystemMessage(CommandContext<CommandSourceStack> c, String message) {
+		//? if < 1.19 {
+		c.getSource().sendSuccess(Component.nullToEmpty(message), false);
+		//? } else {
+		/*c.getSource().sendSystemMessage(Component.nullToEmpty(message));
+		*///? }
+	}
+
+	public static void sendMessage(Player player, String message) {
+		//? if < 1.19 {
+		player.displayClientMessage(Component.nullToEmpty(message), false);
+		//? } else {
+		/*player.sendSystemMessage(Component.nullToEmpty(message));
 		*///? }
 	}
 }

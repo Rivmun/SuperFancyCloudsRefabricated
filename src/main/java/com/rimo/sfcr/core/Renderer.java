@@ -169,11 +169,13 @@ public class Renderer {
 		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
-			//? if < 1.21.1 {
-			BufferBuilder.RenderedBuffer cb = rebuildCloudMesh(Tesselator.getInstance().getBuilder(), cloudColor, xOffsetInGrid, cloudHeight);
-			//? } else {
+			//? if > 1.21 {
 			/*MeshData cb = rebuildCloudMesh(Tesselator.getInstance(), cloudColor, xOffsetInGrid, cloudHeight);
-			*///? }
+			*///? } else if > 1.19 {
+			/*BufferBuilder.RenderedBuffer cb = rebuildCloudMesh(Tesselator.getInstance().getBuilder(), cloudColor, xOffsetInGrid, cloudHeight);
+			*///? } else {
+			BufferBuilder cb = rebuildCloudMesh(Tesselator.getInstance().getBuilder(), cloudColor, xOffsetInGrid, cloudHeight);
+			//? }
 			debugRebuildTime = (System.nanoTime() - debugRebuildTime) / 1000000;
 			if (cb != null) {
 				if (cloudsBuffer != null)
@@ -261,11 +263,13 @@ public class Renderer {
 	}
 
 	// Building mesh
-	//? if < 1.21.1 {
-	private @Nullable BufferBuilder.RenderedBuffer rebuildCloudMesh(BufferBuilder builder, Vec3 cloudColor, double offset, float cloudHeight) {
-	//? } else {
+	//? if > 1.21 {
 	/*private @Nullable MeshData rebuildCloudMesh(Tesselator tesselator, Vec3 cloudColor, double offset, float cloudHeight) {
-	*///? }
+	*///? } else if > 1.19 {
+	/*private @Nullable BufferBuilder.RenderedBuffer rebuildCloudMesh(BufferBuilder builder, Vec3 cloudColor, double offset, float cloudHeight) {
+	*///? } else {
+	private @Nullable BufferBuilder rebuildCloudMesh(BufferBuilder builder, Vec3 cloudColor, double offset, float cloudHeight) {
+	//? }
 		Minecraft client = Minecraft.getInstance();
 		Camera camera = client.gameRenderer.getMainCamera();
 
@@ -276,7 +280,8 @@ public class Renderer {
 			look = new Vec3(camera.getLookVector());
 			up = new Vec3(camera.getUpVector());
 			right = new Vec3(camera.getLeftVector());
-			tanHalfFov = Math.tan(Math.toRadians(CONFIG.getCullRadianMultiplier() * client.options.fov().get() * client.player.getFieldOfViewModifier()) / 2F);
+			//~ if < 1.19 '.fov().get()' -> '.fov'
+			tanHalfFov = Math.tan(Math.toRadians(CONFIG.getCullRadianMultiplier() * client.options.fov * client.player.getFieldOfViewModifier()) / 2F);
 			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getWidth() / client.getWindow().getHeight();
 		}
 
@@ -393,10 +398,14 @@ public class Renderer {
 				}
 			}
 
-			//? if < 1.21.1 {
-			return builder.end();
-			//? } else
-			//return builder.buildOrThrow();
+			//? if > 1.21.1 {
+			/*return builder.buildOrThrow();
+			*///? } else if > 1.19 {
+			/*return builder.end();
+			*///? } else {
+			builder.end();
+			return builder;
+			//? }
 		} catch (Exception e) {
 			exceptionCatcher(e);
 			return null;

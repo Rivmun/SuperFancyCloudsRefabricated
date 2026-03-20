@@ -352,19 +352,11 @@ public class Renderer {
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
-				//? if ! 1.16.5 {
-				cloudAlpha *= switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
-					case NORMAL, TRANS_MID_BODY -> 1F;
-					case TRANS_IN -> 1F - data.getLifeTime() / refreshSpeed * 5f;
-					case TRANS_OUT -> data.getLifeTime() / refreshSpeed * 5f;
-				};
-				//? } else {
-				/*switch (data.getDataType()) {
+				switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
 					case TRANS_IN: cloudAlpha *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
 					case TRANS_OUT: cloudAlpha *= data.getLifeTime() / refreshSpeed * 5F; break;
 					default: break;
 				}
-				*///? }
 
 				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
 				int normCount = vertexList.size() / 4;

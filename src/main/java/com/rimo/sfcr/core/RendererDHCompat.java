@@ -252,7 +252,8 @@ public class RendererDHCompat extends Renderer {
 		this.cloudBlockHeight = CLOUD_BLOCK_HEIGHT;
 		this.cloudBlockWidth = CLOUD_BLOCK_WIDTH;
 		this.timeOffset = timeOffset;
-		cloudColor.multiply(getBlushColorByTime(level.getDayTime()));
+		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
+			cloudColor = cloudColor.multiply(getBlushColorByTime(level.getDayTime()));
 		this.cloudColor = new Color((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1F).getRGB();
 	}
 

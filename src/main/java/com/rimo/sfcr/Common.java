@@ -42,7 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Common {
-	public static final String MOD_ID = "com/rimo/sfcr";
+	public static final String MOD_ID = "sfcr";
 	//~if = 1.16.5 'LoggerFactory.' -> 'LogManager.'
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	public static final Config CONFIG = new Config().load();
@@ -143,17 +143,6 @@ public class Common {
 	public static String debugString;
 
 	public static void init() {
-		// manually mixin debug
-		LifecycleEvent.SETUP.register(() -> {
-			Set<String> list = Plugin.MIXINS;
-			if (! list.isEmpty()) {
-				StringBuilder str = new StringBuilder();
-				for (String s : list)
-					str.append("  ").append(s).append("\n");
-				LOGGER.error("{} was failed to apply mixin(s):\n{}Some function may no work.", MOD_ID,  str);
-			}
-		});
-
 		// dimension cache system
 		//~ if = 1.16.5 'SERVER_LEVEL_LOAD' -> 'SERVER_WORLD_LOAD'
 		LifecycleEvent.SERVER_LEVEL_LOAD.register(Common::loadDimensionData);
@@ -345,5 +334,16 @@ public class Common {
 			text.append("\n    at ").append(i.toString());
 		}
 		LOGGER.error(text.toString());
+	}
+
+	// manually mixin debug
+	public static void checkMixinApplied() {
+		Set<String> list = Plugin.MIXINS;
+		if (! list.isEmpty()) {
+			StringBuilder str = new StringBuilder();
+			for (String s : list)
+				str.append("  ").append(s).append("\n");
+			LOGGER.error("{} was failed to apply mixin(s):\n{}Some function may no work.", MOD_ID, str);
+		}
 	}
 }

@@ -37,7 +37,8 @@ public class Client {
 
 	public static void init() {
 		// Game boot
-		ClientLifecycleEvent.CLIENT_STARTED.register(client -> {
+		ClientLifecycleEvent.CLIENT_SETUP.register(client -> {
+			checkMixinApplied();
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 		});
 
@@ -81,7 +82,8 @@ public class Client {
 			hasServer = false;
 			isCustomDimensionConfig = false;
 			isConfigHasBeenOverride = false;
-			RENDERER.stop();
+			if (RENDERER != null)
+				RENDERER.stop();
 			CONFIG.load();
 			clearDimensionCache();
 		});

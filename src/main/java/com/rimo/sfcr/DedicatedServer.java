@@ -25,11 +25,11 @@ import static net.minecraft.commands.Commands.literal;
 
 public class DedicatedServer {
 	public static void init() {
+		checkMixinApplied();
 		//? if >= 1.21 {
 		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
 		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
 		//? }
-		LifecycleEvent.SETUP.register(Common::checkMixinApplied);
 
 		//~ if > 1.19 'access' -> 'access, env'
 		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher

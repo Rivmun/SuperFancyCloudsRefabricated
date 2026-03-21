@@ -37,10 +37,8 @@ public class Client {
 
 	public static void init() {
 		// Game boot
-		ClientLifecycleEvent.CLIENT_SETUP.register(client -> {
-			checkMixinApplied();
-			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
-		});
+		checkMixinApplied();
+		RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
 		// World loaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {

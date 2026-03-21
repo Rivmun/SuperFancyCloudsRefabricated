@@ -66,7 +66,7 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     mappings(loom.officialMojangMappings())
-    implementation("com.google.code.gson:gson:2.10.1")
+//    implementation("com.google.code.gson:gson:2.10.1")
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
     // Arch-api

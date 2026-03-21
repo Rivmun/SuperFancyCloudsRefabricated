@@ -77,7 +77,7 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     mappings(loom.officialMojangMappings())
-    implementation("com.google.code.gson:gson:2.10.1")
+//    implementation("com.google.code.gson:gson:2.10.1")
     forge("net.minecraftforge:forge:${property("deps.forge")}")
 
 //    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")

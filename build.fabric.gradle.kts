@@ -71,7 +71,7 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     mappings(loom.officialMojangMappings())
-    implementation("com.google.code.gson:gson:2.10.1")
+//    implementation("com.google.code.gson:gson:2.10.1")
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
 

@@ -199,6 +199,7 @@ public class Common {
 						"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
 				apiDebugTime.clear();
 			}
+			Plugin.checkMixinApplied();
 		});
 
 		if (seasonHandler == null)
@@ -313,13 +314,8 @@ public class Common {
 		String name = level.dimension().location().toString();
 		DimensionData data = DIMENSION_CACHE.get(name);
 		if (data == null) {
-			//? if ! 1.16.5 {
-			if (level instanceof ServerLevel serverLevel) {
-				data = loadDimensionData(serverLevel);
-			//? } else {
-			/*if (level instanceof ServerLevel) {
+			if (level instanceof ServerLevel) {
 				data = loadDimensionData((ServerLevel) level);
-			*///? }
 			} else {
 				return false;
 			}
@@ -336,14 +332,4 @@ public class Common {
 		LOGGER.error(text.toString());
 	}
 
-	// manually mixin debug
-	public static void checkMixinApplied() {
-		Set<String> list = Plugin.MIXINS;
-		if (! list.isEmpty()) {
-			StringBuilder str = new StringBuilder();
-			for (String s : list)
-				str.append("  ").append(s).append("\n");
-			LOGGER.error("{} was failed to apply mixin(s):\n{}Some function may no work.", MOD_ID, str);
-		}
-	}
 }

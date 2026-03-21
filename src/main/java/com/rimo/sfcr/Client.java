@@ -37,7 +37,7 @@ public class Client {
 
 	public static void init() {
 		// Game boot
-		checkMixinApplied();
+		// arch api 's SETUP event is not reliable, RENDERER init we directly placed here
 		RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
 		// World loaded

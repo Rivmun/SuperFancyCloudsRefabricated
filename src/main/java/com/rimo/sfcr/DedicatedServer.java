@@ -8,7 +8,6 @@ import com.rimo.sfcr.config.Config;
 //~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
 //~ if = 1.16.5 'events.common' -> 'events' {
 import dev.architectury.event.events.common.CommandRegistrationEvent;
-import dev.architectury.event.events.common.LifecycleEvent;
 //~ }
 import dev.architectury.networking.NetworkManager;
 //~ }
@@ -25,7 +24,6 @@ import static net.minecraft.commands.Commands.literal;
 
 public class DedicatedServer {
 	public static void init() {
-		checkMixinApplied();
 		//? if >= 1.21 {
 		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
 		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);

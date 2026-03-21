@@ -42,25 +42,23 @@ public class Data {
 	public boolean updateWeather(ServerLevel level) {
 		// Weather Pre-detect
 		ServerLevelData levelData = ((ServerLevelAccessor) level).getServerLevelData();
-		int rainTime = levelData.getRainTime();
-		int thunderTime = levelData.getThunderTime();
+		int rainTime = levelData.getRainTime() / 20;
+		int thunderTime = levelData.getThunderTime() / 20;
 		int preDetectTime = CONFIG.getWeatherPreDetectTime();
 		if (levelData.isRaining()) {
 			if (levelData.isThundering()) {
-				nextWeather = thunderTime / 20 < preDetectTime ? Weather.RAIN : Weather.THUNDER;
+				nextWeather = thunderTime < preDetectTime ? Weather.RAIN : Weather.THUNDER;
 			} else {
-				nextWeather = thunderTime / 20 < preDetectTime && thunderTime != rainTime ?
-						Weather.THUNDER :
-						rainTime / 20 < preDetectTime ? Weather.CLEAR : Weather.RAIN;
+				nextWeather = rainTime < preDetectTime ? Weather.CLEAR :
+						thunderTime < preDetectTime ? Weather.THUNDER : Weather.RAIN;
 			}
-		} else {
-			int clearWeatherTime = levelData.getClearWeatherTime();
-			if (clearWeatherTime != 0) {
-				nextWeather = clearWeatherTime / 20 < preDetectTime ? Weather.RAIN : Weather.CLEAR;
+		} else {  //clear...
+			int clearWeatherTime = levelData.getClearWeatherTime() / 20;
+			if (clearWeatherTime != 0) {  // Notice that only '/weather clear' can set clearTime to non-zero
+				nextWeather = clearWeatherTime < preDetectTime ? Weather.RAIN : Weather.CLEAR;
 			} else {
-				nextWeather = Math.min(rainTime, thunderTime) / 20 < preDetectTime ?
-						rainTime < thunderTime ? Weather.RAIN : Weather.THUNDER :
-						Weather.CLEAR;
+				nextWeather = rainTime > preDetectTime ? Weather.CLEAR :
+						rainTime < thunderTime ? Weather.RAIN : Weather.THUNDER;
 			}
 		}
 		if (nextWeather != currentWeather) {

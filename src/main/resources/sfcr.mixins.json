@@ -13,7 +13,7 @@
     ${particlerain_mixin}
     "DebugScreenOverlayMixin",
     "OptionsMixin",
-    "GameRendererMixin",
+    ${GameRendererMixin}
     "LevelRendererMixin",
     "extra.LeavesBlockMixin",
     "extra.LevelRendererMixin"

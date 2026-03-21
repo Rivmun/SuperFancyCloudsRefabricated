@@ -37,6 +37,7 @@ tasks.named<ProcessResources>("processResources") {
         this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
+        this["GameRendererMixin"] = if (sc.current.parsed.eq("1.16.5")) "" else "\"GameRendererMixin\","
         this["particlerain_mixin"] = when {
              sc.current.parsed > "1.20" -> "\"particlerain.ParticleSpawnerMixin\","
              sc.current.parsed > "1.19" -> "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\","
@@ -71,7 +72,6 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     mappings(loom.officialMojangMappings())
-//    implementation("com.google.code.gson:gson:2.10.1")
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
 

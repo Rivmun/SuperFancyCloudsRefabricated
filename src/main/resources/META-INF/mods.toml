@@ -40,7 +40,7 @@ versionRange = "[${cloth},)"
 ordering = "AFTER"
 side = "CLIENT"
 
-[[denpendencies.${mod_id}]]
+[[dependencies.${mod_id}]]
 modId = "distanthorizons"
 mandatory = false
 versionRange = "[${distanthorizons_min_version},)"
@@ -49,7 +49,7 @@ side = "CLIENT"
 
 ${particlerain_deps}
 
-[[denpendencies.${mod_id}]]
+[[dependencies.${mod_id}]]
 modId = "sereneseasons"
 mandatory = false
 versionRange = "[${sereneseasons},)"

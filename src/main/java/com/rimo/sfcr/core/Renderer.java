@@ -236,7 +236,7 @@ public class Renderer {
 		//RenderSystem.depthMask(true);
 		poseStack.pushPose();
 		//? if = 1.21.1
-		poseStack.mulPose(matrix4f2);
+		poseStack.mulPose(projectionMatrix);
 		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
 		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		//~ if = 1.16.5 '.setShaderColor' -> '.color4f'

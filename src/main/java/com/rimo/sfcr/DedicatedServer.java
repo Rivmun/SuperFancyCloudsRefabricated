@@ -6,9 +6,10 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 //import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.rimo.sfcr.config.Config;
 //~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
-//~ if = 1.16.5 'events.common' -> 'events'
+//~ if = 1.16.5 'events.common' -> 'events' {
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.architectury.event.events.common.LifecycleEvent;
+//~ }
 import dev.architectury.networking.NetworkManager;
 //~ }
 import net.minecraft.server.level.ServerPlayer;

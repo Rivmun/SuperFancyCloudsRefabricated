@@ -8,11 +8,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import pigcart.particlerain.ParticleSpawner;
 import pigcart.particlerain.config.ParticleData;
 
@@ -24,16 +25,19 @@ import static com.rimo.sfcr.Common.CONFIG;
 public abstract class ParticleSpawnerMixin {
 	@Unique private static double sfcr$x, sfcr$y, sfcr$z;
 	@Unique private static boolean sfcr$shouldCancel;
+	@Final @Shadow private static BlockPos.MutableBlockPos heightmapPos;
 
 	// rain
-	@ModifyArgs(method = "tickSkyFX", at = @At(
+	// DO NOT USE ModifyArgs on forge, see https://github.com/SpongePowered/Mixin/issues/584
+	@Inject(method = "tickSkyFX", at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;"
+			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;",
+			shift = At.Shift.AFTER
 	))
-	private static void sfcr$catchRenderPos(Args args) {
-		sfcr$x = args.get(0);
-		sfcr$y = args.get(1);
-		sfcr$z = args.get(2);
+	private static void sfcr$catchRenderPos(CallbackInfo ci) {
+		sfcr$x = heightmapPos.getX();
+		sfcr$y = heightmapPos.getY();
+		sfcr$z = heightmapPos.getZ();
 	}
 	@WrapOperation(method = "tickSkyFX", at = @At(
 			value = "INVOKE",

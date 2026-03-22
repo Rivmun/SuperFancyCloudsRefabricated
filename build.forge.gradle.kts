@@ -12,9 +12,10 @@ loom {
 //        convertAccessWideners = true
 //        extraAccessWideners.add(loom.accessWidenerPath.get().asFile.name)
 
-        mixinConfig("sfcr.mixins.json")
+        mixinConfig("${property("mod.id")}.mixins.json")
     }
-    if (sc.current.parsed.eq("1.16.5")) {
+
+    if (sc.current.parsed < "1.20") {
         mixin.useLegacyMixinAp = true
     }
 }
@@ -61,6 +62,9 @@ tasks.named<ProcessResources>("processResources") {
         // insert deps
         this["particlerain_deps"] = if (sc.current.parsed > "1.20")
             "[[dependencies.${prop("mod.id")}]]\nmodId = \"particlerain\"\nmandatory = false\nversionRange = \"[${prop("particlerain_min_version")},)\"\nordering = \"NONE\"\nside = \"CLIENT\"\n" else ""
+        this["mixinextras_deps"] = if (sc.current.parsed.eq("1.16.5") or sc.current.parsed.eq("1.20.1")) "" else
+            "[[dependencies.${prop("mod.id")}]]\nmodId = \"mixinextras\"\nmandatory = true\nversionRange = \"[${prop("deps.mixinextras")},)\"\nordering = \"BEFORE\"\nside = \"BOTH\"\n"
+
     }
 
     filesMatching(listOf("META-INF/mods.toml", "${prop("mod.id")}.mixins.json")) {
@@ -84,12 +88,15 @@ dependencies {
     mappings(loom.officialMojangMappings())
     forge("net.minecraftforge:forge:${property("deps.forge")}")
 
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
-    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0")!!)
-    if (sc.current.parsed < "1.18") {
-        implementation("io.github.llamalad7:mixinextras-forge:0.4.1") {}
+    if (sc.current.parsed < "1.20") {
+        annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    }
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${property("deps.mixinextras")}")!!)
+    if (sc.current.parsed > "1.17") {
+        implementation(include("io.github.llamalad7:mixinextras-forge:${property("deps.mixinextras")}")) {}
     } else {
-        implementation("io.github.llamalad7:mixinextras-forge:0.5.0") {}
+        // mixinextras JIJ on 1.16.5 is unsupported
+        implementation("io.github.llamalad7:mixinextras-forge:${property("deps.mixinextras")}") {}
     }
 
     // Arch-api
@@ -131,12 +138,13 @@ tasks {
         manifest.attributes["MixinConfigs"] = "${project.property("mod.id")}.mixins.json"
     }
 
-    // resolve 1.16.5 mixinextras classDefNotFound issue, powered by https://www.doubao.com/
-    if (sc.current.parsed < "1.18") {
+    // resolve 1.16.5 mixinextras classDefNotFound / JIJ load failure issue, powered by https://www.doubao.com/
+    // Merged .class with mixinextras...
+    if (sc.current.parsed < "1.17") {
         // 用lazy延迟解析outerJar，避免配置阶段触发报错
         val outerJar by lazy {
             configurations.runtimeClasspath.get().files.first {
-                it.name.startsWith("mixinextras-forge-0.4.1")
+                it.name.startsWith("mixinextras-forge-${project.property("deps.mixinextras")}")
             }
         }
 
@@ -147,18 +155,18 @@ tasks {
             dependsOn(configurations.runtimeClasspath)
 
             // 1. 直接用lazy的outerJar（不再重复查找）
-            // 2. 先解压外层jar，提取内层的核心jar（MixinExtras-0.4.1.jar）
+            // 2. 先解压外层jar，提取内层的核心jar（MixinExtras-0.x.x.jar）
             val tempDir = file("$buildDir/tmp/mixinextras")
             delete(tempDir) // 清理旧的临时文件
             copy {
                 from(zipTree(outerJar)) {
-                    include("META-INF/jars/MixinExtras-0.4.1.jar") // 只提取内层核心jar
+                    include("META-INF/jars/MixinExtras-${project.property("deps.mixinextras")}.jar") // 只提取内层核心jar
                 }
                 into(tempDir) // 解压到临时目录
             }
 
             // 3. 解压内层核心jar，拿到所有核心类
-            val innerJar = file("$tempDir/META-INF/jars/MixinExtras-0.4.1.jar")
+            val innerJar = file("$tempDir/META-INF/jars/MixinExtras-${project.property("deps.mixinextras")}.jar")
             from(zipTree(innerJar)) {
                 include("com/**") // 核心类全在这个路径下
                 exclude("module-info.class")

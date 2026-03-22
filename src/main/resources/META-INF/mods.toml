@@ -30,14 +30,14 @@ side = "BOTH"
 modId = "architectury"
 mandatory = true
 versionRange = "[${arch_api},)"
-ordering = "AFTER"
+ordering = "BEFORE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "${cloth_id}"
 mandatory = false
 versionRange = "[${cloth},)"
-ordering = "AFTER"
+ordering = "BEFORE"
 side = "CLIENT"
 
 [[dependencies.${mod_id}]]
@@ -55,3 +55,5 @@ mandatory = false
 versionRange = "[${sereneseasons},)"
 ordering = "NONE"
 side = "CLIENT"
+
+${mixinextras_deps}

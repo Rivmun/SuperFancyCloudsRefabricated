@@ -113,7 +113,7 @@
 	"text.sfcr.second": "%s 秒",
 	"text.sfcr.frame": "%s 帧",
 	"text.sfcr.disabled": "已禁用",
-	"text.sfcr.requiredCloth": "你需要先安装 Cloth-Config。",
+	"text.sfcr.requiredCloth": "你需要先安装 Cloth Config。",
 
 	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方多平台移植版，使原版的云朵更立体更动态。"
 }

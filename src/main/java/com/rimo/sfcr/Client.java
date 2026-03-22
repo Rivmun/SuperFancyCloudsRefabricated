@@ -94,6 +94,7 @@ public class Client {
 					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isNeoForge() && Platform.isModLoaded("cloth_config")) {
 						Minecraft client = Minecraft.getInstance();
+						//~ if > 1.18 && < 1.20 'client.execute' -> 'client.tell'
 						client.execute(() -> client.setScreen(new ConfigScreen().build()));
 					} else {
 						//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'

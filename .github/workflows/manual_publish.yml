@@ -6,6 +6,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # permissions:
+     # contents: write
     strategy:
       matrix:
         version: [
@@ -62,7 +64,7 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # github-token: ${{ secrets.GITHUB_TOKEN }}
           files: versions/${{ matrix.version }}/build/libs/*.jar
           name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
           version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}

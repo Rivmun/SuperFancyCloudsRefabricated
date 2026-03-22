@@ -6,8 +6,9 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 //import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.rimo.sfcr.config.Config;
 //~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
-//~ if = 1.16.5 'events.common' -> 'events'
+//~ if = 1.16.5 'events.common' -> 'events' {
 import dev.architectury.event.events.common.CommandRegistrationEvent;
+//~ }
 import dev.architectury.networking.NetworkManager;
 //~ }
 import net.minecraft.server.level.ServerPlayer;
@@ -23,6 +24,11 @@ import static net.minecraft.commands.Commands.literal;
 
 public class DedicatedServer {
 	public static void init() {
+		//? if >= 1.21 {
+		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
+		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
+		//? }
+
 		//~ if > 1.19 'access' -> 'access, env'
 		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
 				.register(literal(MOD_ID)
@@ -114,11 +120,6 @@ public class DedicatedServer {
 						)
 				)
 		);
-
-		//? if >= 1.21 {
-		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
-		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
-		//? }
 
 		// Shared Config Receiver
 		// allows server can get a new dimension config uploaded by player

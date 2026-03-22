@@ -32,8 +32,6 @@ public class SFCReNeoForge {
 		@SubscribeEvent
 		public static void clientInit(FMLClientSetupEvent event) {
 			Client.init();
-			// TODO: Issue that ArchAPI's LifeCircleEvent.CLIENT_STARTED cannot invoke correctly, so we manually init Renderer in here temporally.
-			Client.RENDERER = Common.CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
 			ModList modList = ModList.get();
 			if (modList.isLoaded("cloth_config")) {

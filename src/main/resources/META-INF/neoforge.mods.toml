@@ -34,14 +34,14 @@ side="BOTH"
 modId="architectury"
 type="optional"
 versionRange="[${arch_api},)"
-ordering="AFTER"
+ordering="BEFORE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="cloth_config"
 type="optional"
 versionRange="[${cloth},)"
-ordering="AFTER"
+ordering="BEFORE"
 side="CLIENT"
 
 [[dependencies.${mod_id}]]

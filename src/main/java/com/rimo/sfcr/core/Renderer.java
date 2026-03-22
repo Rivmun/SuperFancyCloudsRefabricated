@@ -236,7 +236,7 @@ public class Renderer {
 		//RenderSystem.depthMask(true);
 		poseStack.pushPose();
 		//? if = 1.21.1
-		poseStack.mulPose(matrix4f2);
+		poseStack.mulPose(projectionMatrix);
 		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
 		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		//~ if = 1.16.5 '.setShaderColor' -> '.color4f'
@@ -352,19 +352,11 @@ public class Renderer {
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
-				//? if ! 1.16.5 {
-				cloudAlpha *= switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
-					case NORMAL, TRANS_MID_BODY -> 1F;
-					case TRANS_IN -> 1F - data.getLifeTime() / refreshSpeed * 5f;
-					case TRANS_OUT -> data.getLifeTime() / refreshSpeed * 5f;
-				};
-				//? } else {
-				/*switch (data.getDataType()) {
+				switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
 					case TRANS_IN: cloudAlpha *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
 					case TRANS_OUT: cloudAlpha *= data.getLifeTime() / refreshSpeed * 5F; break;
 					default: break;
 				}
-				*///? }
 
 				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
 				int normCount = vertexList.size() / 4;

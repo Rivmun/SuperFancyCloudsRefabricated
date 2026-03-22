@@ -37,9 +37,8 @@ public class Client {
 
 	public static void init() {
 		// Game boot
-		ClientLifecycleEvent.CLIENT_STARTED.register(client -> {
-			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
-		});
+		// arch api 's SETUP event is not reliable, RENDERER init we directly placed here
+		RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
 		// World loaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
@@ -81,7 +80,8 @@ public class Client {
 			hasServer = false;
 			isCustomDimensionConfig = false;
 			isConfigHasBeenOverride = false;
-			RENDERER.stop();
+			if (RENDERER != null)
+				RENDERER.stop();
 			CONFIG.load();
 			clearDimensionCache();
 		});
@@ -94,6 +94,7 @@ public class Client {
 					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isNeoForge() && Platform.isModLoaded("cloth_config")) {
 						Minecraft client = Minecraft.getInstance();
+						//~ if > 1.18 && < 1.20 'client.execute' -> 'client.tell'
 						client.execute(() -> client.setScreen(new ConfigScreen().build()));
 					} else {
 						//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'

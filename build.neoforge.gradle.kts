@@ -44,6 +44,7 @@ tasks.named<ProcessResources>("processResources") {
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
+        this["GameRendererMixin"] = "\"GameRendererMixin\","
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
     }
 
@@ -66,7 +67,6 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     mappings(loom.officialMojangMappings())
-    implementation("com.google.code.gson:gson:2.10.1")
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
     // Arch-api
@@ -110,7 +110,7 @@ tasks {
 }
 
 java {
-    val javaCompat = if (stonecutter.eval(stonecutter.current.version, ">=1.20")) {
+    val javaCompat = if (stonecutter.eval(stonecutter.current.version, ">=1.21")) {
         JavaVersion.VERSION_21
     } else if (stonecutter.eval(stonecutter.current.version, ">=1.18")) {
         JavaVersion.VERSION_17

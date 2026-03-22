@@ -113,5 +113,5 @@
 	"text.sfcr.second": "%s sec(s)",
 	"text.sfcr.frame": "%s frame(s)",
 	"text.sfcr.disabled": "Disabled",
-	"text.sfcr.requiredCloth": "You need to install Cloth-Config first."
+	"text.sfcr.requiredCloth": "You need to install Cloth Config first."
 }

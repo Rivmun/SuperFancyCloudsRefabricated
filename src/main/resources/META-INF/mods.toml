@@ -30,17 +30,17 @@ side = "BOTH"
 modId = "architectury"
 mandatory = true
 versionRange = "[${arch_api},)"
-ordering = "AFTER"
+ordering = "BEFORE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "${cloth_id}"
 mandatory = false
 versionRange = "[${cloth},)"
-ordering = "AFTER"
+ordering = "BEFORE"
 side = "CLIENT"
 
-[[denpendencies.${mod_id}]]
+[[dependencies.${mod_id}]]
 modId = "distanthorizons"
 mandatory = false
 versionRange = "[${distanthorizons_min_version},)"
@@ -49,9 +49,11 @@ side = "CLIENT"
 
 ${particlerain_deps}
 
-[[denpendencies.${mod_id}]]
+[[dependencies.${mod_id}]]
 modId = "sereneseasons"
 mandatory = false
 versionRange = "[${sereneseasons},)"
 ordering = "NONE"
 side = "CLIENT"
+
+${mixinextras_deps}

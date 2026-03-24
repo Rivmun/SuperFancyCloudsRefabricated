@@ -4,11 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Common;
-//? if ! 1.16.5 {
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biomes;
-//? }
 import net.minecraft.world.level.biome.Biome;
 
 import java.util.Arrays;
@@ -24,22 +22,16 @@ public class SharedConfig {
 	);
 
 	private boolean isEnableRender = true;
-	private boolean enableFog = true;
-	private boolean fogAutoDistance = true;
-	private int fogMinDistance = 2;
-	private int fogMaxDistance = 4;
 	protected boolean isEnableCloudRain = false;
-	private int cloudRenderDistance = 64;
-	private boolean cloudRenderDistanceFitToView = false;
-	private int cloudHeight = 192;
+	private int cloudRenderDistance = 31;
+	private int cloudHeight = 0;
 	private int cloudBlockSize = 12;
-	private int cloudLayerThickness = 10;
+	private int cloudLayerThickness = 9;
 	private boolean enableTerrainDodge = true;
 	private int sampleSteps = 2;
 	private int cloudColor = 0xFFFFFFFF;
 	private boolean enableBottomDim = true;
 	private boolean enableDuskBlush = true;
-	private float cloudBrightMultiplier = 0.1f;
 	private float densityThreshold = 1.3f;
 	private float thresholdMaxReduction = 1.5f;
 	private boolean enableDynamic = true;
@@ -62,13 +54,8 @@ public class SharedConfig {
 	public SharedConfig() {}
 	public void setSharedConfig(SharedConfig config) {
 		this.isEnableRender               = config.isEnableRender;
-		this.enableFog                    = config.enableFog;
-		this.fogAutoDistance              = config.fogAutoDistance;
-		this.fogMinDistance               = config.fogMinDistance;
-		this.fogMaxDistance               = config.fogMaxDistance;
 		this.isEnableCloudRain            = config.isEnableCloudRain;
 		this.cloudRenderDistance          = config.cloudRenderDistance;
-		this.cloudRenderDistanceFitToView = config.cloudRenderDistanceFitToView;
 		this.cloudHeight                  = config.cloudHeight;
 		this.cloudBlockSize               = config.cloudBlockSize;
 		this.cloudLayerThickness          = config.cloudLayerThickness;
@@ -77,7 +64,6 @@ public class SharedConfig {
 		this.cloudColor                   = config.cloudColor;
 		this.enableBottomDim              = config.enableBottomDim;
 		this.enableDuskBlush              = config.enableDuskBlush;
-		this.cloudBrightMultiplier        = config.cloudBrightMultiplier;
 		this.densityThreshold             = config.densityThreshold;
 		this.thresholdMaxReduction        = config.thresholdMaxReduction;
 		this.enableDynamic                = config.enableDynamic;
@@ -104,7 +90,6 @@ public class SharedConfig {
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	public int getSampleSteps() {return sampleSteps;}
 	public int getCloudColor() {return cloudColor;}
-	public float getCloudBrightMultiplier() {return cloudBrightMultiplier;}
 	public float getDensityThreshold() {return densityThreshold;}
 	public float getThresholdMaxReduction() {return thresholdMaxReduction;}
 	public boolean isEnableDynamic() {return enableDynamic;}
@@ -121,14 +106,9 @@ public class SharedConfig {
 	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
-	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
 	public boolean isEnableTerrainDodge() {return enableTerrainDodge;}
 	public CloudRefreshSpeed getWeatherRefreshSpeed() {return weatherRefreshSpeed;}
-	public boolean isEnableFog() {return enableFog;}
-	public boolean isFogAutoDistance() {return fogAutoDistance;}
-	public int getFogMinDistance() {return fogMinDistance;}
-	public int getFogMaxDistance() {return fogMaxDistance;}
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
 	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
@@ -141,7 +121,6 @@ public class SharedConfig {
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
-	public void setCloudBrightMultiplier(float cloudBrightMultiplier) {this.cloudBrightMultiplier = cloudBrightMultiplier;}
 	public void setDensityThreshold(float density) {densityThreshold = density;}
 	public void setThresholdMaxReduction(float multiplier) {
 		thresholdMaxReduction = multiplier;}
@@ -160,21 +139,9 @@ public class SharedConfig {
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = Math.min(distance, 192);}
-	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}
 	public void setWeatherRefreshSpeed(CloudRefreshSpeed speed) {weatherRefreshSpeed = speed;}
 	public void setEnableTerrainDodge(boolean isEnable) {enableTerrainDodge = isEnable;}
-	public void setEnableFog(boolean isEnable) {enableFog = isEnable;}
-	public void setFogAutoDistance(boolean isEnable) {fogAutoDistance = isEnable;}
-	public void setFogDistance(int min, int max) {
-		if (min > max) {
-			fogMinDistance = max;
-			fogMaxDistance = min;
-		} else {
-			fogMinDistance = min;
-			fogMaxDistance = max;
-		}
-	}
 	public void setEnableBottomDim(boolean enableBottomDim) {this.enableBottomDim = enableBottomDim;}
 	public void setEnableDuskBlush(boolean enableDuskBlush) {this.enableDuskBlush = enableDuskBlush;}
 	public void setEnableCloudRain(boolean enableCloudRain) {this.isEnableCloudRain = enableCloudRain;}
@@ -184,15 +151,9 @@ public class SharedConfig {
 			Common.seasonHandler.setDensityMapFromString(list.get(0));
 	}
 
-	//conversion
-	public int getAutoFogMaxDistance() {
-		return (int) (cloudRenderDistance / 24f * cloudRenderDistance / 24f * getCloudBlockSize() / 16f);
-	}
-
-	//? if ! 1.16.5 {
 	public boolean isFilterListHasBiome(Holder<Biome> biome) {
 		boolean isHas = false;
-		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).location().toString())) {
+		if (this.getBiomeFilterList().contains(biome.unwrapKey().orElse(Biomes.THE_VOID).identifier().toString())) {
 			isHas = true;
 		} else {
 			for (TagKey<Biome> tag : biome.tags().toList()) {
@@ -204,13 +165,7 @@ public class SharedConfig {
 		}
 		return isHas;
 	}
-	//?} else {
-	/*public boolean isFilterListHasBiome(Biome.BiomeCategory biomeCategory) {
-		return this.getBiomeFilterList().contains(biomeCategory.toString());
-	}
-	*///? }
 
-	//? if > 1.20 {
 	public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;
@@ -220,7 +175,6 @@ public class SharedConfig {
 			return this.getNoneDensity() / 100f;
 		}
 	}
-	//? }
 
 	/**
 	 * @return a SharedConfig JSON string

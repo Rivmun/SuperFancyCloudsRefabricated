@@ -52,13 +52,6 @@ ordering="NONE"
 side="CLIENT"
 
 [[dependencies.${mod_id}]]
-modId="particlerain"
-type="optional"
-versionRange="[${particlerain_min_version},)"
-ordering="NONE"
-side="CLIENT"
-
-[[dependencies.${mod_id}]]
 modId="sereneseasons"
 type="optional"
 versionRange="[${sereneseasons},)"

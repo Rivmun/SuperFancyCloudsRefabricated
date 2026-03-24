@@ -1,4 +1,5 @@
 plugins {
+    id("fabric-loom")
 }
 
 val minecraft = property("deps.minecraft") as String;
@@ -63,7 +64,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/${project.property("mod.id")}.accesswidener")
+        exclude("**/neoforge.mods.toml", "**/${project.property("mod.id")}.accesswidener")
     }
 
     register<Copy>("buildAndCollect") {

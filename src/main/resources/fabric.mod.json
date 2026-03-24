@@ -20,16 +20,16 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
     ],
     "client": [
-      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
     ],
     "server": [
-      "${mod_group}.${mod_id}.loaders.fabric.SFCReFabric"
+      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
     ],
     "modmenu": [
-      "${mod_group}.${mod_id}.loaders.fabric.SFCReModMenuIntegration"
+      "${mod_group}.${mod_id}.loaders.fabric.ModMenuEntryPoint"
     ]
   },
   "mixins": [
@@ -41,12 +41,11 @@
     "architectury": ">=${arch_api}"
   },
   "suggests": {
-    "cloth-config2":">=${cloth}",
-    "modmenu": "*",
-    "distanthorizons": ">=${distanthorizons_min_version}",
     ${particlerain_deps}
     ${sereneseasons_deps}
-    "seasons": ">=${fabricseasons_min_version}"
+    "cloth-config2":">=${cloth}",
+    "modmenu": "*",
+    "distanthorizons": ">=${distanthorizons_min_version}"
   },
   "custom": {
     "modmenu": {

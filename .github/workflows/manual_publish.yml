@@ -2,19 +2,31 @@ name: Manual Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      mc_versions:
+        description: 'input subproject name'
+        required: true
+        type: string
+        default: '1.21.11-fabric, 1.21.11-neoforge'
 
 jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.set-matrix.outputs.versions }}
+    steps:
+      - id: set-matrix
+        run: |
+          VERSIONS='["'$(echo '${{ github.event.inputs.mc_versions }}' | sed 's/,/","/g')'"]'
+          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "Ready to release：$VERSIONS"
+
   release:
+    needs: prepare-matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: [
-          1.16.5-fabric, 1.16.5-forge,
-          1.18.2-fabric, 1.18.2-forge,
-          1.19.2-fabric, 1.19.2-forge,
-          1.20.1-fabric, 1.20.1-forge,
-          1.21.1-fabric, 1.21.1-neoforge
-        ]
+        version: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -62,7 +74,7 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-enabled: false
           files: versions/${{ matrix.version }}/build/libs/*.jar
           name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
           version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}

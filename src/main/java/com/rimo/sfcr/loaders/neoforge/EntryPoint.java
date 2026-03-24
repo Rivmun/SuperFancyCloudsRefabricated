@@ -21,8 +21,8 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import static com.rimo.sfcr.Common.MOD_ID;
 
 @Mod(MOD_ID)
-public class SFCReNeoForge {
-	public SFCReNeoForge(IEventBus bus) {
+public class EntryPoint {
+	public EntryPoint(IEventBus bus) {
 		Common.init();
 	}
 

@@ -6,7 +6,7 @@ val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
-//    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
 sourceSets.main {
@@ -40,12 +40,10 @@ tasks.named<ProcessResources>("processResources") {
         this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-        this["particlerain_min_version"] = if (sc.current.parsed <= "1.21.1") prop("particlerain_min_version") else ""
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
-        this["GameRendererMixin"] = "\"GameRendererMixin\","
-        this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
+        this["particlerain_mixin"] = ""
     }
 
     filesMatching(listOf("META-INF/neoforge.mods.toml", "${prop("mod.id")}.mixins.json")) {
@@ -80,21 +78,15 @@ dependencies {
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
     modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
-    //particle rain
-    if (sc.current.parsed eq "1.21.1") {
-        modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
-    }
-
     //serene seasons
     modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    //Iris
+    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
 }
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener")
-        if (sc.current.parsed <= "1.21.1") {
-            exclude("**/*.vsh", "**/${project.property("mod.id")}.accesswidener")
-        }
+        exclude("**/fabric.mod.json", "**/${project.property("mod.id")}.unobf.accesswidener")
     }
 
     register<Copy>("buildAndCollect") {
@@ -110,13 +102,6 @@ tasks {
 }
 
 java {
-    val javaCompat = if (stonecutter.eval(stonecutter.current.version, ">=1.21")) {
-        JavaVersion.VERSION_21
-    } else if (stonecutter.eval(stonecutter.current.version, ">=1.18")) {
-        JavaVersion.VERSION_17
-    } else {
-        JavaVersion.VERSION_1_8
-    }
-    sourceCompatibility = javaCompat
-    targetCompatibility = javaCompat
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }

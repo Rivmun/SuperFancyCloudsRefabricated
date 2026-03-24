@@ -10,8 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
-//? if < 1.19
-//import net.minecraft.network.chat.TranslatableComponent;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -19,31 +17,21 @@ import java.util.Optional;
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
-//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent' {
 public class ConfigScreen {
 	ConfigBuilder builder = ConfigBuilder.create();
 	final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
-	int fogMin, fogMax;
 	String dimensionName;
 
 	public Screen build() {
 		ClientLevel world = Minecraft.getInstance().level;
-		dimensionName = world != null ? world.dimension().location().toString() : "null";
+		dimensionName = world != null ? world.dimension().identifier().toString() : "null";
 		//cull mode
 		BooleanListEntry cullMode = builder.entryBuilder()
 				.startBooleanToggle(Component.translatable("text.sfcr.option.cullMode"),
 						CONFIG.getEnableViewCulling())
-				.setDefaultValue(true)
+				.setDefaultValue(false)
 				.setTooltip(Component.translatable("text.sfcr.option.cullMode.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableViewCulling)
-				.build();
-		//auto fog
-		BooleanListEntry autoFog = builder.entryBuilder()
-				.startBooleanToggle(Component.translatable("text.sfcr.option.fogAutoDistance")
-						, CONFIG.isFogAutoDistance())
-				.setDefaultValue(true)
-				.setTooltip(Component.translatable("text.sfcr.option.fogAutoDistance.@Tooltip"))
-				.setSaveConsumer(CONFIG::setFogAutoDistance)
 				.build();
 		//debug
 		BooleanListEntry debug = builder.entryBuilder()
@@ -61,14 +49,6 @@ public class ConfigScreen {
 				.setTooltip(Component.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDynamic)
 				.build();
-		//distanceFitToView
-		BooleanListEntry distanceFitToView = builder.entryBuilder()
-				.startBooleanToggle(Component.translatable("text.sfcr.option.cloudRenderDistanceFitToView")
-						, CONFIG.isCloudRenderDistanceFitToView())
-				.setDefaultValue(false)
-				.setTooltip(Component.translatable("text.sfcr.option.cloudRenderDistanceFitToView.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudRenderDistanceFitToView)
-				.build();
 		BooleanListEntry ncnr = builder.entryBuilder()
 				.startBooleanToggle(Component.translatable("text.sfcr.option.isCloudRain")
 						, CONFIG.isEnableCloudRain())
@@ -83,6 +63,14 @@ public class ConfigScreen {
 				.setTooltip(Component.translatable("text.sfcr.option.enableServer.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableServer)
 				.build();
+		BooleanListEntry dhCompat = builder.entryBuilder()
+				.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
+						CONFIG.isEnableDHCompat())
+				.setDefaultValue(false)
+				.setTooltip(Component.translatable("text.sfcr.option.dHCompat.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
+				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
 				.setTitle(Client.isCustomDimensionConfig ?
@@ -90,10 +78,6 @@ public class ConfigScreen {
 						Component.translatable("text.sfcr.title")
 				)
 				.setSavingRunnable(() -> {
-					if (CONFIG.isCloudRenderDistanceFitToView())
-						//~ if ! 1.16.5 '.renderDistance' -> '.getEffectiveRenderDistance()'
-						CONFIG.setCloudRenderDistance(Minecraft.getInstance().options.getEffectiveRenderDistance() * 12);
-					CONFIG.setFogDistance(fogMin, fogMax);
 					if (Client.isCustomDimensionConfig) {
 						CONFIG.save(dimensionName);
 					} else {
@@ -133,8 +117,8 @@ public class ConfigScreen {
 								.startIntSlider(Component.translatable("text.sfcr.option.cullRadianMultiplier")
 										,(int) (CONFIG.getCullRadianMultiplier() * 10)
 										,5
-										,15)
-								.setDefaultValue(11)
+										,20)
+								.setDefaultValue(12)
 								.setTextGetter(value -> Component.nullToEmpty(value / 10f + "x"))
 								.setTooltip(Component.translatable("text.sfcr.option.cullRadianMultiplier.@Tooltip"))
 								.setDisplayRequirement(Requirement.isTrue(cullMode))
@@ -163,10 +147,10 @@ public class ConfigScreen {
 						.addEntry(builder.entryBuilder()
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
 										, CONFIG.getCloudHeight()
-										,-1
-										,384)
-								.setDefaultValue(192)
-								.setTextGetter(value -> value < 0 ?
+										,-192
+										,192)
+								.setDefaultValue(0)
+								.setTextGetter(value -> value == 0 ?
 										Component.translatable("text.sfcr.option.cloudHeight.followVanilla") :
 										Component.nullToEmpty(value.toString())
 								)
@@ -179,7 +163,7 @@ public class ConfigScreen {
 										, DropdownMenuBuilder.TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
 								.setDefaultValue(12)
 								.setSuggestionMode(false)
-								.setSelections(Arrays.asList(2, 4, 8, 12, 16))
+								.setSelections(Arrays.asList(8, 12, 16))
 								.setTooltip(Component.translatable("text.sfcr.option.cloudBlockSize.@Tooltip"))
 								.setSaveConsumer(CONFIG::setCloudBlockSize)
 								.build())
@@ -198,16 +182,17 @@ public class ConfigScreen {
 						.addEntry(builder.entryBuilder()
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudRenderDistance")
 										, CONFIG.getCloudRenderDistance()
-										,32
-										,192)
-								.setDefaultValue(64)
-								.setTextGetter(value -> Component.nullToEmpty(value.toString()))
+										,31
+										,128)
+								.setDefaultValue(31)
+								.setTextGetter(value -> {
+									if (value == 31)
+										return Component.translatable("text.sfcr.option.cloudHeight.followVanilla");
+									return Component.nullToEmpty(value.toString());
+								})
 								.setTooltip(Component.translatable("text.sfcr.option.cloudRenderDistance.@Tooltip"))
 								.setSaveConsumer(CONFIG::setCloudRenderDistance)
-								.setRequirement(Requirement.isFalse(distanceFitToView))
 								.build())
-						//cloud distance fit to view
-						.addEntry(distanceFitToView)
 						//cloud sample steps
 						.addEntry(builder.entryBuilder()
 								.startIntSlider(Component.translatable("text.sfcr.option.sampleSteps")
@@ -233,16 +218,6 @@ public class ConfigScreen {
 										, CONFIG.getCloudColor())
 								.setDefaultValue(0xFFFFFFFF)
 								.setSaveConsumer(CONFIG::setCloudColor)
-								.build())
-						//cloud bright multiplier
-						.addEntry(builder.entryBuilder()
-								.startIntSlider(Component.translatable("text.sfcr.option.cloudBright")
-										, (int) (CONFIG.getCloudBrightMultiplier() * 10)
-										, 0
-										, 10)
-								.setDefaultValue(1)
-								.setTextGetter(value -> Component.nullToEmpty(value * 10 + "%"))
-								.setSaveConsumer(value -> CONFIG.setCloudBrightMultiplier(value / 10f))
 								.build())
 						//dusk blush
 						.addEntry(builder.entryBuilder()
@@ -447,42 +422,6 @@ public class ConfigScreen {
 								.setDisplayRequirement(Requirement.isTrue(enableDynamic))
 								.build())
 				)
-				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.fog"))
-						//fog
-						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Component.translatable("text.sfcr.option.enableFog")
-										, CONFIG.isEnableFog())
-								.setDefaultValue(true)
-								.setTooltip(Component.translatable("text.sfcr.option.enableFog.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableFog)
-								.build())
-						//auto fog
-						.addEntry(autoFog)
-						//min fog
-						.addEntry(builder.entryBuilder()
-								.startIntSlider(Component.translatable("text.sfcr.option.fogMinDistance")
-										, CONFIG.getFogMinDistance()
-										,1
-										,32)
-								.setDefaultValue(2)
-								.setTextGetter(value -> Component.nullToEmpty(value.toString()))
-								.setTooltip(Component.translatable("text.sfcr.option.fogMinDistance.@Tooltip"))
-								.setSaveConsumer(newValue -> fogMin = newValue)
-								.setDisplayRequirement(Requirement.isFalse(autoFog))
-								.build())
-						//max fog
-						.addEntry(builder.entryBuilder()
-								.startIntSlider(Component.translatable("text.sfcr.option.fogMaxDistance")
-										, CONFIG.getFogMaxDistance()
-										,1
-										,32)
-								.setDefaultValue(4)
-								.setTextGetter(value -> Component.nullToEmpty(value.toString()))
-								.setTooltip(Component.translatable("text.sfcr.option.fogMaxDistance.@Tooltip"))
-								.setSaveConsumer(newValue -> fogMax = newValue)
-								.setDisplayRequirement(Requirement.isFalse(autoFog))
-								.build())
-				)
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.compat"))
 						//NO CLOUD NO RAIN
 						.addEntry(ncnr)
@@ -515,13 +454,18 @@ public class ConfigScreen {
 								.setTooltip(Component.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 								.build())
 						//distant horizons
+						.addEntry(dhCompat)
+						//distant horizons renderdistance
 						.addEntry(builder.entryBuilder()
-								.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
-										CONFIG.isEnableDHCompat())
-								.setDefaultValue(false)
-								.setTooltip(Component.translatable("text.sfcr.option.dHCompat.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableDHCompat)
-								.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
+								.startIntSlider(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance"),
+										(int) (CONFIG.getDhRenderRangeMultiplier() * 10),
+										10,
+										40)
+								.setDefaultValue(10)
+								.setTextGetter(value -> Component.nullToEmpty(value / 10F + "x"))
+								.setTooltip(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance.@Tooltip"))
+								.setDisplayRequirement(Requirement.isTrue(dhCompat))
+								.setSaveConsumer(value -> CONFIG.setDhRenderRangeMultiplier(value / 10F))
 								.build())
 						//seasons
 						.addEntry(builder.entryBuilder()
@@ -549,4 +493,3 @@ public class ConfigScreen {
 				.build();
 	}
 }
-//~ }

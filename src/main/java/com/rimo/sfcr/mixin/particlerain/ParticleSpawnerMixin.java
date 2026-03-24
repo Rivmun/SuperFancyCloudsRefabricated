@@ -1,4 +1,4 @@
-//? if > 1.20 {
+//? if fabric && = 1.21.11 {
 package com.rimo.sfcr.mixin.particlerain;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -28,7 +28,6 @@ public abstract class ParticleSpawnerMixin {
 	@Final @Shadow private static BlockPos.MutableBlockPos heightmapPos;
 
 	// rain
-	// DO NOT USE ModifyArgs on forge, see https://github.com/SpongePowered/Mixin/issues/584
 	@Inject(method = "tickSkyFX", at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;",

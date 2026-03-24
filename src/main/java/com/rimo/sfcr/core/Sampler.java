@@ -8,21 +8,15 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
-//? if > 1.18
 import net.minecraft.core.Holder;
-//? if > 1.19 {
 import net.minecraft.util.RandomSource;
-//? } else if ! 1.16.5 {
-/*import net.minecraft.world.level.levelgen.SingleThreadedRandomSource;
-*///? } else
-//import java.util.Random;
 
 import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 /**
  * Independent sampler for any side uses
- * @since 1.9
+ * @since 1.9 / 2.2
  */
 public class Sampler {
 	private Level level;
@@ -39,12 +33,7 @@ public class Sampler {
 	private float densityBySeason = 1F;
 
 	public Sampler setSeed(long seed) {
-		//? if > 1.19 {
 		cloudNoise = new SimplexNoise(RandomSource.create(seed));
-		//? } else if ! 1.16.5 {
-		/*cloudNoise = new SimplexNoise(new SingleThreadedRandomSource(seed));
-		*///? } else
-		//cloudNoise = new SimplexNoise(new Random(seed));
 		return this;
 	}
 
@@ -56,7 +45,7 @@ public class Sampler {
 	public Sampler setConfig(SharedConfig config) {
 		cloudThick = config.getCloudLayerThickness();
 		cloudBlockSize = config.getCloudBlockSize();
-		cloudHeight = config.getCloudHeight() < 0 ? 192 : config.getCloudHeight();
+		cloudHeight = 192.33F + config.getCloudHeight();
 		isEnableDynamic = config.isEnableDynamic();
 		isBiomeByChunk = config.isBiomeDensityByChunk();
 		isEnableTerrainDodge = config.isEnableTerrainDodge();
@@ -92,7 +81,7 @@ public class Sampler {
 
 	/**
 	 * @see #isCloudCovered(double, double, double)
-	 * @see CloudData#collectCloudData(int, int, float, float)
+	 * @see Renderer#getCloudGrid(int, int, int)
 	 */
 	boolean isGridHasCloud(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		if (level == null || cloudNoise == null || Float.isNaN(cloudHeight))
@@ -121,19 +110,9 @@ public class Sampler {
 						level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz),
 						bz
 				);
-				//? if ! 1.16.5 {
 				Holder<Biome> biome = level.getBiome(pos);
 				if (! CONFIG.isFilterListHasBiome(biome))
-				//? } else {
-				/*Biome biome = level.getBiome(pos);
-				if (! CONFIG.isFilterListHasBiome(biome.getBiomeCategory()))
-				*///? }
-					//? if > 1.20 {
-					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
-					//? } else {
-					/*//~ if ! 1.16.5 'biome.' -> 'biome.value().'
-					f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().getDownfall());
-					*///? }
+					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel())));
 			}
 		}
 

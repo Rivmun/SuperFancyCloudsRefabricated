@@ -18,7 +18,7 @@ import static com.rimo.sfcr.Common.MOD_ID;
  * Each season mod has its own implementation invoke by reflection to prevent api changed.<br>
  * SubClass name use to show compat status in {@link ConfigScreen}, make it readable.<br>
  * Static call {@link #getInstance(Config)} to get an instance of impl.
- * @since 1.9
+ * @since 1.9 / 2.2
  */
 public abstract class AbstractSeasonCompat {
 	@SuppressWarnings("rawtypes")

@@ -2,21 +2,12 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-//? if < 1.19
-//import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.rimo.sfcr.config.Config;
-//~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
-//~ if = 1.16.5 'events.common' -> 'events' {
 import dev.architectury.event.events.common.CommandRegistrationEvent;
-//~ }
 import dev.architectury.networking.NetworkManager;
-//~ }
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
-//? if < 1.21 {
-/*import io.netty.buffer.Unpooled;
-import net.minecraft.network.FriendlyByteBuf;
-*///? }
 
 import static com.rimo.sfcr.Common.*;
 import static net.minecraft.commands.Commands.argument;
@@ -24,16 +15,13 @@ import static net.minecraft.commands.Commands.literal;
 
 public class DedicatedServer {
 	public static void init() {
-		//? if >= 1.21 {
 		NetworkManager.registerS2CPayloadType(WeatherPayload.TYPE, WeatherPayload.CODEC);
 		NetworkManager.registerS2CPayloadType(UploadRequestPayload.TYPE, UploadRequestPayload.CODEC);
-		//? }
 
-		//~ if > 1.19 'access' -> 'access, env'
 		CommandRegistrationEvent.EVENT.register((dispatcher, access, env) -> dispatcher
 				.register(literal(MOD_ID)
 						.then(literal("help")
-							.requires(source -> source.hasPermission(2))
+							.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 							.executes(context -> {
 								VersionUtil.sendSystemMessage(context, "- - - - - SFCR Help Page - - - - -");
 								VersionUtil.sendSystemMessage(context, "/sfcr help - Show this page.");
@@ -46,9 +34,9 @@ public class DedicatedServer {
 							})
 						)
 						.then(literal("status")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.executes(context -> {
-									String dimensionName = context.getSource().getLevel().dimension().location().toString();
+									String dimensionName = context.getSource().getLevel().dimension().identifier().toString();
 									String configJson = getDimensionConfigJson(dimensionName);
 									if (configJson == null) {
 										VersionUtil.sendSystemMessage(context, "§4[SFCRe] Got an error that config cache of " + dimensionName +
@@ -67,7 +55,7 @@ public class DedicatedServer {
 								})
 						)
 						.then(literal("service")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
 											CONFIG.setEnableServer(context.getArgument("e", Boolean.class));
@@ -77,7 +65,7 @@ public class DedicatedServer {
 								)
 						)
 						.then(literal("logical")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
 											CONFIG.setCloudRainLogically(context.getArgument("e", Boolean.class));
@@ -87,7 +75,7 @@ public class DedicatedServer {
 								)
 						)
 						.then(literal("debug")
-								.requires(source -> source.hasPermission(2))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 								.then(argument("e", BoolArgumentType.bool())
 										.executes(context -> {
 											CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
@@ -97,23 +85,13 @@ public class DedicatedServer {
 								)
 						)
 						.then(literal("upload")
-								.requires(source -> source.hasPermission(4))
+								.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_OWNER))
 								.executes(context -> {
-									//? if > 1.19 {
 									ServerPlayer player = context.getSource().getPlayer();
 									if (player == null) {
-									//? } else {
-									/*ServerPlayer player;
-									try {
-										player = context.getSource().getPlayerOrException();
-									} catch (CommandSyntaxException e) {
-									*///? }
 										VersionUtil.sendSystemMessage(context, "§4[SFCRe] Please cast it from client!");
 										return 1;
 									}
-									//? if < 1.21 {
-									/*NetworkManager.sendToPlayer(player, PACKET_UPLOAD_REQUEST, new FriendlyByteBuf(Unpooled.buffer()));
-									*///? } else
 									NetworkManager.sendToPlayer(player, new UploadRequestPayload());
 									return 1;
 								})
@@ -123,19 +101,12 @@ public class DedicatedServer {
 
 		// Shared Config Receiver
 		// allows server can get a new dimension config uploaded by player
-		//? if < 1.21 {
-		/*NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, (buf, context) -> {
-			String name = buf.readUtf();
-			String configJson = buf.readUtf();
-			long l = buf.readVarLong();
-		*///? } else {
 		NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
 			String name = payload.name();
 			String configJson = payload.sharedConfigJson();
 			long l = payload.seed();
-		//? }
 			Player player = context.getPlayer();
-			if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
+			if (! player.permissions().hasPermission(Permissions.COMMANDS_OWNER)) {  //check permission again
 				VersionUtil.sendMessage(player, "§4[SFCRe] Your permission is not enough to upload config!");
 				LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?",
 						MOD_ID, player.getName().getString());

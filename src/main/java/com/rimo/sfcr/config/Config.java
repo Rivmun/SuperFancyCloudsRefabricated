@@ -3,7 +3,6 @@ package com.rimo.sfcr.config;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
-//~ if ! 1.16.5 'me.shedaniel.' -> 'dev.'
 import dev.architectury.platform.Platform;
 
 import java.io.BufferedReader;
@@ -17,11 +16,12 @@ import static com.rimo.sfcr.Common.MOD_ID;
 public class Config extends SharedConfig {
 	private boolean enableDebug = false;
 	private boolean enableServer = true;
-	private boolean enableViewCulling = true;
-	private float cullRadianMultiplier = 1.1f;
+	private boolean enableViewCulling = false;
+	private float cullRadianMultiplier = 1.2f;
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
+	private float dhRenderRangeMultiplier = 1F;
 	private boolean isEnableParticleRainCompat = false;
 	private boolean isCloudRainLogically = false;
 
@@ -37,6 +37,7 @@ public class Config extends SharedConfig {
 		this.rebuildInterval            = config.rebuildInterval;
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
+		this.dhRenderRangeMultiplier    = config.dhRenderRangeMultiplier;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
 		this.isCloudRainLogically       = config.isCloudRainLogically;
 		setSharedConfig(config);
@@ -49,6 +50,7 @@ public class Config extends SharedConfig {
 	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
+	public float getDhRenderRangeMultiplier() {return dhRenderRangeMultiplier;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
 	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
@@ -59,6 +61,7 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public void setDhRenderRangeMultiplier(float value) {dhRenderRangeMultiplier = value;}
 	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 

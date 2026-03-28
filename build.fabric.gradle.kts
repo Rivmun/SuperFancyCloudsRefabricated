@@ -1,5 +1,5 @@
 plugins {
-    id("dev.architectury.loom")
+    id("dev.architectury.loom") version "1.13-SNAPSHOT"
 }
 
 val minecraft = property("deps.minecraft") as String

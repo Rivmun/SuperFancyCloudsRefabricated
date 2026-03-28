@@ -1,5 +1,5 @@
 //? if fabric && = 1.21.11 {
-package com.rimo.sfcr.mixin.particlerain;
+/*package com.rimo.sfcr.mixin.particlerain;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -80,4 +80,4 @@ public abstract class ParticleSpawnerMixin {
 		return d;
 	}
 }
-//? }
+*///? }

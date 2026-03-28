@@ -2,7 +2,6 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.ConfigScreen;
-//~ if ! 1.16.5 'me.shedaniel.' -> 'dev.'
 import dev.architectury.platform.Platform;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;

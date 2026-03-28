@@ -1,12 +1,11 @@
 plugins {
-    id("dev.architectury.loom") version "1.13-SNAPSHOT"
+    id("dev.architectury.loom-no-remap") version "1.14-SNAPSHOT"
 }
 
 val minecraft = property("deps.minecraft") as String
 
 loom {
-    silentMojangMappingsLicense()
-    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+    accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }
 
 sourceSets.main {
@@ -37,10 +36,10 @@ tasks.named<ProcessResources>("processResources") {
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
-        this["arch_api"] =      prop("deps.arch-api")
-        this["cloth"] =         prop("deps.cloth")
-        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-        this["sereneseasons"] = prop("deps.sereneseasons")
+//        this["arch_api"] =      prop("deps.arch-api")
+//        this["cloth"] =         prop("deps.cloth")
+//        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
+//        this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
         this["particlerain_mixin"] = ""
@@ -57,43 +56,34 @@ base.archivesName = property("mod.id") as String
 repositories {
     mavenLocal()
     maven("https://maven.neoforged.net/releases/")
-    maven("https://maven.architectury.dev/")
-    maven("https://maven.shedaniel.me/")
     maven("https://api.modrinth.com/maven")
+    maven("https://maven.shedaniel.me/")
 }
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
-    mappings(loom.officialMojangMappings())
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
     // Arch-api
-    modApi("dev.architectury:architectury-neoforge:${property("deps.arch-api")}")
+//    modApi("dev.ar.chitectury:architectury-neoforge:${property("deps.arch-api")}")
     // cloth
-    modApi("me.shedaniel.cloth:cloth-config-neoforge:${property("deps.cloth")}") {
+    api("me.shedaniel.cloth:cloth-config-neoforge:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")
     }
 
     //distant horizons
-    modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //serene seasons
-    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
-    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
+//    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
 }
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/${project.property("mod.id")}.unobf.accesswidener")
-    }
-
-    register<Copy>("buildAndCollect") {
-        group = "build"
-        from(remapJar.map { it.archiveFile })
-        into(rootProject.layout.buildDirectory.file("libs"))
-        dependsOn("build")
+        exclude("**/fabric.mod.json", "**/${project.property("mod.id")}.accesswidener")
     }
 
     jar {
@@ -102,6 +92,6 @@ tasks {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }

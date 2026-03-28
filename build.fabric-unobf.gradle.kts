@@ -1,12 +1,11 @@
 plugins {
-    id("fabric-loom")
+    id("dev.architectury.loom-no-remap") version "1.14-SNAPSHOT"
 }
 
 val minecraft = property("deps.minecraft") as String;
 
 loom {
-    silentMojangMappingsLicense()
-    accessWidenerPath = file("src/main/resources/sfcr.uobf.accesswidener")
+    accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }
 
 tasks.named<ProcessResources>("processResources") {
@@ -29,15 +28,14 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_icon"] =      prop("mod.icon")
 
         this["version_range"] = prop("version_range")
-        this["arch-api"] =      prop("deps.arch-api")
-        this["cloth"] =         prop("deps.cloth")
-        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
+//        this["arch-api"] =      prop("deps.arch-api")
+//        this["cloth"] =         prop("deps.cloth")
+//        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["particlerain_min_version"] = prop("particlerain_min_version")
 
         this["access_widener"] = "${prop("mod.id")}.unobf.accesswidener"
 
         // insert version-specific mixins
-//        this["RegistrySyncManagerMixin" ] = if (sc.current.parsed  > "1.20.1") "\"fabric.RegistrySyncManagerMixin\"," else ""
     }
 
     filesMatching(listOf("fabric.mod.json", "${prop("mod.id")}.mixins.json")) {
@@ -52,26 +50,34 @@ repositories {
     mavenLocal()
     maven("https://api.modrinth.com/maven")
     maven("https://maven.terraformersmc.com/")
+    maven("https://maven.shedaniel.me/")
 }
 
 dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
-
     implementation("net.fabricmc:fabric-loader:${property("deps.fabric")}")
     implementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
-//    implementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
+
+    //modmenu
+    implementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
+    // cloth
+    api("me.shedaniel.cloth:cloth-config-fabric:${property("deps.cloth")}") {
+        exclude(group = "net.fabricmc.fabric-api")
+    }
+    //distant horizons
+//    modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+    //particle rain
+    compileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
+    //serene seasons
+//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    //Iris
+//    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
 }
 
 tasks {
     processResources {
         exclude("**/neoforge.mods.toml", "**/${project.property("mod.id")}.accesswidener")
-    }
-
-    register<Copy>("buildAndCollect") {
-        group = "build"
-        from(jar.map { it.archiveFile })
-        into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
-        dependsOn("build")
     }
 }
 

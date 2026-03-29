@@ -55,5 +55,3 @@ mandatory = false
 versionRange = "[${sereneseasons},)"
 ordering = "NONE"
 side = "CLIENT"
-
-${mixinextras_deps}

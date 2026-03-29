@@ -62,9 +62,6 @@ tasks.named<ProcessResources>("processResources") {
         // insert deps
         this["particlerain_deps"] = if (sc.current.parsed > "1.20")
             "[[dependencies.${prop("mod.id")}]]\nmodId = \"particlerain\"\nmandatory = false\nversionRange = \"[${prop("particlerain_min_version")},)\"\nordering = \"NONE\"\nside = \"CLIENT\"\n" else ""
-        this["mixinextras_deps"] = if (sc.current.parsed.eq("1.16.5") or sc.current.parsed.eq("1.20.1")) "" else
-            "[[dependencies.${prop("mod.id")}]]\nmodId = \"mixinextras\"\nmandatory = true\nversionRange = \"[${prop("deps.mixinextras")},)\"\nordering = \"BEFORE\"\nside = \"BOTH\"\n"
-
     }
 
     filesMatching(listOf("META-INF/mods.toml", "${prop("mod.id")}.mixins.json")) {

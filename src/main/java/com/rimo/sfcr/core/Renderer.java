@@ -118,7 +118,7 @@ public class Renderer {
 		}
 		this.xOffset = (xOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
 		this.zOffset = (zOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
-		int cameraGridY = (int) (cameraY / CLOUD_BLOCK_HEIGHT);
+		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / CLOUD_BLOCK_HEIGHT);
 
 		//refresh check
 		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
@@ -147,9 +147,12 @@ public class Renderer {
 			 * if only Y changed (condition in cloudData) and not in resampling, and in cloudLayer, just refresh mesh.
 			 * Normal culling already does in 1.21.6+ vanilla mesh building, we must remesh it to prevent top/bottom face disappear when Y changed.
 			 */
-			int cloudGridHeight = (int) (cloudHeight / CLOUD_BLOCK_HEIGHT);
-			if (! isResampling && cameraGridY > cloudGridHeight && cameraGridY < cloudGridHeight + CONFIG.getCloudLayerThickness() + 1) {
- 				cloudDataGroup.forEach(cloudData -> cloudData.tryRebuildMesh(cameraGridY));
+			if (! isResampling) {
+				cloudDataGroup.forEach(cloudData -> {
+					int y = cloudData.gridYFromClouds;
+					if (y != cameraGridY && y >= 0 && y < CONFIG.getCloudLayerThickness())
+						cloudData.tryRebuildMesh(cameraGridY);
+				});
 			}
 		}
 

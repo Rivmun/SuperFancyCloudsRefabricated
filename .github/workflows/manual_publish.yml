@@ -71,8 +71,8 @@ jobs:
       - name: Publish to Modrinth & CurseForge
         uses: Kir-Antipov/mc-publish@v3.3
         with:
-          modrinth-id: Hoop89kN
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          # modrinth-id: Hoop89kN
+          # modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-enabled: false

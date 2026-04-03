@@ -1,3 +1,13 @@
+# 1.9.1
+### Fix
+- Fix start up crash on Forge side causing by MixinExtras missing when your modpacks have multiple copy integrated.
+- Fix cloud color can set to fully transparency that let cloud seems to disappear.
+- Fix NCNR mixin for mc < 1.20.
+- (Hopefully) Fix mesh rebuild delay when only Y changed that causing cloud bottom face disappear when you fell from sky.
+- Fix a missing Mixin for NCNR logically function.
+### Known Issue
+- Due to Mixin priority issue, NCNR function may override by mods that modified renderSnowAndRain & tickRain, such as SereneSeasons. This's may not to be fixed.
+
 # 1.9.0
 ##### 2026-3-21
 Merge all repositories of version 1.x into Stonecutter - Arch-loom build system. It may reduce the difference in features and patches between these versions. (while also reducing the effort of porting updates. Well, that's more important...)

@@ -103,7 +103,7 @@ public class SharedConfig {
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	public int getSampleSteps() {return sampleSteps;}
-	public int getCloudColor() {return cloudColor;}
+	public int getCloudColor() {return cloudColor >>> 24 <= 0x20 ? 0xFFFFFFFF : cloudColor;}
 	public float getCloudBrightMultiplier() {return cloudBrightMultiplier;}
 	public float getDensityThreshold() {return densityThreshold;}
 	public float getThresholdMaxReduction() {return thresholdMaxReduction;}

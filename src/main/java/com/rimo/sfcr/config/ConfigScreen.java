@@ -232,6 +232,11 @@ public class ConfigScreen {
 								.startAlphaColorField(Component.translatable("text.sfcr.option.cloudColor")
 										, CONFIG.getCloudColor())
 								.setDefaultValue(0xFFFFFFFF)
+								.setErrorSupplier(value -> {
+									if (value >>> 24 <= 0x20)
+										return Optional.of(Component.translatable("text.sfcr.colorAlphaTooLow"));
+									return Optional.empty();
+								})
 								.setSaveConsumer(CONFIG::setCloudColor)
 								.build())
 						//cloud bright multiplier

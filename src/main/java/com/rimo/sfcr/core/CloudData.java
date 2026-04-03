@@ -1,5 +1,6 @@
 package com.rimo.sfcr.core;
 
+import com.rimo.sfcr.Client;
 import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Vec3i;
@@ -33,7 +34,7 @@ public class CloudData {
 		height = CONFIG.getCloudLayerThickness();
 		gridCenterX = x;
 		gridCenterZ = z;
-		gridYFromClouds = minusCloudGridHeight(y);
+		gridYFromClouds = y;
 		_cloudData = new boolean[width][height][width];
 
 		collectCloudData(x, z, densityByWeather, densityByBiome);
@@ -47,10 +48,6 @@ public class CloudData {
 
 	public void tick() {
 		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f;
-	}
-
-	private int minusCloudGridHeight(int y) {
-		return y - (int)(RENDERER.getCloudHeight() / CONFIG.getCloudBlockSize() * 2);
 	}
 
 	// Access
@@ -67,7 +64,7 @@ public class CloudData {
 			return false;
 		for (int i = height - 1; i >= 0; i --) {
 			if (_cloudData[gx][i][gz]) {
-				return minusCloudGridHeight(gy) <= i;
+				return gy - (int) (Client.RENDERER.getCloudHeight() / cbSize * 2) <= i;
 			}
 		}
 		return false;
@@ -100,11 +97,8 @@ public class CloudData {
 	public void tryRebuildMesh(int y) {
 		if (isOnBuild)
   			return;
-		int newGridY = minusCloudGridHeight(y);
-		if (newGridY == gridYFromClouds)
-			return;
 		isOnBuild = true;
-		gridYFromClouds = newGridY;
+		gridYFromClouds = y;
 		buildThread = new Thread(() -> {
 			try {
 				ArrayList<Integer> newMeshData = new ArrayList<>();

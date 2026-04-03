@@ -69,11 +69,11 @@ public abstract class ServerLevelMixin {
 			return Biome.Precipitation.NONE;
 		return original;
 	}
-	*///? } else if < 1.21 {
-	/*@SuppressWarnings("ConstantConditions")
+	*///? } else {
+	@SuppressWarnings("ConstantConditions")
 	//? if < 1.21 {
-	/^@WrapOperation(method = "tickChunk", at = @At(
-	^///? } else
+	/*@WrapOperation(method = "tickChunk", at = @At(
+	*///? } else
 	@WrapOperation(method = "tickPrecipitation", at = @At(
 			value = "INVOKE",
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
@@ -83,5 +83,5 @@ public abstract class ServerLevelMixin {
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}
-	*///? }
+	//? }
 }

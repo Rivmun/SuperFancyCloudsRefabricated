@@ -36,12 +36,12 @@ tasks.named<ProcessResources>("processResources") {
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
-//        this["arch_api"] =      prop("deps.arch-api")
-//        this["cloth"] =         prop("deps.cloth")
-//        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
-//        this["sereneseasons"] = prop("deps.sereneseasons")
+        this["cloth"] =         prop("deps.cloth")
+        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
+        this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
+        this["ServerLevelAccessor"] = ""
         this["particlerain_mixin"] = ""
     }
 
@@ -64,21 +64,19 @@ dependencies {
     minecraft("com.mojang:minecraft:${property("deps.minecraft")}")
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
-    // Arch-api
-//    modApi("dev.ar.chitectury:architectury-neoforge:${property("deps.arch-api")}")
     // cloth
     api("me.shedaniel.cloth:cloth-config-neoforge:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")
     }
 
     //distant horizons
-//    modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    api("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
+//    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //serene seasons
-//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
-//    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
+    compileOnly("maven.modrinth:iris:${property("deps.iris")}-neoforge")
 }
 
 tasks {

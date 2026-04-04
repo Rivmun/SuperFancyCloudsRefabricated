@@ -24,13 +24,15 @@ public abstract class CloudRendererMixin {
 	@Shadow	private static int getSizeForCloudDistance(int i) {return 0;}
 
 	@Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 1)
-	private void sfcr$render(int color, CloudStatus mode, float cloudHeight, Vec3 cameraPos, long l, float cloudPhase, CallbackInfo ci) {
+	//~ if = 1.21.11 'int range, Vec3 cameraPos' -> 'Vec3 cameraPos'
+	private void sfcr$render(int color, CloudStatus mode, float cloudHeight, int range, Vec3 cameraPos, long l, float cloudPhase, CallbackInfo ci) {
 		Level level = Minecraft.getInstance().level;
 		if (level == null || ! CONFIG.isEnableRender())
 			return;
 
 		int cloudRange = CONFIG.getCloudRenderDistance() < 32 ?
-				Minecraft.getInstance().options.cloudRange().get() * 16 :
+				//~ if = 1.21.11 'range' -> 'Minecraft.getInstance().options.cloudRange().get()'
+				range * 16 :
 				CONFIG.getCloudRenderDistance() * 16;
 		int renderRange = Mth.ceil((float)cloudRange / CONFIG.getCloudBlockSize());
 

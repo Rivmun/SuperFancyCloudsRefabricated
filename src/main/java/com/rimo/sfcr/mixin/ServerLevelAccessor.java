@@ -1,4 +1,5 @@
-package com.rimo.sfcr.mixin;
+//? if = 1.21.11 {
+/*package com.rimo.sfcr.mixin;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.ServerLevelData;
@@ -10,3 +11,4 @@ public interface ServerLevelAccessor {
 	@Accessor
 	ServerLevelData getServerLevelData();
 }
+*///? }

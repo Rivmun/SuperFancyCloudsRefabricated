@@ -1,6 +1,12 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.Common;
+//? if ! 1.21.11 {
+public class RendererDHCompat extends Renderer {
+	public RendererDHCompat() {}
+	public RendererDHCompat(Renderer renderer) {super(renderer);}
+}
+//? } else {
+/*import com.rimo.sfcr.Common;
 import com.rimo.sfcr.VersionUtil;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
@@ -23,12 +29,12 @@ import java.util.List;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
-/* Some note:
+/^ Some note:
 	DH official cloud renderer parse a picture to a renderableBoxGroup, then copy it 11*11 times as a cloud matrix,
 	Its culling method cut matrix group by group, not by a single box
 	We convert our cloudGrid to renderableBoxGroup and add it to DH's renderPass
 	Also, thread-ify it.
- */
+ ^/
 public class RendererDHCompat extends Renderer {
 	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
 	private IDhApiRenderableBoxGroup group;
@@ -250,10 +256,10 @@ public class RendererDHCompat extends Renderer {
 		float offsetX = xOffset + (gridX - cloudGrid.centerX()) * cloudBlockWidth;
 		float offsetZ = zOffset + (gridZ - cloudGrid.centerZ()) * cloudBlockWidth;
 
-		/* TODO: culling?
+		/^ TODO: culling?
 		    but we have only one group. considering is unnecessary..
 		    if we want, try slicing cloudGrid into convertor, to get RenderableBoxGroup[] of sliced cloudGrid.
-		 */
+		 ^/
 
 		//color
 		if (!group.isEmpty()) {
@@ -271,3 +277,4 @@ public class RendererDHCompat extends Renderer {
 		group.setOriginBlockPos(new DhApiVec3d(cameraPos.x() - offsetX, cloudHeight, cameraPos.z() - offsetZ));
 	}
 }
+*///? }

@@ -11,8 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(RenderPipelines.class)
 public abstract class RenderPipelinesMixin {
-	@Shadow
-	public static RenderPipeline register(RenderPipeline renderPipeline) {return null;}
+	@Shadow private static RenderPipeline register(RenderPipeline renderPipeline) {return null;}
 
 	@Inject(method = "<clinit>", at = @At(value = "RETURN"), require = 1)
 	private static void sfcr$registerCustomRenderPipelines(CallbackInfo ci) {

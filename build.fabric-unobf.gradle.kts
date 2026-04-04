@@ -28,14 +28,19 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_icon"] =      prop("mod.icon")
 
         this["version_range"] = prop("version_range")
-//        this["arch-api"] =      prop("deps.arch-api")
-//        this["cloth"] =         prop("deps.cloth")
-//        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
+        this["cloth"] =         prop("deps.cloth")
+        this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["particlerain_min_version"] = prop("particlerain_min_version")
 
         this["access_widener"] = "${prop("mod.id")}.unobf.accesswidener"
 
         // insert version-specific mixins
+        this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
+        this["ServerLevelAccessor"] = ""
+
+        // insert deps
+        this["particlerain_deps"] = "\"particlerain\": \">=${prop("particlerain_min_version")}\","
+        this["sereneseasons_deps"] = ""
     }
 
     filesMatching(listOf("fabric.mod.json", "${prop("mod.id")}.mixins.json")) {
@@ -72,7 +77,7 @@ dependencies {
     //serene seasons
 //    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
-//    modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
+    compileOnly("maven.modrinth:iris:${property("deps.iris")}-fabric")
 }
 
 tasks {

@@ -21,7 +21,7 @@ import static com.rimo.sfcr.Common.DATA;
 @Mixin(DebugScreenEntries.class)
 public class DebugScreenEntriesMixin {
 	@Unique	private static final Identifier sfcr$ID = VersionUtil.getId("debug");
-	@Shadow public static Identifier register(Identifier resourceLocation, DebugScreenEntry debugScreenEntry) {return null;}
+	@Shadow private static Identifier register(Identifier resourceLocation, DebugScreenEntry debugScreenEntry) {return null;}
 
 	@Inject(method = "<clinit>()V", at = @At("RETURN"))
 	private static void sfcr$registerDebugEntry(CallbackInfo ci) {

@@ -3,7 +3,7 @@ package com.rimo.sfcr.config;
 import com.google.gson.JsonParseException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
-import dev.architectury.platform.Platform;
+import com.rimo.sfcr.PlatformUtil;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -69,7 +69,7 @@ public class Config extends SharedConfig {
 	 * -----IO-----
 	 */
 
-	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
+	private static final Path DEFAULT_PATH = PlatformUtil.getConfigFolder().resolve(Common.MOD_ID + ".json");
 	public static final String OVERWORLD = "minecraft:overworld";
 
 	public Config load() {
@@ -90,7 +90,7 @@ public class Config extends SharedConfig {
 			save();  //write default file if not exist.
 		if (! dimensionNamespace.equals(OVERWORLD)) {
 			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
-			Path path2 = Platform.getConfigFolder().resolve(Common.MOD_ID + dimensionNamespace + ".json");
+			Path path2 = PlatformUtil.getConfigFolder().resolve(Common.MOD_ID + dimensionNamespace + ".json");
 			if (Files.exists(path2)) {
 				path = path2;  //load dimension config if exists, or load default (path unmodified if not exist)
 			} else {

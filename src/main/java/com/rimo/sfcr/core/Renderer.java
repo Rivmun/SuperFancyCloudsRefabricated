@@ -3,9 +3,7 @@ package com.rimo.sfcr.core;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.*;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -36,36 +34,8 @@ import java.util.OptionalInt;
 import static com.rimo.sfcr.Common.*;
 
 public class Renderer {
-	//Create custom renderPipeline
-	//when renderClouds init cloud pipeline, we redirect it by Mixin.
-	@SuppressWarnings("RedundantArrayCreation")
-	public static final RenderPipeline SUPER_FANCY_CLOUDS = RenderPipeline
-			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
-					.withVertexShader("core/rendertype_superfancyclouds")  //use our own .vsh
-					.withFragmentShader("core/rendertype_clouds")
-					.withBlend(BlendFunction.TRANSLUCENT)
-					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
-					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
-					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
-					.buildSnippet()
-			})
-			.withLocation("pipeline/clouds")
-			.build();
-	@SuppressWarnings("RedundantArrayCreation")
-	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = RenderPipeline
-			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
-					.withVertexShader("core/rendertype_superfancyclouds_nth")
-					.withFragmentShader("core/rendertype_clouds")
-					.withBlend(BlendFunction.TRANSLUCENT)
-					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
-					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
-					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
-					.buildSnippet()
-			})
-			.withLocation("pipeline/clouds")
-			.build();
+	public static final RenderPipeline SUPER_FANCY_CLOUDS = createCustomRenderPipeline(true);
+	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = createCustomRenderPipeline(false);
 
 	public static Sampler sampler = new Sampler();
 	protected volatile CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
@@ -90,6 +60,31 @@ public class Renderer {
 	public Renderer(Renderer renderer) {
 		renderer.stop();
 		this.cloudGrid = renderer.cloudGrid;
+	}
+
+	@SuppressWarnings("RedundantArrayCreation")
+	private static RenderPipeline createCustomRenderPipeline(boolean hasThick) {
+		String vshPath = hasThick ?
+				"core/rendertype_superfancyclouds" :
+				"core/rendertype_superfancyclouds_nth";
+		return RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipeline
+						.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
+						.withVertexShader(vshPath)  //use our own .vsh
+						.withFragmentShader("core/rendertype_clouds")
+						//? if = 1.21.11 {
+						/*.withBlend(BlendFunction.TRANSLUCENT)
+						*///? } else {
+						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+						//? }
+						.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
+						.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
+						.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
+						//? if > 1.21.11
+						.withDepthStencilState(DepthStencilState.DEFAULT)
+						.buildSnippet()
+				})
+				.withLocation("pipeline/clouds")
+				.build();
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
@@ -158,9 +153,9 @@ public class Renderer {
 				exceptionCatcher(e);
 			} finally {
 				synchronized (this) {
-					isResampling = false;
 					resamplingTimer = 0;
-					rebuildTick = 99;
+					rebuildTick = 999;
+					isResampling = false;
 				}
 			}
 		});
@@ -182,7 +177,7 @@ public class Renderer {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] encode " + debugBuiltCounter + " face(s), " + debugCullCounter + " cell(s) skipped, cost " + debugBuiltTime + "ms.";
+		return "[SFCR] encode " + debugBuiltCounter + " face(s), " + debugCullCounter + " cell(s) skipped, cost " + debugBuiltTime + "ms. " + gridY;
 	}
 
 	/*
@@ -227,9 +222,10 @@ public class Renderer {
 
 		// rebuild check
 		boolean enableCulling = CONFIG.getEnableViewCulling();
-		if (! isPaused &&
-				(gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness() / 2) ||
-				(enableCulling && ++ rebuildTick > CONFIG.getRebuildInterval()) || ! enableCulling && rebuildTick == 99)) {
+		if (! isPaused && (
+				(enableCulling ? ++ rebuildTick > CONFIG.getRebuildInterval() : rebuildTick >= 999) ||
+				gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness())
+		)) {
 			rebuildTick = 0;
 			this.gridX = gridX;
 			this.gridY = gridY;

@@ -23,6 +23,10 @@ public class VersionUtil {
 	}
 
 	public static void sendMessage(Player player, String message) {
-		player.displayClientMessage(Component.nullToEmpty(message), false);
+		//? if = 1.21.11 {
+		/*player.displayClientMessage(Component.nullToEmpty(message), false);
+		*///? } else {
+		player.sendSystemMessage(Component.nullToEmpty(message));
+		//? }
 	}
 }

@@ -36,9 +36,8 @@
     "${mod_id}.mixins.json"
   ],
   "depends": {
-    "fabric": "*",
-    "minecraft": "${version_range}",
-    "architectury": ">=${arch_api}"
+    "fabric-api": "*",
+    "minecraft": "${version_range}"
   },
   "suggests": {
     ${particlerain_deps}

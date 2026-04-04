@@ -37,12 +37,12 @@ tasks.named<ProcessResources>("processResources") {
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
-        this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
+        this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
         this["particlerain_mixin"] = ""
     }
 
@@ -67,8 +67,6 @@ dependencies {
     mappings(loom.officialMojangMappings())
     neoForge("net.neoforged:neoforge:${property("deps.neoforge")}")
 
-    // Arch-api
-    modApi("dev.architectury:architectury-neoforge:${property("deps.arch-api")}")
     // cloth
     modApi("me.shedaniel.cloth:cloth-config-neoforge:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")

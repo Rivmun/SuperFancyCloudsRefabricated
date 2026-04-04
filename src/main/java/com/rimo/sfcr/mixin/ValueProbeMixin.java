@@ -22,7 +22,8 @@ public abstract class ValueProbeMixin {
 
 		// inject custom cloud color
 		if (EnvironmentAttributes.CLOUD_COLOR.equals(environmentAttribute)) {
-			long t = level.getDayTime() % 24000L;
+			//~ if = 1.21.11 'getDefaultClockTime' -> 'getDayTime'
+			long t = level.getDefaultClockTime() % 24000L;
 			int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
 			int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
 			int b = (CONFIG.getCloudColor() & 0x0000FF);

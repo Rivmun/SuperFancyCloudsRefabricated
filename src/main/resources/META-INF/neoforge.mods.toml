@@ -31,13 +31,6 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
-modId="architectury"
-type="optional"
-versionRange="[${arch_api},)"
-ordering="BEFORE"
-side="BOTH"
-
-[[dependencies.${mod_id}]]
 modId="cloth_config"
 type="optional"
 versionRange="[${cloth},)"

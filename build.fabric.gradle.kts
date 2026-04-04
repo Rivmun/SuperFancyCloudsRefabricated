@@ -29,7 +29,6 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_icon"] =      prop("mod.icon")
 
         this["version_range"] = prop("version_range")
-        this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
 
@@ -37,6 +36,7 @@ tasks.named<ProcessResources>("processResources") {
 
         // insert version-specific mixins
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
+        this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
 
         // insert deps
         this["particlerain_deps"] = "\"particlerain\": \">=${prop("particlerain_min_version")}\","
@@ -65,8 +65,6 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric-api")}")
 
-    // Arch-api
-    modApi("dev.architectury:architectury-fabric:${property("deps.arch-api")}")
     // cloth
     modApi("me.shedaniel.cloth:cloth-config-fabric:${property("deps.cloth")}") {
         exclude(group = "net.fabricmc.fabric-api")

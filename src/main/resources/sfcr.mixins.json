@@ -5,7 +5,7 @@
   "plugin": "com.rimo.sfcr.mixin.Plugin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ServerLevelAccessor",
+    ${ServerLevelAccessor}
     "extra.LevelMixin",
     "extra.ServerLevelMixin"
   ],

@@ -7,10 +7,6 @@ import com.rimo.sfcr.core.AbstractSeasonCompat;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
 import com.rimo.sfcr.mixin.Plugin;
-import dev.architectury.event.events.common.LifecycleEvent;
-import dev.architectury.event.events.common.PlayerEvent;
-import dev.architectury.event.events.common.TickEvent;
-import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -90,76 +86,56 @@ public class Common {
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
 	public static String debugString;
 
-	public static void init() {
-		// dimension cache system
-		LifecycleEvent.SERVER_LEVEL_LOAD.register(Common::loadDimensionData);
-		LifecycleEvent.SERVER_LEVEL_UNLOAD.register(level -> {
-			String name = level.dimension().identifier().toString();
-			DIMENSION_CACHE.remove(name);
-		});
-
-		// Dimension Sender
-		PlayerEvent.PLAYER_JOIN.register(player -> {
-			MinecraftServer server = player.level().getServer();
-			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
-			if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
+	public static void onTick(MinecraftServer server) {
+		if (server.getTickCount() % 20 != 0)
+			return;
+		// Weather is a common stat between different level, just check once
+		ServerLevel level = server.overworld();
+		// Sender
+		//~ if = 1.21.11 'server' -> 'level'
+		if (DATA.updateWeather(server)) {  // always update
+			if (! CONFIG.isEnableServer())
 				return;
-			sendDimensionPacket(player, player.level().dimension());
-		});
-		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-			MinecraftServer server = player.level().getServer();
-			if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
-				return;
-			sendDimensionPacket(player, newLevel);
-		});
-
-		TickEvent.SERVER_POST.register(server -> {
-			if (server.getTickCount() % 20 != 0)
-				return;
-			// Weather is a common stat between different level, just check once
-			ServerLevel level = server.overworld();
-			// Sender
-			if (DATA.updateWeather(level)) {  // always update
-				if (! CONFIG.isEnableServer())
-					return;
-				Data.Weather nextWeather = DATA.getNextWeather();
-				NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), new WeatherPayload(nextWeather));
-				if (CONFIG.isEnableDebug())
-					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
-			}
-			// update
-			DATA.updateWeatherDensity(level);
-
-			//debug
-			if (! apiDebugTime.isEmpty()) {
-				double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
-				int size = apiDebugTime.size();
-				debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
-						"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
-				apiDebugTime.clear();
-			}
+			Data.Weather nextWeather = DATA.getNextWeather();
+			PlatformUtil.sendToAllPlayers(server, new WeatherPayload(nextWeather));
 			if (CONFIG.isEnableDebug())
-				Plugin.checkMixinApplied();
-		});
+				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
+		}
+		// update
+		DATA.updateWeatherDensity(level);
 
+		//debug
+		if (! apiDebugTime.isEmpty()) {
+			double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
+			int size = apiDebugTime.size();
+			debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
+					"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
+			apiDebugTime.clear();
+		}
+		if (CONFIG.isEnableDebug())
+			Plugin.checkMixinApplied();
+	}
+
+	public static void onLevelTick(ServerLevel level) {
 		if (seasonHandler == null)
 			return;
-		TickEvent.SERVER_LEVEL_POST.register(level -> {
-			if (level.getGameTime() % 24000 != 0)
-				return;
-			// season base on time, but different level may have different time, so we must update it in level tick instead of server.
-			DimensionData data = DIMENSION_CACHE.get(level.dimension().identifier().toString());
-			if (data == null)
-				return;
-			data.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
-		});
+		if (level.getGameTime() % 24000 != 0)
+			return;
+		// season base on time, but different level may have different time, so we must update it in level tick instead of server.
+		DimensionData data = DIMENSION_CACHE.get(level.dimension().identifier().toString());
+		if (data == null)
+			return;
+		data.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 	}
 
 	// Dimension Packet Sender
-	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+	public static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+		MinecraftServer server = player.level().getServer();
+		if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
+			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());
-		NetworkManager.sendToPlayer(player, new DimensionPayload(
+		PlatformUtil.sendToPlayer(player, new DimensionPayload(
 				name,
 				data.configJson,
 				data.seed
@@ -176,20 +152,29 @@ public class Common {
 	 * Load a dimension config into cache, or refresh its config and sampler.
 	 * @return the newest cache of this Level.
 	 */
-	private static DimensionData loadDimensionData(ServerLevel Level) {
-		String name = Level.dimension().identifier().toString();
+	private static DimensionData loadDimensionData(ServerLevel level) {
+		String name = level.dimension().identifier().toString();
 		Config config = new Config();
 		String configJson = config.load(name) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
-				long seed = getSeed(Level);
-				Sampler sampler = new Sampler().setSeed(seed).setLevel(Level).setConfig(config);
+				long seed = getSeed(level);
+				Sampler sampler = new Sampler().setSeed(seed).setLevel(level).setConfig(config);
 				return new DimensionData(seed, configJson, sampler);
 			} else {
-				existing.sampler.setConfig(config).setLevel(Level);
+				existing.sampler.setConfig(config).setLevel(level);
 				return new DimensionData(existing.seed(), configJson, existing.sampler());
 			}
 		});
+	}
+
+	public static void addDimensionData(ServerLevel level) {
+		loadDimensionData(level);
+	}
+
+	public static void removeDimensionData(ServerLevel level) {
+		String name = level.dimension().identifier().toString();
+		DIMENSION_CACHE.remove(name);
 	}
 
 	/**

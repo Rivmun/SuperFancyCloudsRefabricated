@@ -1,15 +1,19 @@
 package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.mixin.ServerLevelAccessor;
 import net.minecraft.core.BlockPos;
-//? if ! 1.16.5
 import net.minecraft.core.Holder;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+//? if > 1.21.11 {
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.saveddata.WeatherData;
+//? } else {
+/*import com.rimo.sfcr.mixin.ServerLevelAccessor;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.ServerLevelData;
+*///? }
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -39,21 +43,26 @@ public class Data {
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();
 	}
 
-	public boolean updateWeather(ServerLevel level) {
+	//~ if = 1.21.11 'MinecraftServer server' -> 'ServerLevel level'
+	public boolean updateWeather(MinecraftServer server) {
 		// Weather Pre-detect
-		ServerLevelData levelData = ((ServerLevelAccessor) level).getServerLevelData();
-		int rainTime = levelData.getRainTime() / 20;
-		int thunderTime = levelData.getThunderTime() / 20;
+		//? if = 1.21.11 {
+		/*ServerLevelData data = ((ServerLevelAccessor) level).getServerLevelData();
+		*///? } else {
+		WeatherData data = server.getWeatherData();
+		//? }
+		int rainTime = data.getRainTime() / 20;
+		int thunderTime = data.getThunderTime() / 20;
 		int preDetectTime = CONFIG.getWeatherPreDetectTime();
-		if (levelData.isRaining()) {
-			if (levelData.isThundering()) {
+		if (data.isRaining()) {
+			if (data.isThundering()) {
 				nextWeather = thunderTime < preDetectTime ? Weather.RAIN : Weather.THUNDER;
 			} else {
 				nextWeather = rainTime < preDetectTime ? Weather.CLEAR :
 						thunderTime < preDetectTime ? Weather.THUNDER : Weather.RAIN;
 			}
 		} else {  //clear...
-			int clearWeatherTime = levelData.getClearWeatherTime() / 20;
+			int clearWeatherTime = data.getClearWeatherTime() / 20;
 			if (clearWeatherTime != 0) {  // Notice that only '/weather clear' can set clearTime to non-zero
 				nextWeather = clearWeatherTime < preDetectTime ? Weather.RAIN : Weather.CLEAR;
 			} else {

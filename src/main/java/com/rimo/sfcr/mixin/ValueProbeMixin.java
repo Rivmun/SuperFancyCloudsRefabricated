@@ -1,12 +1,11 @@
 package com.rimo.sfcr.mixin;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.attribute.EnvironmentAttribute;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -15,17 +14,13 @@ import static com.rimo.sfcr.Common.CONFIG;
 
 @Mixin(targets = "net.minecraft.world.attribute.EnvironmentAttributeProbe$ValueProbe")
 public abstract class ValueProbeMixin {
-
-	@Unique
-	private final ClientLevel level = Minecraft.getInstance().level;
-
-	/*
-		inject custom cloud color
-	 */
 	@Inject(method = "get", at = @At("TAIL"), cancellable = true)
-	private <Value> void get(EnvironmentAttribute<Value> environmentAttribute, float f, CallbackInfoReturnable<Integer> cir) {
+	private <Value> void sfcr$get(EnvironmentAttribute<Value> environmentAttribute, float f, CallbackInfoReturnable<Object> cir) {
+		Level level = Minecraft.getInstance().level;
 		if (! CONFIG.isEnableRender() || level == null)
 			return;
+
+		// inject custom cloud color
 		if (EnvironmentAttributes.CLOUD_COLOR.equals(environmentAttribute)) {
 			long t = level.getDefaultClockTime() % 24000L;
 			int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
@@ -46,7 +41,12 @@ public abstract class ValueProbeMixin {
 					b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
 				}
 			}
-			cir.setReturnValue(ARGB.multiply(cir.getReturnValue(), ARGB.color(r, g, b)));
+			cir.setReturnValue(ARGB.multiply((Integer) cir.getReturnValue(), ARGB.color(r, g, b)));
+		}
+
+		// inject custom cloud height
+		if (EnvironmentAttributes.CLOUD_HEIGHT.equals(environmentAttribute) && CONFIG.getCloudHeight() != 0) {
+			cir.setReturnValue((Float) cir.getReturnValue() + CONFIG.getCloudHeight());
 		}
 	}
 }

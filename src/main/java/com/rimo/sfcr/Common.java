@@ -1,82 +1,237 @@
 package com.rimo.sfcr;
 
+import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.SharedConfig;
 import com.rimo.sfcr.core.Data;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.rimo.sfcr.core.Sampler;
+import com.rimo.sfcr.mixin.Plugin;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import org.jspecify.annotations.NonNull;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.NameAndId;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.NotNull;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public class Common implements ModInitializer {
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class Common {
 	public static final String MOD_ID = "sfcr";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	public static Config CONFIG = Config.load();
+	public static final Config CONFIG = new Config().load();
 	public static final Data DATA = new Data(CONFIG);
+	/**
+	 * Data.Weather - use to pre-detect function, sent when weather will be changed.
+	 */
+	public record WeatherPayload(Data.Weather weather) implements CustomPacketPayload {
+		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("weather_s2c"));
+		public static final StreamCodec<FriendlyByteBuf, WeatherPayload> CODEC = StreamCodec.of(
+				(buf, value) -> buf.writeEnum(value.weather),
+				buf -> new WeatherPayload(buf.readEnum(Data.Weather.class))
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+	/**
+	 * Contains:<br>
+	 * 1.String dimensionName - use to load specific config, sent when player join at first time and dimension change. <br>
+	 * 2.@Emptyable String dimensionConfigJson - specific configJson which existing on server side when serverConfig is enabled<br>
+	 * 3.Long seed - use to init sampler.
+	 */
+	public record DimensionPayload(String name, String sharedConfigJson, long seed) implements CustomPacketPayload {
+		public static final Type<DimensionPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("dimension"));
+		public static final StreamCodec<FriendlyByteBuf, DimensionPayload> CODEC = StreamCodec.of(
+				((buf, value) -> {
+					buf.writeUtf(value.name);
+					buf.writeUtf(value.sharedConfigJson);
+					buf.writeLong(value.seed);
+				}),
+				buf -> new DimensionPayload(buf.readUtf(), buf.readUtf(), buf.readLong())
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+	/**
+	 * an empty packet to notice client upload its config
+	 */
+	public record UploadRequestPayload() implements CustomPacketPayload {
+		public static final Type<UploadRequestPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("upload_request_s2c"));
+		public static final StreamCodec<FriendlyByteBuf, UploadRequestPayload> CODEC = StreamCodec.of(
+				((buf, value) -> {}),
+				buf -> new UploadRequestPayload()
+		);
+		@Override
+		public @NotNull Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
 
-	@Override
-	public void onInitialize() {
-		PayloadTypeRegistry.clientboundPlay().register(SeedPayload.TYPE, SeedPayload.CODEC);
-		PayloadTypeRegistry.clientboundPlay().register(WeatherPayload.TYPE, WeatherPayload.CODEC);
+	private record DimensionData(long seed, String configJson, Sampler sampler) {}
+	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
+	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
-		//world info sender
-		ServerPlayerEvents.JOIN.register(player -> {
-			if (! CONFIG.isEnableRender())
-				return;
-			ServerLevel world = player.level();
-			ServerPlayNetworking.send(player, new SeedPayload(world.getSeed()));
+	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
+	public static String debugString = "";
+
+	public static void onTick(MinecraftServer server) {
+		if (server.getTickCount() % 20 != 0)
+			return;
+		// Weather is a common stat between different level, just check once
+		ServerLevel level = server.overworld();
+		// Sender
+		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
+			Data.Weather nextWeather = DATA.getNextWeather();
+			playerWithSfcr.forEach(player ->
+					PlatformUtil.sendToPlayer(player, new WeatherPayload(nextWeather))
+			);
 			if (CONFIG.isEnableDebug())
-				LOGGER.info("Send info {} to {}", world.getSeed(), player.getName().getString());
-		});
+				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
+		}
+		// update
+		DATA.updateWeatherDensity(level);
 
-		//weather sender
-		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			if (! CONFIG.isEnableRender())
-				return;
-			if (DATA.updateWeather(server)) {
-				CustomPacketPayload payload = new WeatherPayload(DATA.nextWeather);
-				server.overworld().players().forEach(player -> ServerPlayNetworking.send(player, payload));
+		//debug
+		if (! apiDebugTime.isEmpty()) {
+			double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
+			int size = apiDebugTime.size();
+			debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
+					"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
+			apiDebugTime.clear();
+		}
+		if (CONFIG.isEnableDebug())
+			Plugin.checkMixinApplied();
+	}
 
-				if (CONFIG.isEnableDebug())
-					LOGGER.info("Broadcast next weather: {}", DATA.nextWeather.name());
+	// Dimension Packet Sender
+	public static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+		MinecraftServer server = player.level().getServer();
+		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
+		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player)))
+			return;
+		String name = key.identifier().toString();
+		DimensionData data = loadDimensionData(player.level());
+		PlatformUtil.sendToPlayer(player, new DimensionPayload(
+				name,
+				data.configJson,
+				data.seed
+		));
+		if (CONFIG.isEnableDebug())
+			LOGGER.info("{} send dimension '{}' packet to {}", MOD_ID, name, player.getName().getString());
+	}
+
+	private static long getSeed(ServerLevel level) {
+		return level.getSeed() >> 5 & 0x7FFFFFFFFFFFFFFFL;  // don't send actually seed for anti-cheat
+	}
+
+	/**
+	 * Load a dimension config into cache, or refresh its config and sampler.
+	 * @return the newest cache of this Level.
+	 */
+	private static DimensionData loadDimensionData(ServerLevel level) {
+		String name = level.dimension().identifier().toString();
+		SharedConfig config = new SharedConfig();
+		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
+		return DIMENSION_CACHE.compute(name, (key, existing) -> {
+			if (existing == null) {
+				long seed = getSeed(level);
+				Sampler sampler = new Sampler().setSeed(seed).setLevel(level).setConfig(config);
+				return new DimensionData(seed, configJson, sampler);
+			} else {
+				existing.sampler.setConfig(config).setLevel(level);
+				return new DimensionData(existing.seed(), configJson, existing.sampler());
 			}
 		});
 	}
 
-	public record SeedPayload(long seed) implements CustomPacketPayload {
-		public static final Identifier PACKET_WORLD_SEED = Identifier.fromNamespaceAndPath(MOD_ID, "world_seed_packet");
-		public static final Type<SeedPayload> TYPE = new CustomPacketPayload.Type<>(PACKET_WORLD_SEED);
-		public static final StreamCodec<FriendlyByteBuf, SeedPayload> CODEC = StreamCodec.of(
-				(buf, value) -> buf.writeLong(value.seed),
-				buf -> new SeedPayload(buf.readLong())
-		);
+	public static void addDimensionData(ServerLevel level) {
+		loadDimensionData(level);
+	}
 
-		@Override
-		public @NonNull Type<? extends CustomPacketPayload> type() {
-			return TYPE;
+	public static void removeDimensionData(ServerLevel level) {
+		String name = level.dimension().identifier().toString();
+		DIMENSION_CACHE.remove(name);
+	}
+
+	/**
+	 * Refresh specific dimension cache config from JSON String.<br>
+	 * Will do nothing if {@link #DIMENSION_CACHE} no have such dimension
+	 * @param dimensionName Syntax example: 'minecraft:overworld'
+	 * @param configJson Generated by {@link SharedConfig#toString()}
+	 */
+	public static void setDimensionConfigJson(String dimensionName, String configJson) {
+		try {
+			DIMENSION_CACHE.computeIfPresent(dimensionName, (key, existing) -> {
+				existing.sampler.setConfig(new SharedConfig().fromString(configJson));
+				return new DimensionData(existing.seed, configJson, existing.sampler());
+			});
+		} catch (JsonSyntaxException ignored) {}
+	}
+
+	/**
+	 * Get specific config of dimension from cache
+	 * @return a String generated by {@link SharedConfig#toString()}, or {@code null} if specific dimension doesn't exist in cache
+	 */
+	public static @Nullable String getDimensionConfigJson(String dimensionName) {
+		try {
+			return DIMENSION_CACHE.get(dimensionName).configJson;
+		} catch (Exception e) {
+			return null;
 		}
 	}
 
-	public record WeatherPayload(Data.Weather weather) implements CustomPacketPayload {
-		public static final Identifier PACKET_WEATHER = Identifier.fromNamespaceAndPath(MOD_ID, "weather_packet");
-		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(PACKET_WEATHER);
-		public static final StreamCodec<RegistryFriendlyByteBuf, WeatherPayload> CODEC = StreamCodec.of(
-				((buf, value) -> buf.writeEnum(value.weather)),
-				buf -> new WeatherPayload(buf.readEnum(Data.Weather.class))
-		);
-
-		@Override
-		public @NonNull Type<? extends CustomPacketPayload> type() {
-			return TYPE;
-		}
+	static void clearDimensionCache() {
+		DIMENSION_CACHE.clear();
 	}
+
+	/**
+	 * For logical side, use {@link Sampler#isCloudCovered(double, double, double)} from {@link #DIMENSION_CACHE} to calculate where is no cloud above.<br>
+	 * If you are client, {@link Client#isNoCloudCovered(double, double, double)} is recommended.
+	 * @param level Current level/level
+	 * @param x Components of target level pos
+	 * @param y Components of target level pos
+	 * @param z Components of target level pos
+	 * @return Always {@code false} if this point above cloud, or cache of this level not found, or 'NCNR logical' function disabled.
+	 */
+	public static boolean isNoCloudCovered(Level level, double x, double y, double z) {
+		long time = System.nanoTime();
+		boolean result = _isNoCloudCovered(level, x, y, z);
+		apiDebugTime.add(System.nanoTime() - time);
+		return result;
+	}
+	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
+		if (! CONFIG.isCloudRainLogically())
+			return false;
+		String name = level.dimension().identifier().toString();
+		DimensionData data = DIMENSION_CACHE.get(name);
+		if (data == null) {
+			if (level instanceof ServerLevel) {
+				data = loadDimensionData((ServerLevel) level);
+			} else {
+				return false;
+			}
+		}
+		return ! data.sampler.isCloudCovered(x, y, z);
+	}
+
+	//Debug
+	public static void exceptionCatcher(Exception e) {
+		StringBuilder text = new StringBuilder(MOD_ID + " got an error:\n" + e.toString());
+		for (StackTraceElement i : e.getStackTrace()) {
+			text.append("\n    at ").append(i.toString());
+		}
+		LOGGER.error(text.toString());
+	}
+
 }

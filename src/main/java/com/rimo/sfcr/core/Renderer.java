@@ -1,140 +1,86 @@
 package com.rimo.sfcr.core;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.buffers.Std140Builder;
+import com.mojang.blaze3d.pipeline.*;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.renderer.BindGroupLayouts;
+import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.util.RandomSource;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.synth.SimplexNoise;
-import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 import static com.rimo.sfcr.Common.*;
+import static net.minecraft.client.renderer.RenderPipelines.MATRICES_FOG_SNIPPET;
 
 public class Renderer {
-	//Create custom renderPipeline
-	//when renderClouds init cloud pipeline, we redirect it by Mixin.
-	@SuppressWarnings("RedundantArrayCreation")
-	public static final RenderPipeline SUPER_FANCY_CLOUDS = RenderPipeline
-			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
-					.withVertexShader("core/rendertype_superfancyclouds")  //use our own .vsh in custom build-in resourcepack
-					.withFragmentShader("core/rendertype_clouds")
-					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
-					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
-					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
-					.withDepthStencilState(DepthStencilState.DEFAULT)
-					.buildSnippet()
-			})
-			.withLocation("pipeline/clouds")
-			.build();
-	@SuppressWarnings("RedundantArrayCreation")
-	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = RenderPipeline
-			.builder(new RenderPipeline.Snippet[]{RenderPipeline
-					.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
-					.withVertexShader("core/rendertype_superfancyclouds_nth")
-					.withFragmentShader("core/rendertype_clouds")
-					.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-					.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
-					.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
-					.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
-					.withDepthStencilState(DepthStencilState.DEFAULT)
-					.buildSnippet()
-			})
-			.withLocation("pipeline/clouds")
-			.build();
-	//default cloudSize
-	public float getCloudBlockWidth() {return 12F;}
-	public float getCloudBlockHeight() {return 4F;}
+	public static final RenderPipeline SUPER_FANCY_CLOUDS = createCustomRenderPipeline(true);
+	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = createCustomRenderPipeline(false);
 
-	private SimplexNoise sampler;
-	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
-	private float cloudHeight;
+	public static Sampler sampler = new Sampler();
 	protected volatile CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
-	protected volatile boolean isResampling = false;
-	private volatile double resamplingTimer = 0.0;
-	private int renderDistance;
-	private int cloudGridWidth;
-	private int cloudThickness;
+	private volatile boolean isResampling = false;
+	protected double resamplingTimer = 0.0;
+	protected int rebuildTick = 0;
+	protected float cloudBlockWidth = 12F;
+	protected float cloudBlockHeight = 4F;
+	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
+	protected float xOffset, zOffset;
 
-	private float vanillaCloudHeight;
-	private int vanillaCloudRenderDistance;
-	private int vanillaViewDistance;
-
-	public int debugBuiltCounter, debugCullCounter;
+	protected int debugBuiltCounter = 0;
+	protected int debugCullCounter = 0;
+	protected double debugBuiltTime = 0;
+	protected double debugSamplingTime = 0;
 
 	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
 
-	public synchronized void setRenderer(Config config) {
-		cloudHeight = vanillaCloudHeight + config.getCloudHeightOffset() * getCloudBlockHeight();
-		cloudThickness = config.getCloudThickness();
-		renderDistance = config.isEnableRenderDistanceFitToView() ?
-				vanillaViewDistance * 6 :
-				config.getRenderDistance() >= 32 ?
-						config.getRenderDistance() :
-						vanillaCloudRenderDistance;
-		cloudGridWidth = this.getRenderDistance() * 2 + 1;
-	}
-
-	public void setGridPos(int x, int y, int z) {
-		gridX = x;
-		gridY = y;
-		gridZ = z;
-	}
-
-	public void setRenderDistance(Integer viewDistance, Integer cloudRenderDistance) {
-		this.vanillaViewDistance = viewDistance;
-		this.vanillaCloudRenderDistance = cloudRenderDistance;
-		setRenderer(CONFIG);
-	}
-	protected int getRenderDistance() {
-		return this.renderDistance;
-	}
-
-	public void setCloudHeight(float height) {
-		vanillaCloudHeight = height;
-		cloudHeight = vanillaCloudHeight + CONFIG.getCloudHeightOffset() * getCloudBlockHeight();
-	}
-	public float getCloudHeight() {
-		return this.cloudHeight;
-	}
-
-	public void initSampler(long seed) {
-		this.sampler = new SimplexNoise(RandomSource.create(seed));
-	}
-
-	public void counting(double time) {
-		this.resamplingTimer += time;
+	@SuppressWarnings("RedundantArrayCreation")
+	private static RenderPipeline createCustomRenderPipeline(boolean hasThick) {
+		String vshPath = hasThick ?
+				"core/rendertype_superfancyclouds" :
+				"core/rendertype_superfancyclouds_nth";
+		return RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipeline
+						.builder(new RenderPipeline.Snippet[]{MATRICES_FOG_SNIPPET})
+						.withVertexShader(vshPath)
+						.withFragmentShader("core/rendertype_clouds")
+						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+						.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
+						.withBindGroupLayout(BindGroupLayouts.CLOUD_INFO)
+						.withDepthStencilState(DepthStencilState.DEFAULT)
+						.buildSnippet()
+				})
+				.withLocation("pipeline/clouds")
+				.build();
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
 		CloudGrid cloudGrid = this.cloudGrid;
 		if (cloudGrid == null)
 			return false;
-		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
-		int gx = (int) (cloudGrid.grids.length / 2F - (camPos.x() - x) / getCloudBlockWidth());
-		int gy = (int) ((y - cloudHeight) / getCloudBlockHeight());
-		int gz = (int) (cloudGrid.grids.length / 2F - (camPos.z() - z) / getCloudBlockWidth());
+		Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
+		Vec3 camPos = camera.position();
+		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.33F) * cloudBlockWidth);  //trans to cloud relative...
+		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.33F) * cloudBlockWidth);
+		int gx = (int) (cloudGrid.grids.length / 2F - x / cloudBlockWidth);
+		int gy = (int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight);
+		int gz = (int) (cloudGrid.grids.length / 2F - z / cloudBlockWidth);
 		if (gx >= 0 && gx < cloudGrid.grids.length && gz >= 0 && gz < cloudGrid.grids.length) {
 			for (int i = 0; i < cloudGrid.grids[0][0].length; i++) {
 				if (cloudGrid.grids[gx][gz][i])
@@ -144,99 +90,32 @@ public class Renderer {
 		return false;
 	}
 
-	protected @Nullable CloudGrid getCloudGrid(int x, int z) {
+	protected @Nullable CloudGrid getCloudGrid(int x, int z, int renderRange) {
 		if (Minecraft.getInstance().player == null)
 			return null;
 
-		boolean[][][] grid = new boolean[cloudGridWidth][cloudGridWidth][cloudThickness];
-		int sx = x - this.getRenderDistance();  //make gridX/gridZ offsets to center of cloudGrid
-		int sz = z - this.getRenderDistance();
-		Level world = Minecraft.getInstance().player.level();
-		double time = world.getGameTime() / 20.0;
-		float threshold = 0.5f;  //original
+		int gridWidth = renderRange * 2 + 1;
+		boolean[][][] grid = new boolean[gridWidth][gridWidth][CONFIG.getCloudLayerThickness()];
+		int sx = x - renderRange;  //make gridX/gridZ offsets to center of cloudGrid
+		int sz = z - renderRange;
+		float densityByWeather = DATA.densityByWeather;
+		float densityByBiome = DATA.densityByBiome;
 
-		boolean isEnableDynamic = CONFIG.isEnableWeatherDensity();
-		boolean isBiomeByChunk = CONFIG.isEnableBiomeDensityByChunk();
-		boolean isBiomeUseLoadedChunk = CONFIG.isEnableBiomeDensityUseLoadedChunk();
-		boolean isEnableTerrainDodge = CONFIG.isEnableTerrainDodge();
-		float densityMultiplier = isEnableDynamic ? getDensityMultiplier(world.getDefaultClockTime()) : 1;
-		int steps = CONFIG.getSampleSteps();
-
-		for(int cx = 0; cx < cloudGridWidth; cx++) {
-			for(int cz = 0; cz < cloudGridWidth; cz++) {
-
-				int bx = (int) ((sx + cx + 0.5f) * getCloudBlockWidth());		// transform cloudpos to blockpos
-				int bz = (int) ((sz + cz + 0.5f) * getCloudBlockWidth());
-				final int h = world.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);  //height sampling use to get biome
-
-				// calculating density...
-				if (isEnableDynamic && isBiomeByChunk) {
-					BlockPos pos;
-					if (isBiomeUseLoadedChunk) {
-						Vec2 cellPos = new Vec2(bx, bz);
-						Vec2 unit = cellPos.normalized().scale(16);  //measure as chunk
-						while (!world.hasChunk((int) cellPos.x / 16, (int) cellPos.y / 16)
-								&& unit.dot(cellPos) > 0)  //end when cellPos was reversed.
-							cellPos = cellPos.add(unit.negated());  // stepping pos near towards to player
-
-						pos = new BlockPos((int) cellPos.x, h, (int) cellPos.y);
-					} else {
-						pos = new BlockPos(bx, h, bz);
-					}
-					Holder<Biome> biome = world.getBiome(pos);
-					threshold = CONFIG.isFilterListHasNoBiome(biome)
-							? getDensityThreshold(DATA.densityByWeather, biome.value().climateSettings.downfall)
-							: getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
-				} else {
-					threshold = getDensityThreshold(DATA.densityByWeather, DATA.densityByBiome);
-				}
-
-				// sampling...
-				for (int cy = 0; cy < cloudThickness; cy++) {
-					grid[cx][cz][cy] = getCloudSampleProxy(world, sx, sz, 0, time, steps, cx, cy, cz) * densityMultiplier > threshold && (
-							// terrain dodge (detect light level)
-							! isEnableTerrainDodge || world.getBrightness(LightLayer.SKY, new BlockPos(
-									bx,
-									(int) (getCloudHeight() + (cy - 2) * getCloudBlockHeight()),
-									bz
-							)) == 15
-					);
+		for(int cx = 0; cx < grid.length; cx++) {
+			for(int cz = 0; cz < grid.length; cz++) {
+				for (int cy = 0; cy < grid[0][0].length; cy++) {
+					grid[cx][cz][cy] = sampler.isGridHasCloud(sx + cx, cy, sz + cz, densityByWeather, densityByBiome);
 				}
 			}
 		}
 		return new CloudGrid(grid, x, z);
 	}
 
-	private float getDensityThreshold(float densityByWeather, float densityByBiome) {
-		return CONFIG.getDensityThreshold() - CONFIG.getThresholdMultiplier() * densityByWeather * densityByBiome;
-	}
-
-	private float getDensityMultiplier(long worldTime) {
-		float m = 1F;
-		float time = (worldTime % 24000L);
-		if (time > 13000F || time < 1000F) {  // decreased density at night
-			float remapTime = (time < 1000F ? time + 11000F : time - 13000F) / 12000F;
-			float curveFactor = (float) Math.pow(4 * remapTime * (1 - remapTime), 0.5);  //smooth it...
-			m = 1 - curveFactor * (1 - CONFIG.getDensityAtNight());
-		}
-		return m;
-	}
-
-	private double getCloudSampleProxy(Level world, double startX, double startZ, double zOffset, double timeOffset, int steps, double cx, double cy, double cz) {
-		double sample = getCloudSample(sampler, startX, startZ, zOffset, timeOffset, cx, cy, cz, steps);
-		if (world.isRaining() && CONFIG.isEnableWeatherDensity()) {  //make cloud top more continuous when rain
-			float clearDensity = CONFIG.getDensityPercent() / 100f + 1;
-			float currentDensity = DATA.densityByWeather + 1;
-			float cyMax = CONFIG.getCloudThickness();
-			final float MAX_ADD = 3F;
-			sample += Math.pow(cy / cyMax, 2) * Math.max((1 - clearDensity / Math.max(clearDensity, currentDensity)) * MAX_ADD, 0);
-		}
-		return sample;
-	}
-
 	//thread-ify invoke is a better way to reduce lag.
-	protected void updateCloudGrid() {
-		CloudGrid newGrid = getCloudGrid(gridX, gridZ);
+	protected void updateCloudGrid(int renderRange) {
+		long debugTime = System.nanoTime();
+		CloudGrid newGrid = getCloudGrid(gridX, gridZ, renderRange);
+		debugSamplingTime = (System.nanoTime() - debugTime) / 1000000000F;
 		if (newGrid == null)
 			return;
 		if (cloudGrid != null) {
@@ -245,32 +124,27 @@ public class Renderer {
 			if (newOffset > oldOffset)
 				return;  //pick grids closer to player
 		}
-		synchronized (this) {
-			cloudGrid = newGrid;
-		}
+		cloudGrid = newGrid;
 	}
 
-	protected void tryStartGridUpdateThread() {
+	protected void tryStartGridUpdateThread(int renderRange) {
 		if (isResampling)
 			return;
 		isResampling = true;
 		resamplingThread = new Thread(() -> {
 			try {
-				this.updateCloudGrid();
+				this.updateCloudGrid(renderRange);
 			} catch (Exception e) {
-				//
+				exceptionCatcher(e);
 			} finally {
 				synchronized (this) {
+					resamplingTimer = 0;
+					rebuildTick = 999;
 					isResampling = false;
-					resamplingTimer = 0.0;
 				}
 			}
 		});
 		resamplingThread.start();
-	}
-
-	protected boolean isGridNeedToUpdate() {
-		return gridX != cloudGrid.centerX || gridZ != cloudGrid.centerZ;
 	}
 
 	public boolean isTimeToResampling() {
@@ -287,6 +161,11 @@ public class Renderer {
 		cloudGrid = null;
 	}
 
+	public String getDebugString() {
+		return String.format("[SFCR] build %s faces in %.3fms, %s cell skipped. last sampling in %.3fs",
+				debugBuiltCounter, debugBuiltTime, debugCullCounter, debugSamplingTime);
+	}
+
 	/*
 		- - - - - - - - - - - -
 		Overwritten vanilla method
@@ -295,46 +174,129 @@ public class Renderer {
 		- - - - - - - - - - - -
 	 */
 
-	public void buildMesh(ByteBuffer byteBuffer) {
-		if (this.cloudGrid == null)
-			this.cloudGrid = getCloudGrid(gridX, gridZ);  //resampling directly at first time
-		CloudGrid cloudGrid;  //make a snapshot to prevent concurrent violate
-		cloudGrid = this.cloudGrid;
+	int quadCount = 0;
+
+	public void render(int cloudColor, float cloudHeight, Vec3 camPos, float partialTick, MappableRingBuffer infoBuffer, MappableRingBuffer faceBuffer, int renderRange, Level level) {
+		cloudBlockWidth = CONFIG.getCloudBlockSize();
+		cloudBlockHeight = cloudBlockWidth / 2;
+
+		float timeOffset = level.getGameTime() + partialTick;
+		double cloudX = camPos.x + timeOffset * 0.030000001F;
+		double cloudZ = camPos.z + 3.96F;
+		int gridX = Mth.floor(cloudX / cloudBlockWidth);
+		int gridY = Mth.floor((camPos.y - cloudHeight) / cloudBlockHeight);
+		int gridZ = Mth.floor(cloudZ / cloudBlockWidth);
+		float offsetX = (float) (cloudX - (double) ((float) gridX * cloudBlockWidth));
+		float offsetY = (float) (cloudHeight - camPos.y);
+		float offsetZ = (float) (cloudZ - (double) ((float) gridZ * cloudBlockWidth));
+
+		this.xOffset = offsetX;
+		this.zOffset = offsetZ;
+
+		// resampling check
+		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
+		if (! Minecraft.getInstance().isPaused() &&
+				(gridX != this.gridX || gridZ != this.gridZ || isTimeToResampling())) {
+			if (cloudGrid == null) {
+				cloudGrid = getCloudGrid(gridX, gridZ, renderRange);  //resampling directly at first time
+			} else {
+				tryStartGridUpdateThread(renderRange);
+			}
+		}
+
+		_render(gridX, gridY, gridZ, faceBuffer, infoBuffer, renderRange, cloudColor, offsetX, offsetY, offsetZ);
+	}
+
+	protected void _render(int gridX, int gridY, int gridZ, MappableRingBuffer faceBuffer, MappableRingBuffer infoBuffer,
+	                       int renderRange, int cloudColor, float offsetX, float offsetY, float offsetZ) {
+		RenderPipeline renderPipeline = CONFIG.isEnableBottomDim() ? SUPER_FANCY_CLOUDS : SUPER_FANCY_CLOUDS_NOTHICKNESS;
+		// rebuild check
+		boolean enableCulling = CONFIG.getEnableViewCulling();
+		if (! Minecraft.getInstance().isPaused() && (
+				(enableCulling ? ++ rebuildTick > CONFIG.getRebuildInterval() : rebuildTick >= 999) ||
+						gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness())
+		)) {
+			rebuildTick = 0;
+			this.gridX = gridX;
+			this.gridY = gridY;
+			this.gridZ = gridZ;
+
+			faceBuffer.rotate();
+			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
+				buildMesh(mappedView.data(), cloudGrid, renderRange);
+				quadCount = mappedView.data().position() / (renderPipeline == SUPER_FANCY_CLOUDS ? 5 : 4);
+			}
+		}
+
+		// render
+		if (quadCount != 0) {
+			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(infoBuffer.currentBuffer(), false, true)) {
+				Std140Builder.intoBuffer(mappedView.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
+			}
+
+			GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
+			RenderTarget mainRenderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+			RenderTarget cloudTarget = Minecraft.getInstance().levelRenderer.cloudsTarget();
+			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+			GpuBuffer indexBuffer = indices.getBuffer(6 * this.quadCount);
+			GpuTextureView colorTexture;
+			GpuTextureView depthTexture;
+			if (cloudTarget != null) {
+				colorTexture = cloudTarget.getColorTextureView();
+				depthTexture = cloudTarget.getDepthTextureView();
+			} else {
+				colorTexture = mainRenderTarget.getColorTextureView();
+				depthTexture = mainRenderTarget.getDepthTextureView();
+			}
+
+			try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Clouds", colorTexture, OptionalInt.empty(), depthTexture, OptionalDouble.empty())) {
+				renderPass.setPipeline(renderPipeline);
+				RenderSystem.bindDefaultUniforms(renderPass);
+				renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+				renderPass.setIndexBuffer(indexBuffer, indices.type());
+				renderPass.setUniform("CloudInfo", infoBuffer.currentBuffer());
+				renderPass.setUniform("CloudFaces", faceBuffer.currentBuffer());
+				renderPass.drawIndexed(0, 0, 6 * this.quadCount, 1);
+			}
+		}
+	}
+
+	private void buildMesh(ByteBuffer byteBuffer, CloudGrid cloudGrid, int renderRange) {
 		if (cloudGrid == null)
 			return;
-		if (isTimeToResampling())
-			tryStartGridUpdateThread();  //vanilla renderer already checked grid pos
 		debugBuiltCounter = 0;
 		debugCullCounter = 0;
+		debugBuiltTime = System.nanoTime();
 
 		Vec3 look = null, up = null, left = null;
 		double tanHalfFov = 0, tanHalfFovHorizontal = 0;
 		if (CONFIG.getEnableViewCulling()) {
 			Minecraft client = Minecraft.getInstance();
-			Camera cam = client.gameRenderer.getMainCamera();
+			Camera cam = client.gameRenderer.mainCamera();
 			look = new Vec3(cam.forwardVector());
 			up =   new Vec3(cam.upVector());
 			left = new Vec3(cam.leftVector());
 			float multiplier = CONFIG.getCullRadianMultiplier();
 			if (client.player != null)
-				multiplier *= client.player.getFieldOfViewModifier(true, client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
+				multiplier *= client.player.getFieldOfViewModifier(true, VersionUtil.getLastFrameDuration());
 			tanHalfFov = Math.tan(Math.toRadians(client.options.fov().get() * multiplier) / 2F);
 			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getWidth() / client.getWindow().getHeight();
 		}
 
-		for(int l = 0; l <= 2 * renderDistance; ++l) {
+		for(int l = 0; l <= 2 * renderRange; ++l) {
 			for(int xOffset = -l; xOffset <= l; ++xOffset) {
 				int zOffset = l - Math.abs(xOffset);
-				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
+				if (zOffset >= 0 && zOffset <= renderRange && xOffset * xOffset + zOffset * zOffset <= renderRange * renderRange) {
 					if (zOffset != 0) {
-						tryBuildCellProxy(byteBuffer, xOffset, -zOffset, renderDistance, cloudGrid,
+						tryBuildCellProxy(byteBuffer, xOffset, -zOffset, renderRange, cloudGrid,
 								look, up, left, tanHalfFov, tanHalfFovHorizontal);
 					}
-					tryBuildCellProxy(byteBuffer, xOffset, zOffset, renderDistance, cloudGrid,
+					tryBuildCellProxy(byteBuffer, xOffset, zOffset, renderRange, cloudGrid,
 							look, up, left, tanHalfFov, tanHalfFovHorizontal);
 				}
 			}
 		}
+		debugBuiltTime = (System.nanoTime() - debugBuiltTime) / 1000000F;
 	}
 
 	private void tryBuildCellProxy(ByteBuffer byteBuffer, int xOffset, int zOffset, int renderDistance, CloudGrid cloudGrid,
@@ -342,7 +304,7 @@ public class Renderer {
 		int thickness = 0;
 		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grids index
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
-		for (int h = cloudThickness - 1; h >= 0; h--) {
+		for (int h = cloudGrid.grids[0][0].length - 1; h >= 0; h--) {
 			if (byteBuffer.remaining() < 30)
 				return;  //java.nio.BufferOverflow Check, it must have 30 bytes (.put() amount x 6 faces in encodeFaces()).
 			if (x < 0 || x >= cloudGrid.grids.length || z < 0 || z >= cloudGrid.grids.length || h >= cloudGrid.grids[x][z].length)   //check bound
@@ -352,7 +314,7 @@ public class Renderer {
 					thickness --;
 				continue;
 			}
-			if (CONFIG.getEnableViewCulling() && ! isInView(xOffset, h, zOffset, look, up, left, tanHalfFov, tanHalfFovHorizontal)) {
+			if (look != null && ! isInView(xOffset, h, zOffset, look, up, left, tanHalfFov, tanHalfFovHorizontal)) {
 				debugCullCounter++;
 				continue;
 			}
@@ -364,9 +326,9 @@ public class Renderer {
 	// view culling (on block, not accurate)
 	// call stack is too deep, I'm lazy to do culling on face...
 	private boolean isInView(int x, int y, int z, Vec3 look, Vec3 up, Vec3 left, double tanHalfFov, double tanHalfFovHorizontal) {
-		x *= getCloudBlockWidth();
-		y = (int) ((y - gridY) * getCloudBlockHeight());
-		z *= getCloudBlockWidth();
+		x *= cloudBlockWidth;
+		y = (int) ((y - gridY) * cloudBlockHeight);
+		z *= cloudBlockWidth;
 		Vec3 cloudVec = new Vec3(x, y, z);
 		double depth = look.dot(cloudVec);
 		return depth > 0.05F &&
@@ -385,7 +347,6 @@ public class Renderer {
 		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
 
 		cellState |= (thickness << 6);
-		h += CONFIG.getCloudHeightOffset();
 		x -= renderDistance + gridX - cloudGrid.centerX;  //transform to relative pos
 		z -= renderDistance + gridZ - cloudGrid.centerZ;
 		this.buildExtrudedCell(byteBuffer, x, h, z, cellState);
@@ -418,93 +379,30 @@ public class Renderer {
 
 	private void buildExtrudedCell(ByteBuffer byteBuffer, int x, int h, int z, int cellState) {
 		int thickness = cellState >> 6;
-		if (hasBorderTop(cellState) && h < this.gridY) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.UP, 0, thickness);
-		}
-		if (hasBorderBottom(cellState) && h > this.gridY) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.DOWN, 0, thickness);
-		}
-		if (hasBorderNorth(cellState) && z > 0) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.NORTH, 0, thickness);
-		}
-		if (hasBorderSouth(cellState) && z < 0) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.SOUTH, 0, thickness);
-		}
-		if (hasBorderWest(cellState) && x > 0) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
-		}
-		if (hasBorderEast(cellState) && x < 0) {
-			this.encodeFace(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
-		}
-		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && Math.abs(h) <= this.gridY) {  //inner faces
+		if (hasBorderTop(cellState) && h < gridY)
+			encodeFace(byteBuffer, x, h, z, Direction.UP, 0, thickness);
+		if (hasBorderBottom(cellState) && h > gridY)
+			encodeFace(byteBuffer, x, h, z, Direction.DOWN, 0, thickness);
+		if (hasBorderNorth(cellState) && z > 0)
+			encodeFace(byteBuffer, x, h, z, Direction.NORTH, 0, thickness);
+		if (hasBorderSouth(cellState) && z < 0)
+			encodeFace(byteBuffer, x, h, z, Direction.SOUTH, 0, thickness);
+		if (hasBorderWest(cellState) && x > 0)
+			encodeFace(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
+		if (hasBorderEast(cellState) && x < 0)
+			encodeFace(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
+		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && h == gridY) {  //inner faces
 			Direction[] directions = Direction.values();
 			for (Direction direction : directions) {
-				this.encodeFace(byteBuffer, x, h, z, direction, 16, thickness);
+				encodeFace(byteBuffer, x, h, z, direction, 16, thickness);
 			}
 		}
 	}
 
-	private static boolean hasBorderTop(int packed) {
-		return (packed >> 5 & 1) != 0;
-	}
-	private static boolean hasBorderBottom(int packed) {
-		return (packed >> 4 & 1) != 0;
-	}
-	private static boolean hasBorderEast(int packed) {
-		return (packed >> 3 & 1) != 0;
-	}
-	private static boolean hasBorderWest(int packed) {
-		return (packed >> 2 & 1) != 0;
-	}
-	private static boolean hasBorderSouth(int packed) {
-		return (packed >> 1 & 1) != 0;
-	}
-	private static boolean hasBorderNorth(int packed) {
-		return (packed >> 0 & 1) != 0;
-	}
-
-
-	/* - - - - - Sampler Core - - - - - */
-
-	private static final float baseFreq = 0.05f;
-	private static final float baseTimeFactor = 0.01f;
-
-	private static final float l1Freq = 0.09f;
-	private static final float l1TimeFactor = 0.02f;
-
-	private static final float l2Freq = 0.001f;
-	private static final float l2TimeFactor = 0.1f;
-
-	private static double remappedValue(double noise) {
-		return (Math.pow(Math.sin(Math.toRadians(((noise * 180) + 302) * 1.15)), 0.28) + noise - 0.5f) * 2;		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2
-	}
-
-	private static double getCloudSample(SimplexNoise sampler, double startX, double startZ, double zOffset, double timeOffset, double cx, double cy, double cz, int step) {
-		double cloudVal = sampler.getValue(
-				(startX + cx + (timeOffset * baseTimeFactor)) * baseFreq,
-				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
-				(startZ + cz - zOffset) * baseFreq
-		);
-		if (step > 1) {
-			double cloudVal1 = sampler.getValue(
-					(startX + cx + (timeOffset * l1TimeFactor)) * l1Freq,
-					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
-					(startZ + cz - zOffset) * l1Freq
-			);
-			double cloudVal2 = 1;
-			if (step > 2) {
-				cloudVal2 = sampler.getValue(
-						(startX + cx + (timeOffset * l2TimeFactor)) * l2Freq,
-						0,
-						(startZ + cz - zOffset) * l2Freq
-				);
-				//Smooth floor function...
-				cloudVal2 *= 3;
-				cloudVal2 = (cloudVal2 - (Math.sin(Math.PI * 2 * cloudVal2) / (Math.PI * 2))) / 2.0f;		// (3*x-sin(2*3.1415926*3*x/(2*3.1415926)))/2
-			}
-			cloudVal = ((cloudVal + (cloudVal1 * 0.8f)) / 1.8f) * cloudVal2;
-		}
-		return cloudVal * remappedValue(1 - (cy + 1) / 32);		//range likely [-1, 2]
-	}
-
+	protected static boolean hasBorderTop(int packed) {return (packed >> 5 & 1) != 0;}
+	protected static boolean hasBorderBottom(int packed) {return (packed >> 4 & 1) != 0;}
+	protected static boolean hasBorderEast(int packed) {return (packed >> 3 & 1) != 0;}
+	protected static boolean hasBorderWest(int packed) {return (packed >> 2 & 1) != 0;}
+	protected static boolean hasBorderSouth(int packed) {return (packed >> 1 & 1) != 0;}
+	protected static boolean hasBorderNorth(int packed) {return (packed >> 0 & 1) != 0;}
 }

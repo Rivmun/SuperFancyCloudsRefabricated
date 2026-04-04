@@ -1,111 +1,129 @@
 package com.rimo.sfcr;
 
-import com.rimo.sfcr.Common.SeedPayload;
-import com.rimo.sfcr.Common.WeatherPayload;
+import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
-import com.rimo.sfcr.config.ConfigScreenYACL;
-import com.rimo.sfcr.core.Renderer;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.loader.api.FabricLoader;
+import com.rimo.sfcr.core.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.Level;
 
 import java.util.Random;
 
 import static com.rimo.sfcr.Common.*;
 
-public class Client implements ClientModInitializer {
-	private static boolean hasServer = false;  //if not, calc density and weather on local; if yes, wait message payload from server.
-	public static boolean isCustomDimensionConfig = false;  //indicate current config is default or not.
+public class Client {
+	private static boolean hasServer = false;
+	public static boolean isConfigHasBeenOverride = false;
+	public static boolean isCustomDimensionConfig = false;
 	public static Renderer RENDERER;
 
-	@Override
-	public void onInitializeClient() {
-		//init mod
-		ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-			RENDERER = new Renderer();
-		});
-
-		//init renderer
-		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-			if (!hasServer)
-				RENDERER.initSampler(new Random().nextLong());
-			RENDERER.setRenderer(CONFIG);
-		});
-
-		//update
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (! CONFIG.isEnableRender())
-				return;
-			if (!hasServer && client.player != null)
-				DATA.updateWeatherClient(client.player.level());
-			DATA.updateDensity(client.player);
-		});
-
-		//switch config
-		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, world) -> {
-			CONFIG = Config.load(world.dimension().identifier().toString());
-			applyConfigChange();
-		});
-
-		//reset
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			hasServer = false;
-			RENDERER.stop();
-			if (isCustomDimensionConfig)
-				CONFIG = Config.load();
-		});
-
-		ClientCommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> dispatcher
-				.register(ClientCommands.literal(MOD_ID).executes(context -> {
-					if (FabricLoader.getInstance().isModLoaded("yet_another_config_lib_v3")) {
-						Minecraft.getInstance().schedule(() ->
-								Minecraft.getInstance().setScreen(new ConfigScreenYACL().buildScreen(null))
-						);
-						return 1;
-					}
-					context.getSource().sendFeedback(Component.literal("§4You need to install YACL first."));
-					return 1;
-				}))
-		);
-
-		//world info receiver
-		ClientPlayNetworking.registerGlobalReceiver(SeedPayload.TYPE, (payload, context) -> {
-			hasServer = true;
-			RENDERER.initSampler(payload.seed());
-			if (CONFIG.isEnableDebug())
-				Common.LOGGER.info("Receiver world info: {}", payload.seed());
-		});
-
-		//weather receiver
-		ClientPlayNetworking.registerGlobalReceiver(WeatherPayload.TYPE, (payload, context) -> {
-			DATA.nextWeather = payload.weather();
-			if (CONFIG.isEnableDebug())
-				Common.LOGGER.info("Receiver weather: {}", payload.weather().name());
-		});
+	public static void init() {
+		RENDERER = new Renderer();
 	}
 
-	@Environment(EnvType.CLIENT)
-	public static void applyConfigChange() {
-		DATA.setConfig(CONFIG);
-		RENDERER.setRenderer(CONFIG);
+	public static void onLevelLoad(Level level) {
+		Sampler sampler = Renderer.sampler.setLevel(level).setSeed(new Random().nextLong());  //get a random seed before server send
+		String dimensionName = level.dimension().identifier().toString();
+		if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
+			if (CONFIG.load(dimensionName))
+				isCustomDimensionConfig = true;
+			isConfigHasBeenOverride = false;
+			sampler.setConfig(CONFIG);
+		}
+	}
+
+	public static void onTick(Minecraft client) {
+		ClientLevel level = client.level;
+		if (! CONFIG.isEnableRender() || level == null || level.getGameTime() % 20 != 0)
+			return;
+		if (! client.isLocalServer()) {
+			if (! hasServer)
+				DATA.updateWeatherClient(level);
+			DATA.updateWeatherDensity(level);
+		}
+		if (client.player != null)
+			DATA.updateBiomeDensity(client.player);
+	}
+
+	public static void onQuit() {
+		hasServer = false;
+		isCustomDimensionConfig = false;
+		isConfigHasBeenOverride = false;
+		if (RENDERER != null)
+			RENDERER.stop();
+		CONFIG.load();
+		clearDimensionCache();
+	}
+
+	public static void handleDimensionPayload(DimensionPayload payload) {
+		String name = payload.name();
+		String configJson = payload.sharedConfigJson();
+		long seed = payload.seed();
+		hasServer = true;
+		if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
+			try {
+				CONFIG.fromString(configJson);
+				if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
+					isConfigHasBeenOverride = true;
+				if (! name.equals(Config.OVERWORLD))
+					isCustomDimensionConfig = true;
+				if (CONFIG.isEnableDebug())
+					LOGGER.info("{} receive sharedConfig of '{}'", MOD_ID, name);
+			} catch (JsonSyntaxException e) {
+				LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
+			}
+		} else {
+			if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
+				isCustomDimensionConfig = true;
+			isConfigHasBeenOverride = false;
+			if (CONFIG.isEnableDebug())
+				LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
+		}
+		Renderer.sampler.setSeed(seed).setConfig(CONFIG);
+	}
+
+	public static void handleWeatherPayload(WeatherPayload payload) {
+		Data.Weather weather = payload.weather();
+		DATA.setNextWeather(weather);
+		if (CONFIG.isEnableDebug())
+			LOGGER.info("{} receive weather: {}", MOD_ID, weather);
+	}
+
+	//upload request receiver & shared config sender
+	public static void handleUploadRequestPayload() {
+		Level level = Minecraft.getInstance().level;
+		if (level == null)
+			return;
+		String name = level.dimension().identifier().toString();
+		String configJson = CONFIG.toString();
+		PlatformUtil.sendToServer(new DimensionPayload(
+				name,
+				configJson,
+				0L
+		));
+		if (CONFIG.isEnableDebug())
+			LOGGER.info("{} send current config to server", MOD_ID);
+	}
+
+	public static void applyConfigChange(boolean oldEnableDHCompat) {
+		if (! CONFIG.isEnableRender()) {
+			RENDERER.stop();
+		}
+		Renderer.sampler.setConfig(CONFIG);
 	}
 
 	/**
-	 * @return true if this point is covered by SFC clouds, false if not.<br>
-	 * Note that if this point is above cloud, it always returns false.
+	 * For render (client) side, use {@link Renderer#isCloudCovered(double, double, double)} to calculate where is no cloud above<br>
+	 * Call from logical side is useless and may crash, {@link Common#isNoCloudCovered(Level, double, double, double)} is recommended.
+	 * @param x Components of target Level pos
+	 * @param y Components of target Level pos
+	 * @param z Components of target Level pos
+	 * @return {@code true} if this point is covered by SFC clouds, {@code false} if not.<br>
+	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */
 	public static boolean isNoCloudCovered(double x, double y, double z) {
-		return RENDERER == null || ! RENDERER.isCloudCovered(x, y, z);
+		if (! CONFIG.isEnableCloudRain() || RENDERER == null )
+			return false;
+		return ! RENDERER.isCloudCovered(x, y, z);
 	}
-
 }

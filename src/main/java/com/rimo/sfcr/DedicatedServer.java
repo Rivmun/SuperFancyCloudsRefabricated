@@ -1,60 +1,126 @@
 package com.rimo.sfcr;
 
+import com.google.gson.JsonSyntaxException;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.rimo.sfcr.config.Config;
-import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.network.chat.Component;
+import com.rimo.sfcr.config.SharedConfig;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.entity.player.Player;
 
-import static com.rimo.sfcr.Common.CONFIG;
+import static com.rimo.sfcr.Common.*;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-public class DedicatedServer implements DedicatedServerModInitializer {
-	@Override
-	public void onInitializeServer() {
-		//register a few command to get control remotely
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher
-				.register(literal("sfcr").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-					.then(literal("enable")
-							.executes(context -> {
-								context.getSource().sendSystemMessage(Component.nullToEmpty("SFCR enable: " + CONFIG.isEnableRender()));
+public class DedicatedServer {
+	public static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
+		dispatcher.register(literal(MOD_ID)
+				.then(literal("help")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+						.executes(context -> {
+							VersionUtil.sendSystemMessage(context, "- - - - - SFCR Help Page - - - - -");
+							VersionUtil.sendSystemMessage(context, "/sfcr help - Show this page.");
+							VersionUtil.sendSystemMessage(context, "/sfcr status - Show current dimension's config.");
+							VersionUtil.sendSystemMessage(context, "/sfcr service [true|false] - Set SFCR server activity.");
+							VersionUtil.sendSystemMessage(context, "/sfcr logical [true|false] - Set whether NCNR function affect to logical behavior.");
+							VersionUtil.sendSystemMessage(context, "/sfcr debug [true|false] - Set SFCR should output more log or not.");
+							VersionUtil.sendSystemMessage(context, "/sfcr upload - upload your current config to server as current dimension specific config.");
+							return 1;
+						})
+				)
+				.then(literal("status")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+						.executes(context -> {
+							String dimensionName = context.getSource().getLevel().dimension().identifier().toString();
+							String configJson = getDimensionConfigJson(dimensionName);
+							if (configJson == null) {
+								VersionUtil.sendSystemMessage(context, "§4[SFCRe] Got an error that config cache of " + dimensionName +
+										" is not found, please re-enter dimension or reload server.");
+								LOGGER.error("{} unable to print config for {} at {}. It shouldn't be happened...", MOD_ID, context.getSource().getTextName(), dimensionName);
 								return 1;
-							})
-							.then(argument("e", BoolArgumentType.bool()).executes(context -> {
-								CONFIG.setEnableRender(context.getArgument("e", Boolean.class));
-								Config.save(CONFIG);
-								context.getSource().sendSystemMessage(Component.nullToEmpty("Done!"));
+							}
+							if (configJson.isEmpty()) {
+								VersionUtil.sendSystemMessage(context, "[SFCRe] This dimension '" + dimensionName + "' has no config.");
+								VersionUtil.sendSystemMessage(context, "[SFCRe] Use '/sfcr upload' to upload your current config to server.");
 								return 1;
-							}))
-					)
-					.then(literal("debug")
-							.executes(context -> {
-								context.getSource().sendSystemMessage(Component.nullToEmpty("SFCR debug: " + CONFIG.isEnableDebug()));
+							}
+							VersionUtil.sendSystemMessage(context, "[SFCRe] Dimension config of '" + dimensionName + "' are:");
+							VersionUtil.sendSystemMessage(context, configJson);
+							return 1;
+						})
+				)
+				.then(literal("service")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+						.then(argument("e", BoolArgumentType.bool())
+								.executes(context -> {
+									CONFIG.setEnableServer(context.getArgument("e", Boolean.class));
+									VersionUtil.sendSystemMessage(context, "[SFCRe] service status changed!");
+									return 1;
+								})
+						)
+				)
+				.then(literal("logical")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+						.then(argument("e", BoolArgumentType.bool())
+								.executes(context -> {
+									CONFIG.setCloudRainLogically(context.getArgument("e", Boolean.class));
+									VersionUtil.sendSystemMessage(context, "[SFCRe] NoCloudNoRain for logical side status changed!");
+									return 1;
+								})
+						)
+				)
+				.then(literal("debug")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+						.then(argument("e", BoolArgumentType.bool())
+								.executes(context -> {
+									CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
+									VersionUtil.sendSystemMessage(context, "[SFCRe] Debug status changed!");
+									return 1;
+								})
+						)
+				)
+				.then(literal("upload")
+						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_OWNER))
+						.executes(context -> {
+							ServerPlayer player = context.getSource().getPlayer();
+							if (player == null) {
+								VersionUtil.sendSystemMessage(context, "§4[SFCRe] Please cast it from client!");
 								return 1;
-							})
-							.then(argument("e", BoolArgumentType.bool()).executes(context -> {
-								CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
-								Config.save(CONFIG);
-								context.getSource().sendSystemMessage(Component.nullToEmpty("Done!"));
+							}
+							if (! playerWithSfcr.contains(player)) {
+								VersionUtil.sendSystemMessage(context, "$4[SFCRe] You may install SFCR first!");
 								return 1;
-							}))
-					)
-					.then(literal("predetect")
-							.executes(context -> {
-								context.getSource().sendSystemMessage(Component.nullToEmpty("Pre-detect time: " + CONFIG.getWeatherPreDetectTime() + "s"));
-								return 1;
-							})
-							.then(argument("i", IntegerArgumentType.integer()).executes(context -> {
-								CONFIG.setWeatherPreDetectTime(context.getArgument("i", Integer.class));
-								Config.save(CONFIG);
-								context.getSource().sendSystemMessage(Component.nullToEmpty("Done!"));
-								return 1;
-							}))
-					)
+							}
+							PlatformUtil.sendToPlayer(player, new UploadRequestPayload());
+							return 1;
+						})
 				)
 		);
+	}
+
+	// Shared Config Receiver
+	// allows server can get a new dimension config uploaded by player
+	public static void handleDimensionPayload(DimensionPayload payload, Player player) {
+		String name = payload.name();
+		String configJson = payload.sharedConfigJson();
+		long l = payload.seed();
+		if (! player.permissions().hasPermission(Permissions.COMMANDS_OWNER)) {  //check permission again
+			VersionUtil.sendMessage(player, "§4[SFCRe] Your permission is not enough to upload config!");
+			LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?",
+					MOD_ID, player.getName().getString());
+			return;
+		}
+		SharedConfig config = new SharedConfig();
+		try {
+			config.fromString(configJson);
+			config.save(name);
+			setDimensionConfigJson(name, configJson);
+			VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
+			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
+		} catch (JsonSyntaxException e) {
+			VersionUtil.sendMessage(player, "§4[SFCRe] You upload a config that server cannot read, please check your mod version!");
+			LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
+		}
 	}
 }

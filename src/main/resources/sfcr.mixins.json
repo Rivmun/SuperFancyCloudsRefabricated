@@ -2,8 +2,11 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.rimo.sfcr.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "plugin": "com.rimo.sfcr.mixin.Plugin",
+  "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "extra.LevelMixin",
+    "extra.ServerLevelMixin"
   ],
   "client": [
     "CloudRendererMixin",
@@ -11,9 +14,10 @@
     "OptionsMixin",
     "RenderPipelinesMixin",
     "ValueProbeMixin",
-    "WeatherEffectRendererMixin"
+    "extra.ClientLevelMixin",
+    "extra.LeavesBlockMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

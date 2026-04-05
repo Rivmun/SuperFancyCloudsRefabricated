@@ -1,3 +1,7 @@
+# 2.2.1
+- remove arch-api dependencies.
+- update ParticleRain compat version to v4-beta.8+.
+
 # 2.2.0
 Use stonecutter to manager multi-version.
 

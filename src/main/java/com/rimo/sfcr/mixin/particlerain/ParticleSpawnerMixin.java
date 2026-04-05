@@ -6,7 +6,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-//? if > 1.21.11
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
@@ -61,8 +60,6 @@ public abstract class ParticleSpawnerMixin {
 
 	// still splash? do it again!
 	@Inject(method = "tickBlockFX", at = @At("HEAD"))
-	// v4-beta.8 change here, but now arch loom cannot remap mod built with fabric loom 1.15.5, waiting for update...
-	//~ if > 1.21.11 ', CallbackInfo ci' -> 'RandomSource random, CallbackInfo ci'
 	private static void sfcr$catchBlockPos(BlockPos.MutableBlockPos sourcePos, BlockState state, RandomSource random, CallbackInfo ci) {
 		sfcr$x = sourcePos.getX();
 		sfcr$y = sourcePos.getY();

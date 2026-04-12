@@ -1,3 +1,7 @@
+# 1.9.1.1
+- Fix particle rain compatibility for ParticleRain v4-beta.8+.
+- 
+
 # 1.9.1
 ### Fix
 - Fix start up crash on Forge side causing by MixinExtras missing when your modpacks have multiple copy integrated.

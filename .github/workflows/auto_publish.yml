@@ -55,6 +55,13 @@ jobs:
       - name: Build ${{ matrix.version }}
         run: ./gradlew ${{ matrix.version }}:build --no-daemon
 
+      - name: Extract Current Version Changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          awk -v ver="$VERSION" '/^# / {if($0 ~ "# " ver) {flag=1} else {flag=0}} flag {print}' CHANGELOG.md > temp-changelog.md
+          echo "prepared changelog："
+          cat temp-changelog.md
+
       - name: Publish to Modrinth & CurseForge
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -66,4 +73,4 @@ jobs:
           files: versions/${{ matrix.version }}/build/libs/*.jar
           name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
           version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}
-          changelog-file: CHANGELOG.md
+          changelog-file: temp-changelog.md

@@ -3,12 +3,11 @@ name: Manual Publish
 on:
   workflow_dispatch:
     inputs:
-      # 修正：改用string类型，让用户输入逗号分隔的版本列表
       mc_versions:
         description: 'input subproject name'
         required: true
         type: string
-        default: '1.16.5-fabric, 1.16.5-forge'
+        default: '1.16.5-fabric,1.16.5-forge'
 
 jobs:
   prepare-matrix:
@@ -68,15 +67,22 @@ jobs:
       - name: Build ${{ matrix.version }}
         run: ./gradlew ${{ matrix.version }}:build --no-daemon
 
+      - name: Extract Current Version Changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          awk -v ver="$VERSION" '/^# / {if($0 ~ "# " ver) {flag=1} else {flag=0}} flag {print}' CHANGELOG.md > temp-changelog.md
+          echo "prepared changelog："
+          cat temp-changelog.md
+
       - name: Publish to Modrinth & CurseForge
         uses: Kir-Antipov/mc-publish@v3.3
         with:
-          # modrinth-id: Hoop89kN
-          # modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-id: Hoop89kN
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-enabled: false
           files: versions/${{ matrix.version }}/build/libs/*.jar
           name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
           version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}
-          changelog-file: CHANGELOG.md
+          changelog-file: temp-changelog.md

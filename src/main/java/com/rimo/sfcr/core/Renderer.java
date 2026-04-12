@@ -361,32 +361,24 @@ public class Renderer {
 					default: break;
 				}
 
-				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
-				int normCount = vertexList.size() / 4;
-
-				for (int i = 0; i < normCount; i++) {
-					int[][] verCache = new int[][]{		// exacting data...
-							CloudData.depressVertex(vertexList.get(i * 4)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 1)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 2)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 3))
-					};
+				for (CloudData.CompressedFace face : data.meshData) {  //make a snapshot to prevent concurrent violate
+					int[][] vertexList = face.getVertexList();
 					boolean isDrawn = false;
 
 					if (isDebug && ! Common.isNoCloudCovered(Minecraft.getInstance().level,
-							(verCache[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
+							(vertexList[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
 							63,
-							(verCache[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
+							(vertexList[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
 					)) {
 						cloudColor = cloudColor.multiply(0, 1, 0);
 					}
 
-					for (int j = 0; j <= 3; j ++) {
-						if (enableCulling) {
-							Vec3 cloudVec = new Vec3(  // turns to exactly pos & size to calc position culling (camera relative)
-									(verCache[j][0] + offset - 1) * cloudBlockSize,
-									verCache[j][1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
-									(verCache[j][2] - 1) * cloudBlockSize + 0.33f
+					for (int[] vertex : vertexList) {
+						if (enableCulling) {  // turns to exactly pos & size to calc position culling (camera relative)
+							Vec3 cloudVec = new Vec3(
+									(vertex[0] + offset - 1) * cloudBlockSize,
+									vertex[1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
+									(vertex[2] - 1) * cloudBlockSize + 0.33f
 							);
 							double depth = look.dot(cloudVec);
 							if (depth < 0.05F ||
@@ -394,25 +386,30 @@ public class Renderer {
 									Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
 								continue;
 						}
-						CloudData.Facing facing = CloudData.Facing.get(CloudData.depressFromHead(vertexList.get(i * 4)));
-						Vec3 faceColor = cloudColor.multiply(facing.color);
+
+						CloudData.Facing facing = face.getFacing();
+						Vec3 faceColor = cloudColor.multiply(facing.color[0], facing.color[1], facing.color[2]);
 						if (enableBottomDim) {
-							faceColor = faceColor.scale(Mth.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
+							faceColor = faceColor.scale(Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f));
 						}
-						int nx = facing.normal.getX();
-						int ny = facing.normal.getY();
-						int nz = facing.normal.getZ();
+						float a = 0.8F * cloudAlpha;
+						float r = (float) faceColor.x;
+						float g = (float) faceColor.y;
+						float b = (float) faceColor.z;
+						int nx = facing.normal[0];
+						int ny = facing.normal[1];
+						int nz = facing.normal[2];
 						for (int k = 0; k < 4; k++) {
 							//? if < 1.21 {
-							/*builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
+							/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 									.uv(0.5f, 0.5f)
-									.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+									.color(r, g, b, a)
 									.normal(nx, ny, nz)
 									.endVertex();
 							*///? } else {
-							builder.addVertex(verCache[k][0], verCache[k][1], verCache[k][2])
+							builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 									.setUv(0.5f, 0.5f)
-									.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+									.setColor(r, g, b, a)
 									.setNormal(nx, ny, nz);
 							//? }
 						}

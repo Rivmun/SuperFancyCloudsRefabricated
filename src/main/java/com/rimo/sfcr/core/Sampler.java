@@ -8,6 +8,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
+import org.jetbrains.annotations.NotNull;
 //? if > 1.18
 import net.minecraft.core.Holder;
 //? if > 1.19 {
@@ -53,7 +54,7 @@ public class Sampler {
 		return this;
 	}
 
-	public Sampler setConfig(SharedConfig config) {
+	public Sampler setConfig(@NotNull SharedConfig config) {
 		cloudThick = config.getCloudLayerThickness();
 		cloudBlockSize = config.getCloudBlockSize();
 		cloudHeight = config.getCloudHeight() < 0 ? 192 : config.getCloudHeight();
@@ -71,6 +72,8 @@ public class Sampler {
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
+		if (level == null)
+			return false;
 		int gx = (int) Math.floor((x + level.getGameTime() * 0.03F) / cloudBlockSize);
 		int gz = (int) Math.floor(z / cloudBlockSize + 0.33F);
 		for (int i = cloudThick - 1; i >= 0; i --) {

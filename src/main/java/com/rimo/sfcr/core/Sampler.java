@@ -140,9 +140,9 @@ public class Sampler {
 		return getCloudSampleProxy(time, steps, x, y, z) * densityMultiplier > f && (
 				// terrain dodge (detect light level)
 				! isEnableTerrainDodge || level.getBrightness(LightLayer.SKY, new BlockPos(
-						x,
-						(int) (cloudHeight + (y - 2) * cloudBlockSize / 2f),  //turns to exactly height
-						z
+						x * cloudBlockSize,
+						(int) (cloudHeight + (y - 2) * cloudBlockSize / 2f),
+						z * cloudBlockSize
 				)) == 15
 		);
 	}

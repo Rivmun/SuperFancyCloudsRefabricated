@@ -76,7 +76,7 @@ public class Sampler {
 
 	private int oldX, oldZ;
 	private float densityMultiplier = 1F;
-	private double time = 0.0;
+	private double timeOffset = 0.0;
 	private float f = 0.5F;
 
 	/**
@@ -86,21 +86,23 @@ public class Sampler {
 	boolean isGridHasCloud(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		if (level == null || cloudNoise == null || Float.isNaN(cloudHeight))
 			return false;
+		long time = level.getGameTime();
+		int xOffsetNoDelta = (int) (time * 0.03F);  //remember the input x is grid pos that contains time offset, we must remove it when turns it to world pos.
 
 		if (oldX != x || oldZ != z) {
 			oldX = x;
 			oldZ = z;
 
 			densityMultiplier = 1F;
-			time = 0.0;
+			timeOffset = 0.0;
 			f = threshold;
 			if (isEnableDynamic) {
-				densityMultiplier = getDensityMultiplier(level.getGameTime());
-				time = level.getGameTime() / 20.0;
+				densityMultiplier = getDensityMultiplier(time);
+				timeOffset = time / 20.0;
 				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
 			}
 
-			int bx = x * cloudBlockSize;
+			int bx = x * cloudBlockSize - xOffsetNoDelta;
 			int bz = z * cloudBlockSize;
 
 			// biome detect by chunk
@@ -116,13 +118,13 @@ public class Sampler {
 			}
 		}
 
-		return getCloudSampleProxy(time, steps, x, y, z) * densityMultiplier > f && (
+		return getCloudSampleProxy(timeOffset, steps, x, y, z) * densityMultiplier > f && (
 				// terrain dodge (detect light level)
-				! isEnableTerrainDodge || level.getBrightness(LightLayer.SKY, new BlockPos(
-						x,
-						(int) (cloudHeight + (y - 2) * cloudBlockSize / 2f),  //turns to exactly height
-						z
-				)) == 15
+				! isEnableTerrainDodge || level.isEmptyBlock(new BlockPos(
+						(int) ((x + 0.5F) * cloudBlockSize - xOffsetNoDelta),
+						(int) (cloudHeight + (y + 0.5F) * cloudBlockSize / 2F),
+						(int) ((z + 0.5F) * cloudBlockSize)
+				))
 		);
 	}
 

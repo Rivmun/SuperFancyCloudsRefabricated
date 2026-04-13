@@ -4,7 +4,6 @@ import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
@@ -141,12 +140,12 @@ public class Sampler {
 		}
 
 		return getCloudSampleProxy(time, steps, x, y, z) * densityMultiplier > f && (
-				// terrain dodge (detect light level)
-				! isEnableTerrainDodge || level.getBrightness(LightLayer.SKY, new BlockPos(
-						x * cloudBlockSize,
-						(int) (cloudHeight + (y - 2) * cloudBlockSize / 2f),
-						z * cloudBlockSize
-				)) == 15
+				// terrain dodge
+				! isEnableTerrainDodge || level.isEmptyBlock(new BlockPos(
+						(int) ((x + 0.5F) * cloudBlockSize),
+						(int) (cloudHeight + (y - 1.5F) * cloudBlockSize / 2F),
+						(int) ((z + 0.5F) * cloudBlockSize)
+				))
 		);
 	}
 

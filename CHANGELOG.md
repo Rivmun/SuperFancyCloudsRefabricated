@@ -1,6 +1,25 @@
-# 1.9.1.1
-- Fix particle rain compatibility for ParticleRain v4-beta.8+.
-- 
+# 1.9.2
+Dozens of fixes and optimizations here.
+- Upgrade compatibility of ParticleRain for v4-beta.8+.
+- Refactor Terrain Dodge that no longer detect SKY_LIGHT.
+  - Fix Terrain Dodge calculating out a wrong position.
+  - Fix cloud disappear when work with 'Round Robin Chunk Relighting' from Nostalgic Tweaks at night or raining.
+- Improved usability of custom dimension, now you can create/delete custom dimension config file in game.
+  - Optimize config IO.
+  - Move config to subfolder '.minecraft/config/sfcr/'. Old config will be moved automatically when loaded.
+  - Remove unshared config from custom dimension config file.
+- Add an option for forcibly rendering when cloudHeight is not 'Follow Vanilla', works like ~v1.7.
+  - Default cloudHeight now set to 'Follow Vanilla'.
+- Remove redundant precipitation density config for mc < 1.20. (they use downfall directly)
+- Refactor face compressor to reduce memory use.
+- Slightly improved view culling performance.
+- Fix view culling incorrectly apply to inner faces or face which is too close to camera.
+- Fix renderDistance only save to default config file when renderDistanceFitToView is enabled.
+- Fix concurrent violate when smooth change is enabled (but smooth change still not work).
+
+TODO: 
+- terrain dodge isn't work? 
+- try to fix smooth change?
 
 # 1.9.1
 ### Fix

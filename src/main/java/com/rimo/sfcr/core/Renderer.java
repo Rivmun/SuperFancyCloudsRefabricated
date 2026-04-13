@@ -338,19 +338,24 @@ public class Renderer {
 		/*builder.clear();
 		//~ if ! 1.16.5 '7' -> 'VertexFormat.Mode.QUADS'
 		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
-		for (int i = 0; i < 4; i ++)  // empty builder will lead game crash... we draw a holder face to prevent that.
-			builder.vertex(i, -99, i).uv(0.5f, 0.5f).color(0, 0, 0, 0).normal(0, -1, 0).endVertex();
 		*///? } else {
 		BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
-		for (int i = 0; i < 4; i ++)
-			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
 		//? }
+
+		// empty builder will lead game crash... we draw a holder face to prevent that.
+		for (int i = 0; i < 4; i ++)
+			//? if < 1.21 {
+			/*builder.vertex(i, -99, i).uv(0.5f, 0.5f).color(0, 0, 0, 0).normal(0, -1, 0).endVertex();
+			*///? } else {
+			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
+			//? }
 
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
 		final int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
 		int cloudBlockSize = CONFIG.getCloudBlockSize();
+		int cellWidthSqr = cloudBlockSize * 2 * cloudBlockSize * 2;
 		boolean enableBottomDim = CONFIG.isEnableBottomDim();
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
@@ -363,65 +368,57 @@ public class Renderer {
 
 				for (CloudData.CompressedFace face : data.meshData) {  //make a snapshot to prevent concurrent violate
 					int[][] vertexList = face.getVertexList();
-					boolean isDrawn = false;
 
-					if (isDebug && ! Common.isNoCloudCovered(Minecraft.getInstance().level,
-							(vertexList[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
-							63,
-							(vertexList[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
-					)) {
-						cloudColor = cloudColor.multiply(0, 1, 0);
-					}
-
-					for (int[] vertex : vertexList) {
-						if (enableCulling) {  // turns to exactly pos & size to calc position culling (camera relative)
-							Vec3 cloudVec = new Vec3(
+					if (enableCulling) {
+						boolean isDrawn = false;
+						for (int[] vertex : vertexList) {
+							Vec3 cloudVec = new Vec3(  // turns to exactly pos & size to calc position culling (camera relative)
 									(vertex[0] + offset - 1) * cloudBlockSize,
 									vertex[1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
 									(vertex[2] - 1) * cloudBlockSize + 0.33f
 							);
-							double depth = look.dot(cloudVec);
-							if (depth < 0.05F ||
-									Math.abs(up.dot(cloudVec)) / depth > tanHalfFov ||
-									Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
-								continue;
+							if (cloudVec.lengthSqr() > cellWidthSqr) {  // don't culling near faces
+								double depth = look.dot(cloudVec);
+								if (depth < 0.05F)
+									break;  // if a vec is on player behind, jump whole face
+								if (Math.abs(up.dot(cloudVec)) / depth > tanHalfFov || Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
+									continue;
+							}
+							isDrawn = true;
+							break;
 						}
-
-						CloudData.Facing facing = face.getFacing();
-						Vec3 faceColor = cloudColor.multiply(facing.color[0], facing.color[1], facing.color[2]);
-						if (enableBottomDim) {
-							faceColor = faceColor.scale(Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f));
+						if (! isDrawn) {
+							cullStateSkipped++;
+							continue;
 						}
-						float a = 0.8F * cloudAlpha;
-						float r = (float) faceColor.x;
-						float g = (float) faceColor.y;
-						float b = (float) faceColor.z;
-						int nx = facing.normal[0];
-						int ny = facing.normal[1];
-						int nz = facing.normal[2];
-						for (int k = 0; k < 4; k++) {
-							//? if < 1.21 {
-							/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
-									.uv(0.5f, 0.5f)
-									.color(r, g, b, a)
-									.normal(nx, ny, nz)
-									.endVertex();
-							*///? } else {
-							builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
-									.setUv(0.5f, 0.5f)
-									.setColor(r, g, b, a)
-									.setNormal(nx, ny, nz);
-							//? }
-						}
-						isDrawn = true;
-						break;
 					}
+					cullStateShown++;
 
-					if (isDrawn) {
-						cullStateShown++;
-					} else {
-						cullStateSkipped++;
+					if (isDebug && ! Common.isNoCloudCovered(  //NCNR logical debug
+							Minecraft.getInstance().level,
+							(vertexList[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
+							63,
+							(vertexList[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
+					)) cloudColor = cloudColor.multiply(0, 1, 0);
+
+					CloudData.Facing facing = face.getFacing();
+					Vec3 faceColor = cloudColor.multiply(facing.color[0], facing.color[1], facing.color[2]);
+					if (enableBottomDim) {
+						faceColor = faceColor.scale(Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f));
 					}
+					for (int k = 0; k < 4; k++)
+						//? if < 1.21 {
+						/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
+								.uv(0.5f, 0.5f)
+								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+								.normal(facing.normal[0], facing.normal[1], facing.normal[2])
+								.endVertex();
+						*///? } else {
+						builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
+								.setUv(0.5f, 0.5f)
+								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+								.setNormal(facing.normal[0], facing.normal[1], facing.normal[2]);
+						//? }
 				}
 
 				if (data.getDataType().equals(CloudData.Type.NORMAL)) {

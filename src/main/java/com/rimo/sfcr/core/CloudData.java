@@ -16,14 +16,14 @@ public class CloudData {
 	public static Sampler sampler = new Sampler();
 	private final Type dataType;
 	private float lifeTime;
-	protected ArrayList<CompressedFace> meshData = new ArrayList<>();
+	ArrayList<CompressedFace> meshData = new ArrayList<>();
 	protected boolean[][][] _cloudData;
 	protected int width;
 	protected int height;
 	protected int gridCenterX;
 	protected int gridCenterZ;
 	// We want build inner faces earlier (no through culling equation to build useless faces), so this arg place here instead of Renderer.
-	protected int gridYFromClouds;
+	int gridYFromClouds;
 	private boolean isOnBuild = false;
 	private Thread buildThread;
 

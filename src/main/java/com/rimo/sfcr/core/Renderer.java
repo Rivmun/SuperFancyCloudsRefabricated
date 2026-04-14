@@ -25,7 +25,7 @@ import net.minecraft.client.renderer.*;
 import static net.minecraft.client.renderer.RenderStateShard.*;
 //? }
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.rimo.sfcr.Common.*;
 
@@ -35,7 +35,7 @@ public class Renderer {
 	private static final RenderType SFCR = createCustomCloudRenderType(false);
 	private static final RenderType SFCR_DEPTH_ONLY = createCustomCloudRenderType(true);
 	//? }
-	private final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
+	private final CopyOnWriteArrayList<CloudData> cloudDataGroup = new CopyOnWriteArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
@@ -87,12 +87,10 @@ public class Renderer {
 	public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	//? }
 	                   ClientLevel level) {
-		float cloudHeight = level.effects().getCloudHeight();
+		int configHeight = CONFIG.getCloudHeight();
+		float cloudHeight = configHeight < 0 ? level.effects().getCloudHeight() : configHeight;
 		if (Float.isNaN(cloudHeight))
 			return;
-		int configHeight = CONFIG.getCloudHeight();
-		if (configHeight >= 0)
-			cloudHeight = configHeight;
 		this.cloudHeight = cloudHeight;
 		boolean isPause = Minecraft.getInstance().isPaused();
 

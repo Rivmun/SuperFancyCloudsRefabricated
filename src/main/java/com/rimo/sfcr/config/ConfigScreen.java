@@ -21,14 +21,21 @@ import static com.rimo.sfcr.Common.DATA;
 
 //~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent' {
 public class ConfigScreen {
-	ConfigBuilder builder = ConfigBuilder.create();
+	final ConfigBuilder builder = ConfigBuilder.create();
 	final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
+	final String dimensionName;
+	final boolean isCustomDimension;
 	int fogMin, fogMax;
-	String dimensionName;
+
+	public ConfigScreen() {
+		builder.setGlobalized(true);
+		builder.setGlobalizedExpanded(false);
+		ClientLevel level = Minecraft.getInstance().level;
+		dimensionName = level != null ? level.dimension().location().toString() : Config.OVERWORLD;
+		isCustomDimension = ! dimensionName.equals(Config.OVERWORLD);
+	}
 
 	public Screen build() {
-		ClientLevel world = Minecraft.getInstance().level;
-		dimensionName = world != null ? world.dimension().location().toString() : "null";
 		//cull mode
 		BooleanListEntry cullMode = builder.entryBuilder()
 				.startBooleanToggle(Component.translatable("text.sfcr.option.cullMode"),
@@ -83,23 +90,39 @@ public class ConfigScreen {
 				.setTooltip(Component.translatable("text.sfcr.option.enableServer.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableServer)
 				.build();
+		BooleanListEntry deleteAfterQuit = builder.entryBuilder()
+				.startBooleanToggle(Component.translatable("text.sfcr.option.deleteDimensionAfterQuit",
+								Component.translatable("text.cloth-config.save_and_done")),
+						false)
+				.setDefaultValue(false)
+				.setSaveConsumer(value -> {
+				})
+				.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
+				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
-				.setTitle(Client.isCustomDimensionConfig ?
+				.setTransparentBackground(true)
+				.setTitle(isCustomDimension ?
 						Component.translatable("text.sfcr.title.customDimensionMode", dimensionName) :
 						Component.translatable("text.sfcr.title")
 				)
 				.setSavingRunnable(() -> {
-					if (CONFIG.isCloudRenderDistanceFitToView())
-						//~ if ! 1.16.5 '.renderDistance' -> '.getEffectiveRenderDistance()'
-						CONFIG.setCloudRenderDistance(Minecraft.getInstance().options.getEffectiveRenderDistance() * 12);
-					CONFIG.setFogDistance(fogMin, fogMax);
-					if (Client.isCustomDimensionConfig) {
-						CONFIG.save(dimensionName);
+					if (deleteAfterQuit.getValue()) {
+						Config.delete(dimensionName);
+						Common.setDimensionConfigJson(dimensionName, "");
+						CONFIG.load();
 					} else {
-						CONFIG.save();
+						if (CONFIG.isCloudRenderDistanceFitToView())
+							//~ if ! 1.16.5 '.renderDistance' -> '.getEffectiveRenderDistance()'
+							CONFIG.setCloudRenderDistance(Minecraft.getInstance().options.getEffectiveRenderDistance() * 12);
+						CONFIG.setFogDistance(fogMin, fogMax);
+						if (isCustomDimension) {
+							CONFIG.save(dimensionName);
+						} else {
+							CONFIG.save();
+						}
+						Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
 					}
-					Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
 					DATA.setConfig(CONFIG);
 					Client.applyConfigChange(oldEnableDHCompat);
 				})
@@ -109,7 +132,7 @@ public class ConfigScreen {
 								.startTextDescription(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
 										"§b" + dimensionName
 								))
-								.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
+								.setDisplayRequirement(Requirement.isTrue(() -> isCustomDimension))
 								.build())
 						// Config Override Warning
 						.addEntry(builder.entryBuilder()
@@ -392,7 +415,6 @@ public class ConfigScreen {
 						//biome group
 						.addEntry(builder.entryBuilder()
 								.startSubCategory(Component.translatable("text.autoconfig.sfcr.option.precipitationDensity.@PrefixText"), Arrays.asList(
-
 										//snow
 										builder.entryBuilder()
 												.startIntSlider(Component.translatable("text.autoconfig.sfcr.option.snowDensity")
@@ -519,6 +541,8 @@ public class ConfigScreen {
 								))
 								.setTooltip(Component.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 								.build())
+						//delete config after quit
+						.addEntry(deleteAfterQuit)
 						//distant horizons
 						.addEntry(builder.entryBuilder()
 								.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),

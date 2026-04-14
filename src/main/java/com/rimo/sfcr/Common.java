@@ -137,7 +137,7 @@ public class Common {
 		}
 	}
 	*///? }
-	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
+	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
 	public static String debugString;
@@ -249,7 +249,7 @@ public class Common {
 	private static DimensionData loadDimensionData(ServerLevel Level) {
 		String name = Level.dimension().location().toString();
 		Config config = new Config();
-		String configJson = config.load(name) ? config.toString() : "";
+		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(Level);

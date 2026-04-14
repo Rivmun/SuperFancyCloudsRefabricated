@@ -69,8 +69,19 @@ public class Config extends SharedConfig {
 	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
 	public static final String OVERWORLD = "minecraft:overworld";
 
+	private static Path getDimensionConfigPath(String dimensionName) {
+		if (dimensionName.equals(OVERWORLD))
+			return DEFAULT_PATH;
+		dimensionName = "_" + dimensionName.replace(":", "_");
+		return DEFAULT_PATH.getParent().resolve(MOD_ID + dimensionName + ".json");
+	}
+
 	public Config load() {
-		load(OVERWORLD);
+		if (! Files.exists(DEFAULT_PATH)) {
+			save();  //write default file
+		} else {
+			load(OVERWORLD);
+		}
 		return this;
 	}
 
@@ -79,30 +90,19 @@ public class Config extends SharedConfig {
 	 * If specific config not exist, it'll load default config then {@link #setConfig}.<br>
 	 * File path like 'sfcr_modName_dimensionName.json'
 	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
-	 * @return true if success to load dimension specific config, false if not.
+	 * @return {@code true} if success to load dimension specific config,<br>{@code false} if not or dimensionName is minecraft:overworld.
 	 */
 	public boolean load(String dimensionNamespace) {
-		Path path = DEFAULT_PATH;
-		if (!Files.exists(path))
-			save();  //write default file if not exist.
-		if (! dimensionNamespace.equals(OVERWORLD)) {
-			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
-			Path path2 = Platform.getConfigFolder().resolve(Common.MOD_ID + dimensionNamespace + ".json");
-			if (Files.exists(path2)) {
-				path = path2;  //load dimension config if exists, or load default (path unmodified if not exist)
-			} else {
-				return false;
-			}
-		}
+		Path path = getDimensionConfigPath(dimensionNamespace);
 		try (BufferedReader reader = Files.newBufferedReader(path)) {
 			setConfig(GSON.fromJson(reader, Config.class));
+			if (isEnableDebug())
+				Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
 		} catch (IOException | JsonParseException e) {
 			Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
 			return false;
 		}
-		if (isEnableDebug())
-			Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
-		return true;
+		return path != DEFAULT_PATH;
 	}
 
 	public void save() {
@@ -114,11 +114,7 @@ public class Config extends SharedConfig {
 	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
 	 */
 	public void save(String dimensionNamespace) {
-		Path path = DEFAULT_PATH;
-		if (! dimensionNamespace.equals(OVERWORLD)) {
-			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
-			path = path.getParent().resolve(Common.MOD_ID + dimensionNamespace + ".json");
-		}
+		Path path = getDimensionConfigPath(dimensionNamespace);
 		try {
 			Files.createDirectories(path.getParent());
 			try (BufferedWriter writer = Files.newBufferedWriter(path)) {
@@ -129,4 +125,9 @@ public class Config extends SharedConfig {
 		}
 	}
 
+	public static void delete(String dimensionName) {
+		try {
+			Files.deleteIfExists(getDimensionConfigPath(dimensionName));
+		} catch (IOException ignored) {}
+	}
 }

@@ -33,7 +33,7 @@ public class SharedConfig {
 	private boolean cloudRenderDistanceFitToView = false;
 	private int cloudHeight = -1;
 	private int cloudBlockSize = 12;
-	private int cloudLayerThickness = 10;
+	private int cloudLayerThickness = 9;
 	private boolean enableTerrainDodge = true;
 	private int sampleSteps = 2;
 	private int cloudColor = 0xFFFFFFFF;

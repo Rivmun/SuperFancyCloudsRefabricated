@@ -66,7 +66,7 @@ public class Config extends SharedConfig {
 	 * -----IO-----
 	 */
 
-	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(Common.MOD_ID + ".json");
+	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
 	public static final String OVERWORLD = "minecraft:overworld";
 
 	private static Path getDimensionConfigPath(String dimensionName) {
@@ -77,10 +77,18 @@ public class Config extends SharedConfig {
 	}
 
 	public Config load() {
-		if (! Files.exists(DEFAULT_PATH)) {
-			save();  //write default file
-		} else {
+		if (Files.exists(DEFAULT_PATH)) {
 			load(OVERWORLD);
+		} else {
+			Path defaultPath_1_9_1 = DEFAULT_PATH.getParent().getParent().resolve(DEFAULT_PATH.getFileName());
+			if (Files.exists(defaultPath_1_9_1)) {
+				try {
+					Files.copy(defaultPath_1_9_1, DEFAULT_PATH);  //copy old config file to new folder
+					load(OVERWORLD);
+				} catch (IOException ignore) {}
+			} else {
+				save();  //write default file
+			}
 		}
 		return this;
 	}

@@ -31,7 +31,7 @@ public class SharedConfig {
 	protected boolean isEnableCloudRain = false;
 	private int cloudRenderDistance = 64;
 	private boolean cloudRenderDistanceFitToView = false;
-	private int cloudHeight = 192;
+	private int cloudHeight = -1;
 	private int cloudBlockSize = 12;
 	private int cloudLayerThickness = 10;
 	private boolean enableTerrainDodge = true;

@@ -30,8 +30,8 @@ public class ConfigScreen {
 	int fogMin, fogMax;
 
 	public ConfigScreen() {
-		builder.setGlobalized(true);
-		builder.setGlobalizedExpanded(false);
+//		builder.setGlobalized(true);
+//		builder.setGlobalizedExpanded(false);
 		ClientLevel level = Minecraft.getInstance().level;
 		dimensionName = level != null ? level.dimension().location().toString() : Config.OVERWORLD;
 		isCustomDimension = ! dimensionName.equals(Config.OVERWORLD);
@@ -132,6 +132,7 @@ public class ConfigScreen {
 								.startTextDescription(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
 										"§b" + dimensionName
 								))
+								.setTooltip(Component.translatable("text.sfcr.option.customDimensionMode.@Tooltip"))
 								.setDisplayRequirement(Requirement.isTrue(() -> isCustomDimension))
 								.build())
 						// Config Override Warning
@@ -415,6 +416,7 @@ public class ConfigScreen {
 						//biome group
 						.addEntry(entryBuilder
 								.startSubCategory(Component.translatable("text.autoconfig.sfcr.option.precipitationDensity.@PrefixText"), Arrays.asList(
+										//? if > 1.20 {
 										//snow
 										entryBuilder
 												.startIntSlider(Component.translatable("text.autoconfig.sfcr.option.snowDensity")
@@ -445,6 +447,7 @@ public class ConfigScreen {
 												.setTextGetter(value -> Component.nullToEmpty(value + "%"))
 												.setSaveConsumer(CONFIG::setNoneDensity)
 												.build(),
+										//? }
 										//biome density affect by chunk
 										entryBuilder
 												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityByChunk")

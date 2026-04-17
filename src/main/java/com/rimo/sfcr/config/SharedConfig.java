@@ -2,8 +2,11 @@ package com.rimo.sfcr.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Common;
+//~ if ! 1.16.5 'me.shedaniel.' -> 'dev.'
+import dev.architectury.platform.Platform;
 //? if ! 1.16.5 {
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
@@ -11,8 +14,15 @@ import net.minecraft.world.level.biome.Biomes;
 //? }
 import net.minecraft.world.level.biome.Biome;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.rimo.sfcr.Common.MOD_ID;
 
 public class SharedConfig {
 	protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -51,16 +61,14 @@ public class SharedConfig {
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
-	private int snowDensity = 60;
-	private int rainDensity = 90;
-	private int noneDensity = 0;
 	private boolean isBiomeDensityByChunk = false;
 	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
 	private List<String> seasonDensityPercentMap = DEF_SEASON_DENSITY_MAP;
 
 	public SharedConfig() {}
-	public void setSharedConfig(SharedConfig config) {
+
+	public void set(SharedConfig config) {
 		this.isEnableRender               = config.isEnableRender;
 		this.enableFog                    = config.enableFog;
 		this.fogAutoDistance              = config.fogAutoDistance;
@@ -89,9 +97,11 @@ public class SharedConfig {
 		this.normalRefreshSpeed           = config.normalRefreshSpeed;
 		this.weatherRefreshSpeed          = config.weatherRefreshSpeed;
 		this.densityChangingSpeed         = config.densityChangingSpeed;
+		//? if > 1.20 {
 		this.snowDensity                  = config.snowDensity;
 		this.rainDensity                  = config.rainDensity;
 		this.noneDensity                  = config.noneDensity;
+		//? }
 		this.isBiomeDensityByChunk        = config.isBiomeDensityByChunk;
 		this.isBiomeDensityUseLoadedChunk = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList              = config.biomeFilterList;
@@ -114,9 +124,6 @@ public class SharedConfig {
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
 	public float getDensityAtNight() {return densityAtNight;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
-	public int getSnowDensity() {return snowDensity;}
-	public int getRainDensity() {return rainDensity;}
-	public int getNoneDensity() {return noneDensity;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
 	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
@@ -153,9 +160,6 @@ public class SharedConfig {
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
 	public void setDensityAtNight(float density) {this.densityAtNight = density;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
-	public void setSnowDensity(int density) {snowDensity = density;}
-	public void setRainDensity(int density) {rainDensity = density;}
-	public void setNoneDensity(int density) {noneDensity = density;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
 	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
@@ -211,6 +215,15 @@ public class SharedConfig {
 	*///? }
 
 	//? if > 1.20 {
+	private int snowDensity = 60;
+	private int rainDensity = 90;
+	private int noneDensity = 0;
+	public int getSnowDensity() {return snowDensity;}
+	public int getRainDensity() {return rainDensity;}
+	public int getNoneDensity() {return noneDensity;}
+	public void setSnowDensity(int density) {snowDensity = density;}
+	public void setRainDensity(int density) {rainDensity = density;}
+	public void setNoneDensity(int density) {noneDensity = density;}
 	public float getDownfall(Biome.Precipitation i) {
 		if (i.equals(Biome.Precipitation.SNOW)) {
 			return this.getSnowDensity() / 100f;
@@ -232,9 +245,102 @@ public class SharedConfig {
 
 	/**
 	 * @throws JsonSyntaxException if input string cannot convert to SharedConfig
+	 * @return {@code this}
 	 */
 	public SharedConfig fromString(String s) throws JsonSyntaxException {
-		setSharedConfig(GSON.fromJson(s, SharedConfig.class));
+		SharedConfig config = GSON.fromJson(s, SharedConfig.class);
+		if (config == null)
+			throw new JsonSyntaxException("input is empty!");
+		set(config);
 		return this;
 	}
+
+	/*
+	 * -----IO-----
+	 */
+
+	/**
+	 * It must be {@code .minecraft/config/sfcr/sfcr.json} in normally.
+	 */
+	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
+	public static final String OVERWORLD = "minecraft:overworld";
+
+	/**
+	 * Trans dimensionName to specific config file path.<br>
+	 * If param is {@code minecraft:overworld}, {@link #DEFAULT_PATH} will be present.
+	 * @param dimensionName syntax like {@code minecraft:overworld}
+	 * @return syntax like {@code .minecraft/config/sfcr/sfcr_modName_dimensionName.json}
+	 */
+	private static Path getDimensionConfigPath(String dimensionName) {
+		if (dimensionName.equals(OVERWORLD))
+			return DEFAULT_PATH;
+		// .minecraft/config/sfcr/sfcr_modName_dimensionName.json
+		dimensionName = "_" + dimensionName.replace(":", "_");
+		return DEFAULT_PATH.getParent().resolve(MOD_ID + dimensionName + ".json");
+	}
+
+	/**
+	 * Load dimensionName specific config then {@link #set} to this instance.<br>
+	 * If specific config not exist, it'll load default config then {@link #set}.<br>
+	 * File path like 'sfcr_modName_dimensionName.json'<br>
+	 * Since 1.9.2 we modify the config path, this func will automatically detect old file then move it into new path.
+	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
+	 * @return {@code true} if success to load dimension specific config,<br>{@code false} if not or dimensionName is {@code minecraft:overworld}.
+	 */
+	public boolean load(String dimensionNamespace) {
+		Path path = getDimensionConfigPath(dimensionNamespace);
+		if (Files.exists(path)) {
+			try (BufferedReader reader = Files.newBufferedReader(path)) {
+				_load(reader, path);
+				return path != DEFAULT_PATH;
+			} catch (IOException | JsonParseException e) {
+				Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
+				return false;
+			}
+		}
+		Path path_1_9_1 = path.getParent().getParent().resolve(path.getFileName());
+		if (Files.exists(path_1_9_1)) {
+			try {
+				Files.createDirectories(path.getParent());
+				Files.move(path_1_9_1, path);  //move old config file to new folder
+				return load(dimensionNamespace);
+			} catch (IOException ignore) {}
+		}
+		if (path == DEFAULT_PATH)
+			save(OVERWORLD);  //write default file
+		return false;
+	}
+
+	protected void _load(BufferedReader reader, Path path) throws JsonSyntaxException {
+		set(GSON.fromJson(reader, SharedConfig.class));
+	}
+
+	/**
+	 * Write this config instance as a file into {@link #getDimensionConfigPath(String)}
+	 * @param dimensionNamespace syntax like {@code minecraft:overworld} from {@code Level.dimension().location().toString()}
+	 */
+	public void save(String dimensionNamespace) {
+		Path path = getDimensionConfigPath(dimensionNamespace);
+		try {
+			Files.createDirectories(path.getParent());
+			try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+				if (path != DEFAULT_PATH)
+					GSON.toJson(this, SharedConfig.class, writer);
+				else
+					GSON.toJson(this, writer);
+			}
+		} catch (IOException e) {
+			Common.LOGGER.error("{} failed to write config file: {}", MOD_ID, path.getFileName());
+		}
+	}
+
+	/**
+	 * Delete specific dimension config file from {@link #getDimensionConfigPath(String)}
+	 */
+	public static void delete(String dimensionName) {
+		try {
+			Files.deleteIfExists(getDimensionConfigPath(dimensionName));
+		} catch (IOException ignored) {}
+	}
+
 }

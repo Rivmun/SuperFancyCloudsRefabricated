@@ -4,7 +4,7 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 //? if < 1.19
 //import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.SharedConfig;
 //~ if = 1.16.5 'dev.architectury' -> 'me.shedaniel.architectury' {
 //~ if = 1.16.5 'events.common' -> 'events' {
 import dev.architectury.event.events.common.CommandRegistrationEvent;
@@ -141,18 +141,17 @@ public class DedicatedServer {
 						MOD_ID, player.getName().getString());
 				return;
 			}
-			Config config = new Config();
+			SharedConfig config = new SharedConfig();
 			try {
 				config.fromString(configJson);
+				config.save(name);
+				setDimensionConfigJson(name, configJson);
+				VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
+				LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
 			} catch (JsonSyntaxException e) {
 				VersionUtil.sendMessage(player, "§4[SFCRe] You upload a config that server cannot read, please check your mod version!");
 				LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
-				return;
 			}
-			config.save(name);
-			setDimensionConfigJson(name, configJson);
-			VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
-			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
 		});
 	}
 }

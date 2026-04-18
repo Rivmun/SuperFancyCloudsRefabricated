@@ -88,7 +88,7 @@ public class Renderer {
 	//? }
 	                   ClientLevel level) {
 		int configHeight = CONFIG.getCloudHeight();
-		float cloudHeight = configHeight < 0 ? level.effects().getCloudHeight() : configHeight;
+		float cloudHeight = CONFIG.isForceRendering() || configHeight >= 0 ? configHeight : level.effects().getCloudHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;

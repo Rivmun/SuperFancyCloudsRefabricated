@@ -22,7 +22,9 @@
 
 	"text.sfcr.category.clouds": "Cloud",
 	"text.sfcr.option.cloudHeight": "Cloud Height",
-	"text.sfcr.option.cloudHeight.@Tooltip": "May NOT accurate. Set leftmost to use vanilla height.\nNOTE: cloud will be rendered in any dimension if this option is not 'Follow Vanilla'.",
+	"text.sfcr.option.cloudHeight.@Tooltip": "May NOT accurate. Set leftmost to use vanilla height.",
+	"text.sfcr.option.forceRendering": "Force Rendering",
+	"text.sfcr.option.forceRendering.@Tooltip": "In vanilla method, cloud will not render if a dimension has no cloudHeight value such as Nether and End.\nThis option can override it with ‘Cloud Height' above.",
 	"text.sfcr.option.cloudHeight.followVanilla": "Follow Vanilla",
 	"text.sfcr.option.cloudBlockSize": "Cloud Block Size",
 	"text.sfcr.option.cloudBlockSize.@Tooltip": "Define how big a cloud block is. \nMeasure in block.",

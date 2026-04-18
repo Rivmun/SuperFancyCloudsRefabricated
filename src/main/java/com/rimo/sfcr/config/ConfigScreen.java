@@ -6,6 +6,7 @@ import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -100,6 +101,19 @@ public class ConfigScreen {
 				.setSaveConsumer(value -> {})
 				.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
 				.build();
+		IntegerSliderEntry cloudHeight = entryBuilder
+				.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
+						, CONFIG.getCloudHeight()
+						, - 1
+						, 384)
+				.setDefaultValue(- 1)
+				.setTextGetter(value -> value < 0 ?
+						Component.translatable("text.sfcr.option.cloudHeight.followVanilla") :
+						Component.nullToEmpty(value.toString())
+				)
+				.setTooltip(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
+				.setSaveConsumer(CONFIG::setCloudHeight)
+				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
 				.setTransparentBackground(true)
@@ -184,18 +198,15 @@ public class ConfigScreen {
 				)
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.clouds"))
 						//cloud height
+						.addEntry(cloudHeight)
+						//force rendering
 						.addEntry(entryBuilder
-								.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
-										, CONFIG.getCloudHeight()
-										,-1
-										,384)
-								.setDefaultValue(-1)
-								.setTextGetter(value -> value < 0 ?
-										Component.translatable("text.sfcr.option.cloudHeight.followVanilla") :
-										Component.nullToEmpty(value.toString())
-								)
-								.setTooltip(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
-								.setSaveConsumer(CONFIG::setCloudHeight)
+								.startBooleanToggle(Component.translatable("text.sfcr.option.forceRendering"),
+										CONFIG.isForceRendering())
+								.setDefaultValue(false)
+								.setSaveConsumer(CONFIG::setForceRendering)
+								.setTooltip(Component.translatable("text.sfcr.option.forceRendering.@Tooltip"))
+								.setRequirement(Requirement.isTrue(() -> cloudHeight.getValue() >= 0))
 								.build())
 						//cloud block size
 						.addEntry(entryBuilder

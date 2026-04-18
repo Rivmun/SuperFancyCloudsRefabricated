@@ -42,6 +42,7 @@ public class SharedConfig {
 	private int cloudRenderDistance = 64;
 	private boolean cloudRenderDistanceFitToView = false;
 	private int cloudHeight = -1;
+	private boolean isForceRendering = false;
 	private int cloudBlockSize = 12;
 	private int cloudLayerThickness = 9;
 	private boolean enableTerrainDodge = true;
@@ -78,6 +79,7 @@ public class SharedConfig {
 		this.cloudRenderDistance          = config.cloudRenderDistance;
 		this.cloudRenderDistanceFitToView = config.cloudRenderDistanceFitToView;
 		this.cloudHeight                  = config.cloudHeight;
+		this.isForceRendering             = config.isForceRendering;
 		this.cloudBlockSize               = config.cloudBlockSize;
 		this.cloudLayerThickness          = config.cloudLayerThickness;
 		this.enableTerrainDodge           = config.enableTerrainDodge;
@@ -110,6 +112,7 @@ public class SharedConfig {
 
 	public boolean isEnableRender() {return isEnableRender;}
 	public int getCloudHeight() {return cloudHeight;}
+	public boolean isForceRendering() {return isForceRendering && cloudHeight >= 0;}
 	public int getCloudBlockSize() {return cloudBlockSize;}
 	public int getCloudLayerThickness() {return cloudLayerThickness;}
 	public int getSampleSteps() {return sampleSteps;}
@@ -141,19 +144,17 @@ public class SharedConfig {
 	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
 	public List<String> getSeasonDensityPercentMap() {return seasonDensityPercentMap;}
 
-	public void setEnableRender(boolean isEnable) {
-		isEnableRender = isEnable;}
+	public void setEnableRender(boolean isEnable) {isEnableRender = isEnable;}
 	public void setCloudHeight(int height) {cloudHeight = height;}
+	public void setForceRendering(boolean isEnable) {isForceRendering = isEnable;}
 	public void setCloudBlockSize(int size) {cloudBlockSize = size;}
 	public void setCloudLayerThickness(int thickness) {cloudLayerThickness = thickness;}
 	public void setSampleSteps(int steps) {sampleSteps = steps;}
 	public void setCloudColor(int cloudColor) {this.cloudColor = cloudColor;}
 	public void setCloudBrightMultiplier(float cloudBrightMultiplier) {this.cloudBrightMultiplier = cloudBrightMultiplier;}
 	public void setDensityThreshold(float density) {densityThreshold = density;}
-	public void setThresholdMaxReduction(float multiplier) {
-		thresholdMaxReduction = multiplier;}
-	public void setEnableDynamic(boolean isEnable) {
-		enableDynamic = isEnable;}
+	public void setThresholdMaxReduction(float multiplier) {thresholdMaxReduction = multiplier;}
+	public void setEnableDynamic(boolean isEnable) {enableDynamic = isEnable;}
 	public void setWeatherPreDetectTime(int time) {weatherPreDetectTime = time;}
 	public void setCloudDensityPercent(int density) {cloudDensityPercent = density;}
 	public void setRainDensityPercent(int density) {rainDensityPercent = density;}

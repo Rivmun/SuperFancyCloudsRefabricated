@@ -22,7 +22,9 @@
 
 	"text.sfcr.category.clouds": "云层",
 	"text.sfcr.option.cloudHeight": "云高度",
-	"text.sfcr.option.cloudHeight.@Tooltip": "可能不准。拉到最左端以使用原版高度。\n提醒：当该选项不‘跟随原版’时，云层会渲染在所有维度中。",
+	"text.sfcr.option.cloudHeight.@Tooltip": "可能不准。拉到最左端以使用原版高度。",
+	"text.sfcr.option.forceRendering": "强制渲染",
+	"text.sfcr.option.forceRendering.@Tooltip": "在原版游戏中，云层不会渲染在没有云高度值的维度，例如下界和末地。\n此选项可使上方的‘云高度’值覆盖它。",
 	"text.sfcr.option.cloudHeight.followVanilla": "跟随原版",
 	"text.sfcr.option.cloudBlockSize": "云块大小",
 	"text.sfcr.option.cloudBlockSize.@Tooltip": "定义单块云的大小，单位为方块。",

@@ -2,7 +2,6 @@ package com.rimo.sfcr.core;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.rimo.sfcr.Common;
-import com.rimo.sfcr.VersionUtil;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
@@ -12,6 +11,7 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBoxGroupShading;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 //? if > 1.20 {
 import org.joml.Matrix4f;
@@ -30,15 +30,11 @@ import static com.rimo.sfcr.Common.*;
 	Its culling method cut matrix group by group, not by a single box
 	We convert our cloudGrid to renderableBoxGroup and add it to DH's renderPass
 	Also, thread-ify it.
+	@see com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler
  */
 public class RendererDHCompat extends Renderer {
 	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
-	private CloudData data;
-	private IDhApiRenderableBoxGroup group;
-
-	private float cloudBlockWidth, cloudBlockHeight;
-	private double timeOffset;
-	private int cloudColor;
+	private List<IDhApiRenderableBoxGroup> groupList = new ArrayList<>();
 
 	public RendererDHCompat() {}
 	public RendererDHCompat(Renderer renderer) {super(renderer);}
@@ -52,152 +48,6 @@ public class RendererDHCompat extends Renderer {
 		return cloudShading;
 	}
 
-	//convert cloudGrid.boolean[][][] to List<DhApiRenderableBox>
-	//Powered by Deepseek.ai
-	private List<DhApiRenderableBox> convertGridForm(boolean[][][] grid) {
-		int w = grid.length;
-		int h = grid[0].length;
-		boolean[][][] covered = new boolean[w][h][w];
-		List<DhApiRenderableBox> result = new ArrayList<>();
-		cullStateShown = 0;
-		cullStateSkipped = 0;
-
-		for (int z = 0; z < w; z++) {
-			for (int y = 0; y < h; y++) {
-				for (int x = 0; x < w; x++) {
-					if (grid[x][y][z] && !covered[x][y][z]) {
-						int xMin = x, xMax = x;
-						int yMin = y, yMax = y;
-						int zMin = z, zMax = z;
-
-						//expand box
-						while (xMax + 1 < w && grid[xMax + 1][y][z])  // X to right
-							xMax++;
-						while (xMin - 1 >= 0 && grid[xMin - 1][y][z])  // X to left
-							xMin--;
-						while (yMax + 1 < h) {  // Y to down
-							boolean valid = true;
-							for (int i = xMin; i <= xMax; i++) {
-								if (!grid[i][yMax + 1][z]) {
-									valid = false;
-									break;
-								}
-							}
-							if (valid) yMax++;
-							else break;
-						}
-						while (yMin - 1 >= 0) {  // Y to up
-							boolean valid = true;
-							for (int i = xMin; i <= xMax; i++) {
-								if (!grid[i][yMin - 1][z]) {
-									valid = false;
-									break;
-								}
-							}
-							if (valid) yMin--;
-							else break;
-						}
-						while (zMax + 1 < w) {  // Z to forward
-							boolean valid = true;
-							for (int i = xMin; i <= xMax; i++) {
-								for (int j = yMin; j <= yMax; j++) {
-									if (!grid[i][j][zMax + 1]) {
-										valid = false;
-										break;
-									}
-								}
-								if (!valid) break;
-							}
-							if (valid) zMax++;
-							else break;
-						}
-						while (zMin - 1 >= 0) {  // Z to backward
-							boolean valid = true;
-							for (int i = xMin; i <= xMax; i++) {
-								for (int j = yMin; j <= yMax; j++) {
-									if (!grid[i][j][zMin - 1]) {
-										valid = false;
-										break;
-									}
-								}
-								if (!valid) break;
-							}
-							if (valid) zMin--;
-							else break;
-						}
-
-						// mark as covered
-						for (int k = zMin; k <= zMax; k++) {
-							for (int j = yMin; j <= yMax; j++) {
-								for (int i = xMin; i <= xMax; i++) {
-									covered[i][j][k] = true;
-								}
-							}
-						}
-
-						// Add AABB box
-						result.add(new DhApiRenderableBox(
-								new DhApiVec3d(
-										(xMin - w / 2) * cloudBlockWidth,  //offset to center
-										yMin * cloudBlockHeight,
-										(zMin - w / 2) * cloudBlockWidth
-								),
-								new DhApiVec3d(
-										(++xMax - w / 2) * cloudBlockWidth,  //++at least one block size
-										++yMax * cloudBlockHeight,
-										(++zMax - w / 2) * cloudBlockWidth
-								),
-								new Color(255,255,255,255),  //color change by time, here just placeholder
-								EDhApiBlockMaterial.UNKNOWN
-						));
-						cullStateShown ++;
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-//	/** TODO: It's still have z-fight issue if we allowed alpha, meaningless...
-//	 * An imitation of {@link CloudData#buildMesh}
-//	 */
-//	private List<DhApiRenderableBox> getVisibleBoxGroupFrom(CloudData data) {
-//		List<DhApiRenderableBox> group = new ArrayList<>();
-//		int cy = data.gridYFromClouds;
-//		if (cy >= 0 && cy < data.height) {
-//			int cx = data.width / 2;
-//			if (data._cloudData[cx][cy][cx])  //build an inner box then return;
-//				group.add(new DhApiRenderableBox(
-//						new DhApiVec3d(
-//								cx * cloudBlockWidth,
-//								cy * cloudBlockHeight,
-//								cx * cloudBlockWidth
-//						),
-//						new DhApiVec3d(
-//								(cx + 1) * cloudBlockWidth,
-//								(cy + 1) * cloudBlockHeight,
-//								(cx + 1) * cloudBlockWidth
-//						),
-//						new Color(0),
-//						EDhApiBlockMaterial.UNKNOWN
-//				));
-//			return group;
-//		}
-//
-//		int renderDistance = data.width / 2;
-//		for (int l = 0; l <= 2 * renderDistance; ++l) {
-//			for (int xOffset = - l; xOffset <= l; ++xOffset) {
-//				int zOffset = l - Math.abs(xOffset);
-//				// circular-like culling...
-//				if (zOffset >= 0 && zOffset <= renderDistance && xOffset * xOffset + zOffset * zOffset <= renderDistance * renderDistance) {
-//					if (zOffset != 0)
-//				}
-//			}
-//		}
-//		return group;
-//	}
-
-	//update cloud invoked by mixin (instead of manual call in 2.0)
 	@Override
 	//? if = 1.16.5 {
 	/*public void render(PoseStack poseStack, float tickDelta, double cameraX, double cameraY, double cameraZ,
@@ -207,104 +57,109 @@ public class RendererDHCompat extends Renderer {
 	public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	//? }
 	                   ClientLevel level) {
-		float cloudHeight = level.effects().getCloudHeight();
-		if (Float.isNaN(cloudHeight))
-			return;
-		int configHeight = CONFIG.getCloudHeight();
-		if (configHeight >= 0)
-			cloudHeight = configHeight;
-		this.cloudHeight = cloudHeight;
-
-		//vanilla cloud pos calculation
-		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
-		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
-		double timeOffset = (level.getGameTime() + tickDelta) * 0.03F;
-		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
-		double cloudY = cloudHeight - (float) cameraY + 0.33F;
-		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
-		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
-		int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
-		int GridZ = (int) Math.floor(cloudZ);
-		Vec3 cloudColor = level.getCloudColor(tickDelta);
-
-		cloudColor = getBrightMultiplier(cloudColor);
-
-		//refresh check
-		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
-		if (! Minecraft.getInstance().isPaused() && ! isResampling &&
-				(resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ)) {
-			isResampling = true;
-			resamplingTimer = 0.0;
-			resamplingThread = new Thread(() -> {  //start data refresh thread
-				try {
-					collectCloudData(GridX, GridY, GridZ);
-				} catch (Exception e) {
-					exceptionCatcher(e);
-				} finally {
-					oldGridX = GridX;
-					oldGridZ = GridZ;
-					isResampling = false;
-				}
-			});
-			resamplingThread.start();
-		}
-
-		this.cloudBlockHeight = CLOUD_BLOCK_HEIGHT;
-		this.cloudBlockWidth = CLOUD_BLOCK_WIDTH;
-		this.timeOffset = timeOffset;
-		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
-			cloudColor = cloudColor.multiply(getBlushColorByTime(level.getDayTime()));
-		this.cloudColor = new Color((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1F).getRGB();
-	}
-
-	//add RenderableBoxGroup build and replace.
-	@Override
-	protected void collectCloudData(int x, int y, int z) {
-		CloudData newData = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome);
 		if (!DhApi.Delayed.configs.graphics().renderingEnabled().getValue())
 			return;  //save battery if DH render was disabled.
-		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
-				Common.MOD_ID + ":clouds",
-				new DhApiVec3d(0, 0, 0),
-				convertGridForm(newData._cloudData)
-		);
-		newGroup.setBlockLight(15);
-		newGroup.setSkyLight(15);
-		newGroup.setSsaoEnabled(false);
-		newGroup.setShading(cloudShading);
-		newGroup.setPreRenderFunc(renderParam -> preRender(newGroup));
-		synchronized (this) {
-			IDhApiCustomRenderRegister renderRegister = DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister();
-			if (group != null)
-				renderRegister.remove(group.getId());  //clear old group
-			renderRegister.add(newGroup);
-			group = newGroup;
-			data = newData;
-			cullStateShown = group.size();
+		//? if = 1.16.5 {
+		/*super.render(poseStack, tickDelta, cameraX, cameraY, cameraZ, level);
+		*///? } else if < 1.21.1 {
+		/*super.render(poseStack, projectionMatrix, tickDelta, cameraX, cameraY, cameraZ, level);
+		*///? } else {
+		super.render(poseStack, projectionMatrix, matrix4f2, tickDelta, cameraX, cameraY, cameraZ, level);
+		//? }
+	}
+
+	@Override
+	//? if = 1.16.5 {
+	/*public void _render(PoseStack poseStack, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	 *///? } else if < 1.21.1 {
+	/*public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	*///? } else {
+	public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	//? }
+		if (! Minecraft.getInstance().isPaused() && isMarkedForRebuild()) {
+			rebuildTimer = 0;
+			rebuildCloudMesh(cloudColor);
 		}
 	}
 
 	@Override
 	public void stop() {
 		super.stop();
-		if (group != null && DhApi.Delayed.worldProxy.worldLoaded()) {
-			DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister().remove(group.getId());
-			group = null;
+		if (DhApi.Delayed.worldProxy.worldLoaded()) {
+			for (IDhApiRenderableBoxGroup group : groupList)
+				DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister().remove(group.getId());
+			groupList.clear();
 		}
 	}
 
-	@Override
-	public boolean isCloudCovered(double x, double y, double z) {
-		return data != null && data.isCloudCovered(x + xOffset, y, z + zOffset);
+	// turns quad vertex into AABB box for DH renderer
+	private List<DhApiRenderableBox> getGroup(CloudData data, Vec3 color, float alpha) {
+		List<DhApiRenderableBox> group = new ArrayList<>();
+		for(CloudData.CompressedFace face : data.meshData) {
+			Vec3 newColor = color.scale(CONFIG.isEnableBottomDim() ?
+					Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f) :
+					1F
+			);
+			int[][] vertex = face.getVertexList();
+			group.add(new DhApiRenderableBox(
+					new DhApiVec3d(
+							(vertex[0][0] - 0.33F) * cloudBlockWidth,
+							vertex[0][1] * cloudBlockHeight,
+							(vertex[0][2] - 0.33F) * cloudBlockWidth
+					),
+					new DhApiVec3d(
+							(vertex[2][0] - 0.33F) * cloudBlockWidth,
+							vertex[2][1] * cloudBlockHeight,
+							(vertex[2][2] - 0.33F) * cloudBlockWidth
+					),
+					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha * 0.8F),
+					EDhApiBlockMaterial.UNKNOWN
+			));
+		}
+		return group;
 	}
 
-	// Below we rewrite 2 method from
-	// com.seibel.distanthorizons.core.render.renderer.generic.CloudRenderHandler
+	// RenderableBoxGroup build and replace.
+	private void rebuildCloudMesh(Vec3 cloudColor) {
+		int customColor = CONFIG.getCloudColor();  //apply custom color
+		Vec3 color = cloudColor.multiply(getBlushColorByTime(Minecraft.getInstance().level.getDayTime()))
+				.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
+		float alpha = (customColor >>> 24) / 255F;
 
-	//rewrite of original constructor (more likes entire delete?)
-	//update check by mixin vanilla call, so yep, we delete it completely XD
+		cullStateSkipped = 0;
+		cullStateShown = 0;
+		int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
+		List<IDhApiRenderableBoxGroup> newGroupList = new ArrayList<>();
+		for(CloudData data : cloudDataGroup) {
+			switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
+				case TRANS_IN: alpha *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
+				case TRANS_OUT: alpha *= data.getLifeTime() / refreshSpeed * 5F; break;
+				default: break;
+			}
+			IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
+					Common.MOD_ID + ":clouds",
+					new DhApiVec3d(),
+					getGroup(data, color, alpha)
+			);
+			newGroup.setBlockLight(15);
+			newGroup.setSkyLight(15);
+			newGroup.setSsaoEnabled(false);
+			newGroup.setShading(cloudShading);
+			newGroup.setPreRenderFunc(renderParam -> preRender(newGroup));
+			newGroupList.add(newGroup);
+			cullStateShown += newGroup.size();
+		}
 
-	//to calc RenderableBoxGroup pos and culling, etc..
+		IDhApiCustomRenderRegister renderRegister = DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister();
+		for(IDhApiRenderableBoxGroup group : groupList)
+			// since DH 3.0 it will get flicker if we directly remove, so...
+			group.setPreRenderFunc(renderParam -> renderRegister.remove(group.getId()));
+		for(IDhApiRenderableBoxGroup group : newGroupList)
+			renderRegister.add(group);
+		groupList = newGroupList;
+	}
+
+	// calc RenderableBoxGroup pos and culling, etc..
 	private void preRender(IDhApiRenderableBoxGroup group) {
 
 		/* TODO: culling?
@@ -313,28 +168,17 @@ public class RendererDHCompat extends Renderer {
 		 */
 
 		//color
-		if (! group.isEmpty()) {
-			Color color = new Color(cloudColor, true);
-			if (! group.get(0).color.equals(color)) {
-				for (DhApiRenderableBox box : group)
-					box.color = color;
-				group.triggerBoxChange();
-			}
-		}
+		// Change color here will override bottomDim color, we move it to groupBuilder.
+		// We replace whole meshGroup in frequent anyway so why not set color in meshBuilding?
+		//@see getGroup()
 
 		//pos
 		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-		double xOffsetInGrid = (cameraPos.x() + timeOffset) / cloudBlockWidth - oldGridX;
-		double zOffsetInGrid = cameraPos.z() / cloudBlockWidth + 0.33F - oldGridZ;
-		xOffsetInGrid *= cloudBlockWidth;  //turns to blocks
-		zOffsetInGrid *= cloudBlockWidth;
-		xOffset = xOffsetInGrid - 0.33F * cloudBlockWidth;
-		zOffset = zOffsetInGrid - 0.33F * cloudBlockWidth;
+		double cloudX = cameraPos.x() - xOffset;
+		double cloudZ = cameraPos.z() - zOffset;
+		double cloudY = getCloudHeight() + 0.33F;
 		/* Suddenly I realized that there should be simply "cameraPos - offset" ...
 		 * W T F to my brain (╯‵□′)╯︵┻━┻ */
-		double cloudX = cameraPos.x() - xOffsetInGrid;
-		double cloudZ = cameraPos.z() - zOffsetInGrid;
-		double cloudY = getCloudHeight() + 0.33F;
 		group.setOriginBlockPos(new DhApiVec3d(cloudX, cloudY, cloudZ));
 	}
 }

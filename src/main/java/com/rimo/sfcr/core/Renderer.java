@@ -35,18 +35,19 @@ public class Renderer {
 	private static final RenderType SFCR = createCustomCloudRenderType(false);
 	private static final RenderType SFCR_DEPTH_ONLY = createCustomCloudRenderType(true);
 	//? }
-	private final CopyOnWriteArrayList<CloudData> cloudDataGroup = new CopyOnWriteArrayList<>();
+	protected final CopyOnWriteArrayList<CloudData> cloudDataGroup = new CopyOnWriteArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
 	protected int oldGridX, oldGridZ;
-	private Vec3 oldColor = Vec3.ZERO;
+	protected Vec3 oldColor = Vec3.ZERO;
 	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
-	private int rebuildTimer = 0;  //measure in ticks
+	protected int rebuildTimer = 0;  //measure in ticks
 	protected int cullStateSkipped, cullStateShown;  //debug counter
 	protected double debugRebuildTime, debugUploadTime;
+	protected float cloudBlockWidth, cloudBlockHeight;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
@@ -79,6 +80,7 @@ public class Renderer {
 	//? }
 
 	//Rewrite of vanilla renderClouds invoke by mixin
+	// data calculation and refresh
 	//? if = 1.16.5 {
 	/*public void render(PoseStack poseStack, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	*///? } else if < 1.21.1 {
@@ -92,15 +94,14 @@ public class Renderer {
 		if (Float.isNaN(cloudHeight))
 			return;
 		this.cloudHeight = cloudHeight;
-		boolean isPause = Minecraft.getInstance().isPaused();
 
 		//vanilla cloud pos calculation
-		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
-		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
+		cloudBlockWidth = CONFIG.getCloudBlockSize();  //cloud size
+		cloudBlockHeight = cloudBlockWidth / 2F;
 		double timeOffset = (level.getGameTime() + tickDelta) * 0.03F;
-		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
+		double cloudX = (cameraX + timeOffset) / cloudBlockWidth;  //grid pos where to draw cloud layer
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
-		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
+		double cloudZ = cameraZ / cloudBlockWidth + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
 		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
@@ -114,13 +115,13 @@ public class Renderer {
 			xOffsetInGrid += GridX - oldGridX;
 			zOffsetInGrid += GridZ - oldGridZ;
 		}
-		this.xOffset = (xOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
-		this.zOffset = (zOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
-		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / CLOUD_BLOCK_HEIGHT);
+		this.xOffset = (xOffsetInGrid - 0.33F) * cloudBlockWidth;
+		this.zOffset = (zOffsetInGrid - 0.33F) * cloudBlockWidth;
+		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / cloudBlockHeight);
 
 		//refresh check
 		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
-		if (! isPause && ! isResampling) {
+		if (! Minecraft.getInstance().isPaused() && ! isResampling) {
 			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.distanceToSqr(cloudColor) > 2.0E-4) {
 				isResampling = true;
 				resamplingTimer = 0.0;
@@ -154,6 +155,23 @@ public class Renderer {
 			}
 		}
 
+		//? if = 1.16.5 {
+		/*_render(poseStack, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		*///? } else if < 1.21.1 {
+		/*_render(poseStack, projectionMatrix, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		*///? } else {
+		_render(poseStack, projectionMatrix, matrix4f2, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		//? }
+	}
+
+	// mesh building and draw call
+	//? if = 1.16.5 {
+	/*public void _render(PoseStack poseStack, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	*///? } else if < 1.21.1 {
+	/*public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	*///? } else {
+	public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	//? }
 		//Setup render system
 		RenderSystem.disableCull();
 		RenderSystem.enableBlend();
@@ -174,7 +192,7 @@ public class Renderer {
 		 */
 		boolean enableCulling = CONFIG.getEnableViewCulling();
 		//if culling is disabled, no need to rebuild in every tick.
-		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
+		if (! Minecraft.getInstance().isPaused() && (! enableCulling && isMarkedForRebuild() || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
 			//? if > 1.21 {
@@ -238,8 +256,8 @@ public class Renderer {
 		poseStack.pushPose();
 		//? if = 1.21.1
 		poseStack.mulPose(projectionMatrix);
-		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
-		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
+		poseStack.scale(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
+		poseStack.translate(-xOffsetInGrid, cloudY / cloudBlockHeight, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		//~ if = 1.16.5 '.setShaderColor' -> '.color4f'
 		RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 
@@ -288,7 +306,11 @@ public class Renderer {
 		//RenderSystem.disableFog();
 	}
 
-	public void markForRebuild() {
+	protected boolean isMarkedForRebuild() {
+		return rebuildTimer == 99;
+	}
+
+	void markForRebuild() {
 		this.rebuildTimer = 99;
 	}
 
@@ -328,7 +350,7 @@ public class Renderer {
 
 		int customColor = CONFIG.getCloudColor();  //apply custom color
 		cloudColor = cloudColor.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
-		float cloudAlpha = ((customColor & 0xFF000000) >>> 24) / 255F;
+		float cloudAlpha = (customColor >>> 24) / 255F;
 		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
 			cloudColor = cloudColor.multiply(getBlushColorByTime(client.level.getDayTime()));
 
@@ -353,7 +375,7 @@ public class Renderer {
 
 		final int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
 		int cloudBlockSize = CONFIG.getCloudBlockSize();
-		int cellWidthSqr = cloudBlockSize * 2 * cloudBlockSize * 2;
+		int minCullDistSqr = cloudBlockSize * 2 * cloudBlockSize * 2;
 		boolean enableBottomDim = CONFIG.isEnableBottomDim();
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
@@ -375,7 +397,7 @@ public class Renderer {
 									vertex[1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
 									(vertex[2] - 1) * cloudBlockSize + 0.33f
 							);
-							if (cloudVec.lengthSqr() > cellWidthSqr) {  // don't culling near faces
+							if (cloudVec.lengthSqr() > minCullDistSqr) {  // don't culling near faces
 								double depth = look.dot(cloudVec);
 								if (depth < 0.05F)
 									break;  // if a vec is on player behind, jump whole face
@@ -448,7 +470,7 @@ public class Renderer {
 		}
 	}
 
-	protected void collectCloudData(int x, int y, int z) {
+	private void collectCloudData(int x, int y, int z) {
 		CloudData tmp;
 		CloudData fadeIn = null, fadeOut = null, midBody = null;
 
@@ -491,7 +513,7 @@ public class Renderer {
 		return new Vec3(r / 255F, g / 255F, b / 255F);
 	}
 
-	protected Vec3 getBrightMultiplier(Vec3 cloudColor) {
+	private Vec3 getBrightMultiplier(Vec3 cloudColor) {
 		return cloudColor.add(
 				(1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
 				(1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
@@ -499,7 +521,7 @@ public class Renderer {
 		);
 	}
 
-	public float getCloudHeight() {
+	float getCloudHeight() {
 		return cloudHeight;
 	}
 

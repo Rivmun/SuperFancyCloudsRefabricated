@@ -201,7 +201,8 @@ public class CloudData {
 				encodeFace(meshData, 0, cy + 1, 0, Facing.BOTTOM, 0);
 				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
 				encodeFace(meshData, 0, cy, -1, Facing.SOUTH, 0);
-				return;
+				if (! CONFIG.isEnableDHCompat())
+					return;
 			}
 		}
 

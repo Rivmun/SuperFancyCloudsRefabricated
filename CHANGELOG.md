@@ -1,6 +1,8 @@
 # 1.9.2
 Dozens of fixes and optimizations here.
 - Upgrade compatibility of ParticleRain for v4-beta.8+.
+- Refactor DHCompat renderer, to allow alpha, bottomDim and others.
+  - Fix cloudLayer flicker when mesh changing for DH 3.0.
 - Refactor Terrain Dodge that no longer detect SKY_LIGHT.
   - Fix Terrain Dodge calculating out a wrong position.
   - Fix cloud disappear when work with 'Round Robin Chunk Relighting' from Nostalgic Tweaks at night or raining.
@@ -13,7 +15,7 @@ Dozens of fixes and optimizations here.
 - Remove redundant precipitation density config for mc < 1.20. (they use downfall directly)
 - Refactor face compressor to reduce memory use.
 - Slightly improved view culling performance.
-- Fix view culling incorrectly apply to inner faces or face which is too close to camera.
+  - Fix view culling incorrectly applied to inner faces or face which is too close to camera.
 - Fix renderDistance only save to default config file when renderDistanceFitToView is enabled.
 - Fix concurrent violate when smooth change is enabled (but smooth change still not work).
 

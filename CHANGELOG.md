@@ -1,11 +1,16 @@
 # 1.9.2
 Dozens of fixes and optimizations here.
+### Compatibility Fixes
 - Upgrade compatibility of ParticleRain for v4-beta.8+.
 - Refactor DHCompat renderer, to allow alpha, bottomDim and others.
   - Fix cloudLayer flicker when mesh changing for DH 3.0.
-- Refactor Terrain Dodge that no longer detect SKY_LIGHT.
-  - Fix Terrain Dodge calculating out a wrong position.
-  - Fix cloud disappear when work with 'Round Robin Chunk Relighting' from Nostalgic Tweaks at night or raining.
+- Fix cloud disappear when work with 'Round Robin Chunk Relighting' from Nostalgic Tweaks at night or raining.
+  - Now terrain dodge detect blockState.isAir instead of SKY_LIGHT == 15.
+### Function Fixes
+- Fix terrain dodge calculating out a wrong position.
+- Fix biome detect calculating out a wrong position.
+- Fix view culling incorrectly applied to inner faces or face which is too close to camera.
+### Improves & Bugfixes
 - Improved usability of custom dimension, now you can create/delete custom dimension config file in game.
   - Optimize config IO.
   - Move config to subfolder '.minecraft/config/sfcr/'. Old config will be moved automatically when loaded.
@@ -15,13 +20,12 @@ Dozens of fixes and optimizations here.
 - Remove redundant precipitation density config for mc < 1.20. (they use downfall directly)
 - Refactor face compressor to reduce memory use.
 - Slightly improved view culling performance.
-  - Fix view culling incorrectly applied to inner faces or face which is too close to camera.
 - Fix renderDistance only save to default config file when renderDistanceFitToView is enabled.
-- Fix concurrent violate when smooth change is enabled (but smooth change still not work).
+- Fix concurrent violate crash when smooth change is enabled (but smooth change still not work).
 
 TODO: 
-- terrain dodge isn't work? 
 - try to fix smooth change?
+- DH inner face fix
 
 # 1.9.1
 ### Fix

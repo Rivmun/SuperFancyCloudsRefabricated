@@ -47,7 +47,7 @@ public class CloudData {
 	}
 
 	void tick() {
-		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f;
+		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f * (CONFIG.getRebuildInterval() + 1);
 	}
 
 	// Access

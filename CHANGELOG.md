@@ -26,7 +26,8 @@ Dozens of fixes and optimizations here.
 - Slightly improved view culling performance.
 - Fix weather density has stop to update when 'enableServer' is disabled.
 - Fix renderDistance only save to default config file when renderDistanceFitToView is enabled.
-- Fix concurrent violate crash when smooth change is enabled (but smooth change still not work).
+- Fix concurrent violate crash when smooth change is enabled.
+- Fix smooth change not work. (but it's still very...ugly...)
 
 # 1.9.1
 ### Fix

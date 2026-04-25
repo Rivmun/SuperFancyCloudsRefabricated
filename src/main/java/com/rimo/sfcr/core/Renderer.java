@@ -1,6 +1,7 @@
 package com.rimo.sfcr.core;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+//? if < 1.21
+//import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.rimo.sfcr.Common;
@@ -183,7 +184,8 @@ public class Renderer {
 	*///? } else {
 	public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
 	//? }
-		//Setup render system
+		//? if < 1.21 {
+		/*//Setup render system
 		RenderSystem.disableCull();
 		RenderSystem.enableBlend();
 		//? if = 1.16.5
@@ -194,6 +196,7 @@ public class Renderer {
 		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 		//? if ! 1.16.5
 		RenderSystem.depthMask(true);
+		*///? }
 
 		//cloud mesh rebuilt
 		/* NOTE:
@@ -391,9 +394,10 @@ public class Renderer {
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
+				float cloudAlphaByType = cloudAlpha;
 				switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
-					case TRANS_IN: cloudAlpha *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
-					case TRANS_OUT: cloudAlpha *= data.getLifeTime() / refreshSpeed * 5F; break;
+					case TRANS_IN: cloudAlphaByType *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
+					case TRANS_OUT: cloudAlphaByType *= data.getLifeTime() / refreshSpeed * 5F; break;
 					default: break;
 				}
 
@@ -441,13 +445,13 @@ public class Renderer {
 						//? if < 1.21 {
 						/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 								.uv(0.5f, 0.5f)
-								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
 								.normal(facing.normal[0], facing.normal[1], facing.normal[2])
 								.endVertex();
 						*///? } else {
 						builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 								.setUv(0.5f, 0.5f)
-								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlpha)
+								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
 								.setNormal(facing.normal[0], facing.normal[1], facing.normal[2]);
 						//? }
 				}
@@ -482,14 +486,15 @@ public class Renderer {
 	}
 
 	private void collectCloudData(int x, int y, int z) {
-		CloudData tmp;
+		CloudData newData;
 		CloudData fadeIn = null, fadeOut = null, midBody = null;
 
-		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
+		newData = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudData.CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
-			fadeOut = new CloudData.CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
-			midBody = new CloudData.CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
+			CloudData oldData = cloudDataGroup.get(cloudDataGroup.size() - 1);
+			fadeIn = new CloudData.CloudFadeData(oldData, newData, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudData.CloudFadeData(newData, oldData, CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudData.CloudMidData(oldData, newData, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
@@ -499,7 +504,7 @@ public class Renderer {
 				cloudDataGroup.add(fadeOut);
 				cloudDataGroup.add(midBody);
 			}
-			cloudDataGroup.add(tmp);
+			cloudDataGroup.add(newData);
 		}
 	}
 

@@ -138,6 +138,7 @@ public class Common {
 	}
 	*///? }
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
+	static final Set<ServerPlayer> playersWithSfcr = ConcurrentHashMap.newKeySet();  //only send packet to these players (save traffic?)
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
 	public static String debugString;
@@ -154,19 +155,28 @@ public class Common {
 
 		// Dimension Sender
 		PlayerEvent.PLAYER_JOIN.register(player -> {
+			//~ if > 1.21 'PACKET_DIMENSION' -> 'DimensionPayload.TYPE'
+			if (NetworkManager.canPlayerReceive(player, DimensionPayload.TYPE)) {
+				playersWithSfcr.add(player);
+			} else {
+				return;
+			}
 			MinecraftServer server = player.getServer();
 			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
-			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
+			boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
+			if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player)))
 				return;
 			//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
 			sendDimensionPacket(player, player.serverLevel().dimension());
 		});
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
 			MinecraftServer server = player.getServer();
-			if (! CONFIG.isEnableServer() && server != null && ! server.isSingleplayerOwner(player.getGameProfile()))
+			boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
+			if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player)))
 				return;
 			sendDimensionPacket(player, newLevel);
 		});
+		PlayerEvent.PLAYER_QUIT.register(playersWithSfcr::remove);
 
 		TickEvent.SERVER_POST.register(server -> {
 			if (server.getTickCount() % 20 != 0)
@@ -174,16 +184,14 @@ public class Common {
 			// Weather is a common stat between different level, just check once
 			ServerLevel level = server.overworld();
 			// Sender
-			if (DATA.updateWeather(level)) {  // always update
-				if (! CONFIG.isEnableServer())
-					return;
+			if (DATA.updateWeather(level) && CONFIG.isEnableServer()) {  // always update
 				Data.Weather nextWeather = DATA.getNextWeather();
 				//? if < 1.21 {
-				/*NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), PACKET_WEATHER, new FriendlyByteBuf(Unpooled.buffer())
+				/*NetworkManager.sendToPlayers(playersWithSfcr, PACKET_WEATHER, new FriendlyByteBuf(Unpooled.buffer())
 						.writeEnum(nextWeather)
 				);
 				*///? } else {
-				NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), new WeatherPayload(nextWeather));
+				NetworkManager.sendToPlayers(playersWithSfcr, new WeatherPayload(nextWeather));
 				//? }
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
@@ -195,8 +203,8 @@ public class Common {
 			if (! apiDebugTime.isEmpty()) {
 				double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
 				int size = apiDebugTime.size();
-				debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
-						"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
+				debugString = String.format("[SFCR] Api was %scall/s, avg %.1fcall/t, cost %.4fms/t, %.4fms/call",
+						size, size / 20F, time / 20, time / size);
 				apiDebugTime.clear();
 			}
 			Plugin.checkMixinApplied();

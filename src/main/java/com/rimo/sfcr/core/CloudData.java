@@ -138,12 +138,12 @@ public class CloudData {
 		private final int data;
 
 		static {
-			OFFSET_MAP.put(Facing.NORTH,  new int[][]{{0, 0, 0},{1, 0, 0},{1, 1, 0},{0, 1, 0}});
 			OFFSET_MAP.put(Facing.EAST,   new int[][]{{1, 0, 0},{1, 0, 1},{1, 1, 1},{1, 1, 0}});
 			OFFSET_MAP.put(Facing.WEST,   new int[][]{{0, 0, 0},{0, 0, 1},{0, 1, 1},{0, 1, 0}});
 			OFFSET_MAP.put(Facing.TOP,    new int[][]{{0, 1, 0},{1, 1, 0},{1, 1, 1},{0, 1, 1}});
 			OFFSET_MAP.put(Facing.BOTTOM, new int[][]{{0, 0, 0},{1, 0, 0},{1, 0, 1},{0, 0, 1}});
 			OFFSET_MAP.put(Facing.SOUTH,  new int[][]{{0, 0, 1},{1, 0, 1},{1, 1, 1},{0, 1, 1}});
+			OFFSET_MAP.put(Facing.NORTH,  new int[][]{{0, 0, 0},{1, 0, 0},{1, 1, 0},{0, 1, 0}});
 		}
 
 		CompressedFace(Facing facing, int x, int y, int z, int thick) {
@@ -199,10 +199,9 @@ public class CloudData {
 				encodeFace(meshData, 1, cy, 0, Facing.WEST, 0);
 				encodeFace(meshData, 0, cy - 1, 0, Facing.TOP, 0);
 				encodeFace(meshData, 0, cy + 1, 0, Facing.BOTTOM, 0);
-				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
 				encodeFace(meshData, 0, cy, -1, Facing.SOUTH, 0);
-				if (! CONFIG.isEnableDHCompat())
-					return;
+				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
+				return;
 			}
 		}
 

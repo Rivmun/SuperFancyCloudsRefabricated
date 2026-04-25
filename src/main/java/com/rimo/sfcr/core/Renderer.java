@@ -40,18 +40,27 @@ public class Renderer {
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
+	protected float cloudBlockWidth, cloudBlockHeight;
 	protected int oldGridX, oldGridZ;
 	protected Vec3 oldColor = Vec3.ZERO;
 	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
 	protected int rebuildTimer = 0;  //measure in ticks
 	protected int cullStateSkipped, cullStateShown;  //debug counter
-	protected double debugRebuildTime, debugUploadTime;
-	protected float cloudBlockWidth, cloudBlockHeight;
+	protected double debugRebuildTime, debugUploadTime, debugSamplingTime;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
 		renderer.stop();
+		this.cloudDataGroup.addAll(renderer.cloudDataGroup);
+		this.cloudHeight = renderer.cloudHeight;
+		this.cloudBlockWidth = renderer.cloudBlockWidth;
+		this.cloudBlockHeight = renderer.cloudBlockHeight;
+		this.oldGridX = renderer.oldGridX;
+		this.oldGridZ = renderer.oldGridZ;
+		this.oldColor = renderer.oldColor;
+		this.xOffset = renderer.xOffset;
+		this.zOffset = renderer.zOffset;
 	}
 
 	/*
@@ -128,7 +137,9 @@ public class Renderer {
 				oldColor = cloudColor;
 				resamplingThread = new Thread(() -> {  //start data refresh thread
 					try {
+						long debugTime = System.nanoTime();
 						collectCloudData(GridX, cameraGridY, GridZ);
+						debugSamplingTime = (System.nanoTime() - debugTime) / 1000000000F;
 					} catch (Exception e) {
 						exceptionCatcher(e);
 					} finally {
@@ -436,7 +447,7 @@ public class Renderer {
 						*///? } else {
 						builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 								.setUv(0.5f, 0.5f)
-								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
+								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlpha)
 								.setNormal(facing.normal[0], facing.normal[1], facing.normal[2]);
 						//? }
 				}
@@ -534,9 +545,13 @@ public class Renderer {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] build " + cullStateShown + "/" +
-				(cullStateSkipped + cullStateShown) + " faces, cost " +
-				debugRebuildTime + "ms, upload in " +
-				debugUploadTime + "ms";
+		return String.format(
+				"[SFCR] build %s/%s faces in %.3fms, upload in %.3fms, last sampling in %.3fs",
+				cullStateShown,
+				cullStateShown + cullStateSkipped,
+				debugRebuildTime,
+				debugUploadTime,
+				debugSamplingTime
+		);
 	}
 }

@@ -35,6 +35,8 @@ import static com.rimo.sfcr.Common.*;
 public class RendererDHCompat extends Renderer {
 	private final DhApiRenderableBoxGroupShading cloudShading = createCloudShading();
 	private List<IDhApiRenderableBoxGroup> groupList = new ArrayList<>();
+	private boolean isRemeshing = false;
+	private Thread remeshingThread;
 
 	public RendererDHCompat() {}
 	public RendererDHCompat(Renderer renderer) {super(renderer);}
@@ -76,15 +78,29 @@ public class RendererDHCompat extends Renderer {
 	*///? } else {
 	public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
 	//? }
-		if (! Minecraft.getInstance().isPaused() && isMarkedForRebuild()) {
+		if (! Minecraft.getInstance().isPaused() && ! isRemeshing && isMarkedForRebuild()) {
+			isRemeshing = true;
 			rebuildTimer = 0;
-			rebuildCloudMesh(cloudColor);
+			if (CONFIG.isThreadifyDHRemesh()) {
+				remeshingThread = new Thread(() -> {
+					rebuildCloudMesh(cloudColor);  //redirect mesh builder
+					isRemeshing = false;
+				});
+				remeshingThread.start();
+			} else {
+				rebuildCloudMesh(cloudColor);
+				isRemeshing = false;
+			}
 		}
 	}
 
 	@Override
 	public void stop() {
 		super.stop();
+		try {
+			if (remeshingThread != null)
+				remeshingThread.join();
+		} catch (Exception ignore) {}
 		if (DhApi.Delayed.worldProxy.worldLoaded()) {
 			for (IDhApiRenderableBoxGroup group : groupList)
 				DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister().remove(group.getId());
@@ -93,14 +109,69 @@ public class RendererDHCompat extends Renderer {
 	}
 
 	// turns quad vertex into AABB box for DH renderer
-	private List<DhApiRenderableBox> getGroup(CloudData data, Vec3 color, float alpha) {
+	private List<DhApiRenderableBox> getGroup(List<CloudData.CompressedFace> data, Vec3 color, float alpha) {
+		int scale = data.size() == 6 ? (int) (12F / CONFIG.getCloudBlockSize()) : 0;
 		List<DhApiRenderableBox> group = new ArrayList<>();
-		for(CloudData.CompressedFace face : data.meshData) {
+		for(CloudData.CompressedFace face : data) {
 			Vec3 newColor = color.scale(CONFIG.isEnableBottomDim() ?
 					Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f) :
 					1F
 			);
 			int[][] vertex = face.getVertexList();
+
+			if (scale != 0) {  //if only has inner face, scale it to prevent DH culling.
+				switch (face.getFacing()) {
+					case EAST:
+						vertex[0][0] -= scale;  //push out along facing axis
+						vertex[0][1] -= scale;  //scale on other axis
+						vertex[0][2] -= scale;
+						vertex[2][0] -= scale;
+						vertex[2][1] += scale;
+						vertex[2][2] += scale;
+						break;
+					case WEST:
+						vertex[0][0] += scale;
+						vertex[0][1] -= scale;
+						vertex[0][2] -= scale;
+						vertex[2][0] += scale;
+						vertex[2][1] += scale;
+						vertex[2][2] += scale;
+						break;
+					case TOP:
+						vertex[0][0] -= scale;
+						vertex[0][1] -= scale;
+						vertex[0][2] -= scale;
+						vertex[2][0] += scale;
+						vertex[2][1] -= scale;
+						vertex[2][2] += scale;
+						break;
+					case BOTTOM:
+						vertex[0][0] -= scale;
+						vertex[0][1] += scale;
+						vertex[0][2] -= scale;
+						vertex[2][0] += scale;
+						vertex[2][1] += scale;
+						vertex[2][2] += scale;
+						break;
+					case SOUTH:
+						vertex[0][0] -= scale;
+						vertex[0][1] -= scale;
+						vertex[0][2] -= scale;
+						vertex[2][0] += scale;
+						vertex[2][1] += scale;
+						vertex[2][2] -= scale;
+						break;
+					case NORTH:
+						vertex[0][0] -= scale;
+						vertex[0][1] -= scale;
+						vertex[0][2] += scale;
+						vertex[2][0] += scale;
+						vertex[2][1] += scale;
+						vertex[2][2] += scale;
+						break;
+				}
+			}
+
 			group.add(new DhApiRenderableBox(
 					new DhApiVec3d(
 							(vertex[0][0] - 0.33F) * cloudBlockWidth,
@@ -112,7 +183,7 @@ public class RendererDHCompat extends Renderer {
 							vertex[2][1] * cloudBlockHeight,
 							(vertex[2][2] - 0.33F) * cloudBlockWidth
 					),
-					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha * 0.8F),
+					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha * 0.7F),
 					EDhApiBlockMaterial.UNKNOWN
 			));
 		}
@@ -121,13 +192,14 @@ public class RendererDHCompat extends Renderer {
 
 	// RenderableBoxGroup build and replace.
 	private void rebuildCloudMesh(Vec3 cloudColor) {
+		long debugTime = System.nanoTime();
+		int debugBuildCount = 0;
+
 		int customColor = CONFIG.getCloudColor();  //apply custom color
 		Vec3 color = cloudColor.multiply(getBlushColorByTime(Minecraft.getInstance().level.getDayTime()))
 				.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
 		float alpha = (customColor >>> 24) / 255F;
 
-		cullStateSkipped = 0;
-		cullStateShown = 0;
 		int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
 		List<IDhApiRenderableBoxGroup> newGroupList = new ArrayList<>();
 		for(CloudData data : cloudDataGroup) {
@@ -139,7 +211,7 @@ public class RendererDHCompat extends Renderer {
 			IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(
 					Common.MOD_ID + ":clouds",
 					new DhApiVec3d(),
-					getGroup(data, color, alpha)
+					getGroup(data.meshData, color, alpha)
 			);
 			newGroup.setBlockLight(15);
 			newGroup.setSkyLight(15);
@@ -147,16 +219,21 @@ public class RendererDHCompat extends Renderer {
 			newGroup.setShading(cloudShading);
 			newGroup.setPreRenderFunc(renderParam -> preRender(newGroup));
 			newGroupList.add(newGroup);
-			cullStateShown += newGroup.size();
+			debugBuildCount += newGroup.size();
 		}
+		cullStateSkipped = 0;
+		cullStateShown = debugBuildCount;
+		debugRebuildTime = (System.nanoTime() - debugTime) / 1000000F;
 
+		debugTime = System.nanoTime();
 		IDhApiCustomRenderRegister renderRegister = DhApi.Delayed.worldProxy.getSinglePlayerLevel().getRenderRegister();
+		for(IDhApiRenderableBoxGroup group : newGroupList)
+			renderRegister.add(group);
 		for(IDhApiRenderableBoxGroup group : groupList)
 			// since DH 3.0 it will get flicker if we directly remove, so...
 			group.setPreRenderFunc(renderParam -> renderRegister.remove(group.getId()));
-		for(IDhApiRenderableBoxGroup group : newGroupList)
-			renderRegister.add(group);
 		groupList = newGroupList;
+		debugUploadTime = (System.nanoTime() - debugTime) / 1000000F;
 	}
 
 	// calc RenderableBoxGroup pos and culling, etc..

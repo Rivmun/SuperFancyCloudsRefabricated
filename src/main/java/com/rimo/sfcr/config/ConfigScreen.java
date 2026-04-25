@@ -114,6 +114,14 @@ public class ConfigScreen {
 				.setTooltip(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
 				.setSaveConsumer(CONFIG::setCloudHeight)
 				.build();
+		BooleanListEntry dHCompat = entryBuilder
+				.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
+						CONFIG.isEnableDHCompat())
+				.setDefaultValue(false)
+				.setTooltip(Component.translatable("text.sfcr.option.dHCompat.@Tooltip"))
+				.setSaveConsumer(CONFIG::setEnableDHCompat)
+				.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
+				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
 				.setTransparentBackground(true)
@@ -558,13 +566,15 @@ public class ConfigScreen {
 						//delete config after quit
 						.addEntry(deleteAfterQuit)
 						//distant horizons
+						.addEntry(dHCompat)
+						//threadify remeshing
 						.addEntry(entryBuilder
-								.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
-										CONFIG.isEnableDHCompat())
+								.startBooleanToggle(Component.translatable("text.sfcr.option.isThreadifyDHRemesh"),
+										CONFIG.isThreadifyDHRemesh())
 								.setDefaultValue(false)
-								.setTooltip(Component.translatable("text.sfcr.option.dHCompat.@Tooltip"))
-								.setSaveConsumer(CONFIG::setEnableDHCompat)
-								.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
+								.setTooltip(Component.translatable("text.sfcr.option.isThreadifyDHRemesh.@Tooltip"))
+								.setSaveConsumer(CONFIG::setThreadifyDHRemesh)
+								.setDisplayRequirement(Requirement.isTrue(dHCompat))
 								.build())
 						//seasons
 						.addEntry(entryBuilder

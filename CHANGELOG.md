@@ -25,7 +25,7 @@ Dozens of fixes and optimizations here.
 
 TODO: 
 - try to fix smooth change?
-- DH inner face fix
+- Network receiver check
 
 # 1.9.1
 ### Fix

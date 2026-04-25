@@ -182,8 +182,11 @@ public class Client {
 	}
 
 	public static void applyConfigChange(boolean oldEnableDHCompat) {
-		if (oldEnableDHCompat != CONFIG.isEnableDHCompat())
+		if (oldEnableDHCompat != CONFIG.isEnableDHCompat()) {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
+		} else if (! CONFIG.isEnableRender()) {
+			RENDERER.stop();
+		}
 		CloudData.sampler.setConfig(CONFIG);
 	}
 

@@ -17,6 +17,7 @@ public class Config extends SharedConfig {
 	private int rebuildInterval = 10;
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
+	private boolean isThreadifyDHRemesh = false;
 	private boolean isEnableParticleRainCompat = false;
 	private boolean isCloudRainLogically = false;
 
@@ -33,6 +34,7 @@ public class Config extends SharedConfig {
 		this.rebuildInterval            = config.rebuildInterval;
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
+		this.isThreadifyDHRemesh        = config.isThreadifyDHRemesh;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
 		this.isCloudRainLogically       = config.isCloudRainLogically;
 		super.set(config);
@@ -45,6 +47,7 @@ public class Config extends SharedConfig {
 	public int getRebuildInterval() {return rebuildInterval;}
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
+	public boolean isThreadifyDHRemesh() {return isThreadifyDHRemesh;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
 	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
@@ -55,6 +58,7 @@ public class Config extends SharedConfig {
 	public void setRebuildInterval(int value) {rebuildInterval = value;}
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
+	public void setThreadifyDHRemesh(boolean enable) {isThreadifyDHRemesh = enable;}
 	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 

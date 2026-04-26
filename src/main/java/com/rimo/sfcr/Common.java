@@ -93,9 +93,7 @@ public class Common {
 		ServerLevel level = server.overworld();
 		// Sender
 		//~ if = 1.21.11 'server' -> 'level'
-		if (DATA.updateWeather(server)) {  // always update
-			if (! CONFIG.isEnableServer())
-				return;
+		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
 			PlatformUtil.sendToAllPlayers(server, new WeatherPayload(nextWeather));
 			if (CONFIG.isEnableDebug())

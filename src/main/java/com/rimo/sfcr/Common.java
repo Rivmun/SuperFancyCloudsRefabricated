@@ -156,7 +156,7 @@ public class Common {
 	 */
 	private static DimensionData loadDimensionData(ServerLevel level) {
 		String name = level.dimension().identifier().toString();
-		Config config = new Config();
+		SharedConfig config = new SharedConfig();
 		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
@@ -188,7 +188,7 @@ public class Common {
 	public static void setDimensionConfigJson(String dimensionName, String configJson) {
 		try {
 			DIMENSION_CACHE.computeIfPresent(dimensionName, (key, existing) -> {
-				existing.sampler.setConfig(new Config().fromString(configJson));
+				existing.sampler.setConfig(new SharedConfig().fromString(configJson));
 				return new DimensionData(existing.seed, configJson, existing.sampler());
 			});
 		} catch (JsonSyntaxException ignored) {}

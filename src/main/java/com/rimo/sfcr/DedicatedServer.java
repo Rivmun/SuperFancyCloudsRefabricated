@@ -3,7 +3,7 @@ package com.rimo.sfcr;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
@@ -111,17 +111,16 @@ public class DedicatedServer {
 					MOD_ID, player.getName().getString());
 			return;
 		}
-		Config config = new Config();
+		SharedConfig config = new SharedConfig();
 		try {
 			config.fromString(configJson);
+			config.save(name);
+			setDimensionConfigJson(name, configJson);
+			VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
+			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
 		} catch (JsonSyntaxException e) {
 			VersionUtil.sendMessage(player, "§4[SFCRe] You upload a config that server cannot read, please check your mod version!");
 			LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
-			return;
 		}
-		config.save(name);
-		setDimensionConfigJson(name, configJson);
-		VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
-		LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
 	}
 }

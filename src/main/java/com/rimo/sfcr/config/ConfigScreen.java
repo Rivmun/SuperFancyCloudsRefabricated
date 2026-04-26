@@ -116,6 +116,7 @@ public class ConfigScreen {
 								.startTextDescription(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
 										"§b" + dimensionName
 								))
+								.setTooltip(Component.translatable("text.sfcr.option.customDimensionMode.@Tooltip"))
 								.setDisplayRequirement(Requirement.isTrue(() -> isCustomDimension))
 								.build())
 						// Config Override Warning

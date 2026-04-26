@@ -33,7 +33,7 @@ public class Data {
 		setConfig(config);
 	}
 
-	public int getResamplingInterval() {
+	int getResamplingInterval() {
 		return ((isWeatherChange || isBiomeChange) ? weatheringRefreshSpeed : normalRefreshSpeed) / 5;
 	}
 

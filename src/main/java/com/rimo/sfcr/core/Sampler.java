@@ -60,6 +60,8 @@ public class Sampler {
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
+		if (level == null)
+			return false;
 		int gx = (int) Math.floor((x + level.getGameTime() * 0.03F) / cloudBlockSize);
 		int gz = (int) Math.floor(z / cloudBlockSize + 0.33F);
 		for (int i = cloudThick - 1; i >= 0; i --) {

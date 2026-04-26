@@ -88,6 +88,10 @@ public class DedicatedServer {
 								VersionUtil.sendSystemMessage(context, "§4[SFCRe] Please cast it from client!");
 								return 1;
 							}
+							if (! playerWithSfcr.contains(player)) {
+								VersionUtil.sendSystemMessage(context, "$4[SFCRe] You may install SFCR first!");
+								return 1;
+							}
 							PlatformUtil.sendToPlayer(player, new UploadRequestPayload());
 							return 1;
 						})

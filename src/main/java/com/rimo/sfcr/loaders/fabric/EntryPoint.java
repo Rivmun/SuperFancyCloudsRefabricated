@@ -37,11 +37,19 @@ public class EntryPoint implements ModInitializer, ClientModInitializer, Dedicat
 		ServerTickEvents.END_SERVER_TICK.register(Common::onTick);
 		//~ if = 1.21.11 'END_LEVEL_TICK' -> 'END_WORLD_TICK'
 		ServerTickEvents.END_LEVEL_TICK.register(Common::onLevelTick);
-		ServerPlayerEvents.JOIN.register(player -> Common.sendDimensionPacket(player, player.level().dimension()));
+		ServerPlayerEvents.JOIN.register(player -> {
+			if (ServerPlayNetworking.canSend(player, Common.DimensionPayload.TYPE)) {
+				Common.playerWithSfcr.add(player);
+			} else {
+				return;
+			}
+			Common.sendDimensionPacket(player, player.level().dimension());
+		});
 		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
 			if (oldPlayer.level().dimension() != newPlayer.level().dimension())
 				Common.sendDimensionPacket(newPlayer, newPlayer.level().dimension());
 		});
+		ServerPlayerEvents.LEAVE.register(Common.playerWithSfcr::remove);
 	}
 
 	@Override

@@ -82,6 +82,7 @@ public class Common {
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
+	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
 	public static String debugString;
@@ -95,7 +96,9 @@ public class Common {
 		//~ if = 1.21.11 'server' -> 'level'
 		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
-			PlatformUtil.sendToAllPlayers(server, new WeatherPayload(nextWeather));
+			playerWithSfcr.forEach(player ->
+					PlatformUtil.sendToPlayer(player, new WeatherPayload(nextWeather))
+			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 		}
@@ -129,7 +132,8 @@ public class Common {
 	// Dimension Packet Sender
 	public static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
 		MinecraftServer server = player.level().getServer();
-		if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
+		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
+		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player)))
 			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());

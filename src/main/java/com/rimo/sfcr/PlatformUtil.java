@@ -1,7 +1,6 @@
 package com.rimo.sfcr;
 
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 //? if neoforge {
 /*import net.neoforged.fml.ModList;
@@ -38,16 +37,6 @@ public class PlatformUtil {
 		/*ClientPacketDistributor.sendToServer(payload);
 		*///? } else {
 		ClientPlayNetworking.send(payload);
-		//? }
-	}
-
-	public static void sendToAllPlayers(MinecraftServer server, CustomPacketPayload payload) {
-		//? if neoforge {
-		/*PacketDistributor.sendToAllPlayers(payload);
-		*///? } else {
-		server.getPlayerList().getPlayers().forEach(player ->
-				ServerPlayNetworking.send(player, payload)
-		);
 		//? }
 	}
 

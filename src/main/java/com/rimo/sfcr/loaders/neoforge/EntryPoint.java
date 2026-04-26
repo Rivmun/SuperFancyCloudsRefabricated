@@ -52,11 +52,20 @@ public class EntryPoint {
 	}
 	@SubscribeEvent
 	public static void onJoin(PlayerEvent.PlayerLoggedInEvent event) {
+		if (((ServerPlayer) event.getEntity()).connection.hasChannel(Common.DimensionPayload.TYPE)) {
+			Common.playerWithSfcr.add((ServerPlayer) event.getEntity());
+		} else {
+			return;
+		}
 		Common.sendDimensionPacket((ServerPlayer) event.getEntity(), event.getEntity().level().dimension());
 	}
 	@SubscribeEvent
 	public static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
 		Common.sendDimensionPacket((ServerPlayer) event.getEntity(), event.getTo());
+	}
+	@SubscribeEvent
+	public static void onQuit(PlayerEvent.PlayerLoggedOutEvent event) {
+		Common.playerWithSfcr.remove((ServerPlayer) event.getEntity());
 	}
 
 	@OnlyIn(Dist.CLIENT)

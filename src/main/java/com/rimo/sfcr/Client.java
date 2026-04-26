@@ -28,7 +28,7 @@ public class Client {
 		Sampler sampler = Renderer.sampler.setLevel(level).setSeed(new Random().nextLong());  //get a random seed before server send
 		String dimensionName = level.dimension().identifier().toString();
 		if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
-			if (CONFIG.load(dimensionName) && ! dimensionName.equals(Config.OVERWORLD))
+			if (CONFIG.load(dimensionName))
 				isCustomDimensionConfig = true;
 			isConfigHasBeenOverride = false;
 			sampler.setConfig(CONFIG);
@@ -80,7 +80,7 @@ public class Client {
 				LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
 			}
 		} else {
-			if (CONFIG.load(name) && ! name.equals(Config.OVERWORLD))  //Client trying to load dimension config if server not send...
+			if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
 				isCustomDimensionConfig = true;
 			isConfigHasBeenOverride = false;
 			if (CONFIG.isEnableDebug())

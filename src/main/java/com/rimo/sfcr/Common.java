@@ -81,7 +81,7 @@ public class Common {
 	}
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
-	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
+	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
 	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
@@ -157,7 +157,7 @@ public class Common {
 	private static DimensionData loadDimensionData(ServerLevel level) {
 		String name = level.dimension().identifier().toString();
 		Config config = new Config();
-		String configJson = config.load(name) ? config.toString() : "";
+		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(level);

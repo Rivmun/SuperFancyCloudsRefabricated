@@ -70,11 +70,11 @@ dependencies {
     }
 
     //distant horizons
-//    api("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-//    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+    api("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
+    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //serene seasons
-//    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
     compileOnly("maven.modrinth:iris:${property("deps.iris")}-neoforge")
 }

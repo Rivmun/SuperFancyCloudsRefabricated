@@ -104,6 +104,7 @@ public class RendererDHCompat extends Renderer {
 				.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
 		float alpha = (customColor >>> 24) / 255F;
 
+		long debugTime = System.nanoTime();
 		//transform grid to boxes
 		List<DhApiRenderableBox> boxList = new ArrayList<>();
 		if (gridY > 0 && gridY <= cloudGrid.grids()[0][0].length &&
@@ -124,6 +125,9 @@ public class RendererDHCompat extends Renderer {
 				}
 			}
 		}
+		debugBuiltTime = (System.nanoTime() - debugTime) / 1000000F;
+		debugBuiltCounter = boxList.size();
+		debugCullCounter = 0;
 
 		//build group
 		IDhApiRenderableBoxGroup newGroup = DhApi.Delayed.customRenderObjectFactory.createRelativePositionedGroup(

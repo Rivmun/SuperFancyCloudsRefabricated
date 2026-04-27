@@ -85,7 +85,7 @@ public class Common {
 	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
-	public static String debugString;
+	public static String debugString = "";
 
 	public static void onTick(MinecraftServer server) {
 		if (server.getTickCount() % 20 != 0)

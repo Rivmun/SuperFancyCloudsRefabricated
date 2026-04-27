@@ -51,6 +51,7 @@ public class Renderer {
 	protected int debugBuiltCounter = 0;
 	protected int debugCullCounter = 0;
 	protected double debugBuiltTime = 0;
+	protected double debugSamplingTime = 0;
 
 	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
 
@@ -130,7 +131,9 @@ public class Renderer {
 
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid(int renderRange) {
+		long debugTime = System.nanoTime();
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ, renderRange);
+		debugSamplingTime = (System.nanoTime() - debugTime) / 1000000000F;
 		if (newGrid == null)
 			return;
 		if (cloudGrid != null) {
@@ -177,7 +180,8 @@ public class Renderer {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] encode " + debugBuiltCounter + " face(s), " + debugCullCounter + " cell(s) skipped, cost " + debugBuiltTime + "ms. " + gridY;
+		return String.format("[SFCR] build %s faces in %.3fms, %s cell skipped. last sampling in %.3fs",
+				debugBuiltCounter, debugBuiltTime, debugCullCounter, debugSamplingTime);
 	}
 
 	/*

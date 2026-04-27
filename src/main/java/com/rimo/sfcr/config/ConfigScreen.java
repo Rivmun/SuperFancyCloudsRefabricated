@@ -6,6 +6,7 @@ import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.DropdownBoxEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
 import net.minecraft.client.Minecraft;
@@ -101,18 +102,27 @@ public class ConfigScreen {
 				.setSaveConsumer(value -> {})
 				.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
 				.build();
+		DropdownBoxEntry<Integer> cloudBlockSize = entryBuilder
+				.startDropdownMenu(Component.translatable("text.sfcr.option.cloudBlockSize")
+						, DropdownMenuBuilder.TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
+				.setDefaultValue(12)
+				.setSuggestionMode(false)
+				.setSelections(Arrays.asList(2, 4, 8, 12, 16))
+				.setTooltip(Component.translatable("text.sfcr.option.cloudBlockSize.@Tooltip"))
+				.setSaveConsumer(CONFIG::setCloudBlockSize)
+				.build();
 		IntegerSliderEntry cloudHeight = entryBuilder
 				.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
 						, CONFIG.getCloudHeight()
 						, - 1
-						, 384)
+						, 384 / cloudBlockSize.getValue() * 2)
 				.setDefaultValue(- 1)
 				.setTextGetter(value -> value < 0 ?
 						Component.translatable("text.sfcr.option.cloudHeight.followVanilla") :
-						Component.nullToEmpty(value.toString())
+						Component.nullToEmpty(String.valueOf(value * cloudBlockSize.getValue() / 2))
 				)
 				.setTooltip(Component.translatable("text.sfcr.option.cloudHeight.@Tooltip"))
-				.setSaveConsumer(CONFIG::setCloudHeight)
+				.setSaveConsumer(value -> CONFIG.setCloudHeight(value < 0 ? value : value * cloudBlockSize.getValue() / 2))
 				.build();
 		BooleanListEntry dHCompat = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
@@ -217,15 +227,7 @@ public class ConfigScreen {
 								.setRequirement(Requirement.isTrue(() -> cloudHeight.getValue() >= 0))
 								.build())
 						//cloud block size
-						.addEntry(entryBuilder
-								.startDropdownMenu(Component.translatable("text.sfcr.option.cloudBlockSize")
-										, DropdownMenuBuilder.TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
-								.setDefaultValue(12)
-								.setSuggestionMode(false)
-								.setSelections(Arrays.asList(2, 4, 8, 12, 16))
-								.setTooltip(Component.translatable("text.sfcr.option.cloudBlockSize.@Tooltip"))
-								.setSaveConsumer(CONFIG::setCloudBlockSize)
-								.build())
+						.addEntry(cloudBlockSize)
 						//cloud thickness
 						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudLayerThickness")

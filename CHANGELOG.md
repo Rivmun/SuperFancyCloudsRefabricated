@@ -24,6 +24,7 @@ Dozens of fixes and optimizations here.
 - Refactor face compressor to reduce memory use.
 - SFCR packet will not send to player who wasn't have SFCR installed.
 - Slightly improved view culling performance.
+- Now cloudHeight step by cloudBlockHeight in configScreen.
 - Fix weather density has stop to update when 'enableServer' is disabled.
 - Fix renderDistance only save to default config file when renderDistanceFitToView is enabled.
 - Fix concurrent violate crash when smooth change is enabled.

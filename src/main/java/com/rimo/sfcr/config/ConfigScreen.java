@@ -492,6 +492,13 @@ public class ConfigScreen {
 								.setDisplayRequirement(Requirement.isTrue(dhCompat))
 								.setSaveConsumer(value -> CONFIG.setDhRenderRangeMultiplier(value / 10F))
 								.build())
+						.addEntry(entryBuilder
+								.startBooleanToggle(Component.translatable("text.sfcr.option.isThreadifyDHRemesh"),
+										CONFIG.isThreadifyDHRemesh())
+								.setTooltip(Component.translatable("text.sfcr.option.isThreadifyDHRemesh.@Tooltip"))
+								.setSaveConsumer(CONFIG::setThreadifyDHRemesh)
+								.setDisplayRequirement(Requirement.isTrue(dhCompat))
+								.build())
 						//seasons
 						.addEntry(entryBuilder
 								.startStrList(Component.translatable("text.sfcr.option.seasonCompat", Common.seasonHandler != null ?

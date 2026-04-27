@@ -12,7 +12,7 @@ import java.util.Random;
 import static com.rimo.sfcr.Common.*;
 
 public class Client {
-	public static final boolean isDistantHorizonsLoaded = false;  //PlatformUtil.isModLoaded("distanthorizons");
+	public static final boolean isDistantHorizonsLoaded = PlatformUtil.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = PlatformUtil.isModLoaded("particlerain");
 	public static boolean isIrisLoadedShader = false;
 	private static boolean hasServer = false;

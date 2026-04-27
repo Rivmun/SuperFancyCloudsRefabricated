@@ -18,6 +18,7 @@ public class Config extends SharedConfig {
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
 	private float dhRenderRangeMultiplier = 1F;
+	private boolean isThreadifyDHRemesh = false;
 	private boolean isEnableParticleRainCompat = false;
 	private boolean isCloudRainLogically = false;
 
@@ -35,6 +36,7 @@ public class Config extends SharedConfig {
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
 		this.dhRenderRangeMultiplier    = config.dhRenderRangeMultiplier;
+		this.isThreadifyDHRemesh        = config.isThreadifyDHRemesh;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
 		this.isCloudRainLogically       = config.isCloudRainLogically;
 		super.set(config);
@@ -48,6 +50,7 @@ public class Config extends SharedConfig {
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 	public float getDhRenderRangeMultiplier() {return dhRenderRangeMultiplier;}
+	public boolean isThreadifyDHRemesh() {return isThreadifyDHRemesh;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
 	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
@@ -59,6 +62,7 @@ public class Config extends SharedConfig {
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 	public void setDhRenderRangeMultiplier(float value) {dhRenderRangeMultiplier = value;}
+	public void setThreadifyDHRemesh(boolean enable) {isThreadifyDHRemesh = enable;}
 	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 

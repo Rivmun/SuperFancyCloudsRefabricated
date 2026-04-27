@@ -83,7 +83,7 @@ public class RendererDHCompat extends Renderer {
 			this.gridY = gridY;
 			this.gridZ = gridZ;
 
-			if (false) {
+			if (CONFIG.isThreadifyDHRemesh()) {
 				remeshingThread = new Thread(() -> {
 					buildMesh(renderRange, cloudGrid, cloudColor);
 					isRemeshing = false;

@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         version: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
+      fail-fast: false
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

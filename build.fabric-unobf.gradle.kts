@@ -70,12 +70,12 @@ dependencies {
         exclude(group = "net.fabricmc.fabric-api")
     }
     //distant horizons
-//    modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+    api("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
+    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
     //particle rain
     compileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
     //serene seasons
-//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
     compileOnly("maven.modrinth:iris:${property("deps.iris")}-fabric")
 }

@@ -40,9 +40,9 @@ public class Renderer {
 	public static Sampler sampler = new Sampler();
 	protected volatile CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
-	protected volatile boolean isResampling = false;
+	private volatile boolean isResampling = false;
 	protected double resamplingTimer = 0.0;
-	private int rebuildTick = 0;
+	protected int rebuildTick = 0;
 	protected float cloudBlockWidth = 12F;
 	protected float cloudBlockHeight = 4F;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
@@ -51,6 +51,7 @@ public class Renderer {
 	protected int debugBuiltCounter = 0;
 	protected int debugCullCounter = 0;
 	protected double debugBuiltTime = 0;
+	protected double debugSamplingTime = 0;
 
 	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
 
@@ -130,7 +131,9 @@ public class Renderer {
 
 	//thread-ify invoke is a better way to reduce lag.
 	protected void updateCloudGrid(int renderRange) {
+		long debugTime = System.nanoTime();
 		CloudGrid newGrid = getCloudGrid(gridX, gridZ, renderRange);
+		debugSamplingTime = (System.nanoTime() - debugTime) / 1000000000F;
 		if (newGrid == null)
 			return;
 		if (cloudGrid != null) {
@@ -177,7 +180,8 @@ public class Renderer {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] encode " + debugBuiltCounter + " face(s), " + debugCullCounter + " cell(s) skipped, cost " + debugBuiltTime + "ms. " + gridY;
+		return String.format("[SFCR] build %s faces in %.3fms, %s cell skipped. last sampling in %.3fs",
+				debugBuiltCounter, debugBuiltTime, debugCullCounter, debugSamplingTime);
 	}
 
 	/*
@@ -191,7 +195,6 @@ public class Renderer {
 	int quadCount = 0;
 
 	public void render(int cloudColor, float cloudHeight, Vec3 camPos, float partialTick, MappableRingBuffer infoBuffer, MappableRingBuffer faceBuffer, int renderRange, Level level) {
-		final boolean isPaused = Minecraft.getInstance().isPaused();
 		cloudBlockWidth = CONFIG.getCloudBlockSize();
 		cloudBlockHeight = cloudBlockWidth / 2;
 
@@ -201,17 +204,16 @@ public class Renderer {
 		int gridX = Mth.floor(cloudX / cloudBlockWidth);
 		int gridY = Mth.floor((camPos.y - cloudHeight) / cloudBlockHeight);
 		int gridZ = Mth.floor(cloudZ / cloudBlockWidth);
-		float offsetX = (float)(cloudX - (double)((float)gridX * cloudBlockWidth));
-		float offsetY = (float)(cloudHeight - camPos.y);
-		float offsetZ = (float)(cloudZ - (double)((float)gridZ * cloudBlockWidth));
-		RenderPipeline renderPipeline = CONFIG.isEnableBottomDim() ? SUPER_FANCY_CLOUDS : SUPER_FANCY_CLOUDS_NOTHICKNESS;
+		float offsetX = (float) (cloudX - (double) ((float) gridX * cloudBlockWidth));
+		float offsetY = (float) (cloudHeight - camPos.y);
+		float offsetZ = (float) (cloudZ - (double) ((float) gridZ * cloudBlockWidth));
 
 		this.xOffset = offsetX;
 		this.zOffset = offsetZ;
 
 		// resampling check
 		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
-		if (! isPaused &&
+		if (! Minecraft.getInstance().isPaused() &&
 				(gridX != this.gridX || gridZ != this.gridZ || isTimeToResampling())) {
 			if (cloudGrid == null) {
 				cloudGrid = getCloudGrid(gridX, gridZ, renderRange);  //resampling directly at first time
@@ -220,9 +222,15 @@ public class Renderer {
 			}
 		}
 
+		_render(gridX, gridY, gridZ, faceBuffer, infoBuffer, renderRange, cloudColor, offsetX, offsetY, offsetZ);
+	}
+
+	protected void _render(int gridX, int gridY, int gridZ, MappableRingBuffer faceBuffer, MappableRingBuffer infoBuffer,
+	                       int renderRange, int cloudColor, float offsetX, float offsetY, float offsetZ) {
+		RenderPipeline renderPipeline = CONFIG.isEnableBottomDim() ? SUPER_FANCY_CLOUDS : SUPER_FANCY_CLOUDS_NOTHICKNESS;
 		// rebuild check
 		boolean enableCulling = CONFIG.getEnableViewCulling();
-		if (! isPaused && (
+		if (! Minecraft.getInstance().isPaused() && (
 				(enableCulling ? ++ rebuildTick > CONFIG.getRebuildInterval() : rebuildTick >= 999) ||
 				gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness())
 		)) {
@@ -409,23 +417,10 @@ public class Renderer {
 		}
 	}
 
-	private static boolean hasBorderTop(int packed) {
-		return (packed >> 5 & 1) != 0;
-	}
-	private static boolean hasBorderBottom(int packed) {
-		return (packed >> 4 & 1) != 0;
-	}
-	private static boolean hasBorderEast(int packed) {
-		return (packed >> 3 & 1) != 0;
-	}
-	private static boolean hasBorderWest(int packed) {
-		return (packed >> 2 & 1) != 0;
-	}
-	private static boolean hasBorderSouth(int packed) {
-		return (packed >> 1 & 1) != 0;
-	}
-	private static boolean hasBorderNorth(int packed) {
-		return (packed >> 0 & 1) != 0;
-	}
-
+	protected static boolean hasBorderTop(int packed) {return (packed >> 5 & 1) != 0;}
+	protected static boolean hasBorderBottom(int packed) {return (packed >> 4 & 1) != 0;}
+	protected static boolean hasBorderEast(int packed) {return (packed >> 3 & 1) != 0;}
+	protected static boolean hasBorderWest(int packed) {return (packed >> 2 & 1) != 0;}
+	protected static boolean hasBorderSouth(int packed) {return (packed >> 1 & 1) != 0;}
+	protected static boolean hasBorderNorth(int packed) {return (packed >> 0 & 1) != 0;}
 }

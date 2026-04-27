@@ -3,6 +3,7 @@ package com.rimo.sfcr.config;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
+import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.api.Requirement;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
@@ -18,15 +19,23 @@ import static com.rimo.sfcr.Common.CONFIG;
 import static com.rimo.sfcr.Common.DATA;
 
 public class ConfigScreen {
-	ConfigBuilder builder = ConfigBuilder.create();
+	final ConfigBuilder builder = ConfigBuilder.create();
+	final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 	final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
-	String dimensionName;
+	final String dimensionName;
+	final boolean isCustomDimension;
+
+	public ConfigScreen() {
+//		builder.setGlobalized(true);
+//		builder.setGlobalizedExpanded(false);
+		ClientLevel level = Minecraft.getInstance().level;
+		dimensionName = level != null ? level.dimension().identifier().toString() : Config.OVERWORLD;
+		isCustomDimension = ! dimensionName.equals(Config.OVERWORLD);
+	}
 
 	public Screen build() {
-		ClientLevel world = Minecraft.getInstance().level;
-		dimensionName = world != null ? world.dimension().identifier().toString() : "null";
 		//cull mode
-		BooleanListEntry cullMode = builder.entryBuilder()
+		BooleanListEntry cullMode = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.cullMode"),
 						CONFIG.getEnableViewCulling())
 				.setDefaultValue(false)
@@ -34,7 +43,7 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableViewCulling)
 				.build();
 		//debug
-		BooleanListEntry debug = builder.entryBuilder()
+		BooleanListEntry debug = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.debug")
 						, CONFIG.isEnableDebug())
 				.setDefaultValue(false)
@@ -42,28 +51,36 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableDebug)
 				.build();
 		//dynamic
-		BooleanListEntry enableDynamic = builder.entryBuilder()
+		BooleanListEntry enableDynamic = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.enableWeatherDensity")
 						, CONFIG.isEnableDynamic())
 				.setDefaultValue(true)
 				.setTooltip(Component.translatable("text.sfcr.option.enableWeatherDensity.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableDynamic)
 				.build();
-		BooleanListEntry ncnr = builder.entryBuilder()
+		BooleanListEntry ncnr = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.isCloudRain")
 						, CONFIG.isEnableCloudRain())
 				.setDefaultValue(false)
 				.setTooltip(Component.translatable("text.sfcr.option.isCloudRain.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableCloudRain)
 				.build();
-		BooleanListEntry enableServer = builder.entryBuilder()
+		BooleanListEntry enableServer = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.enableServer")
 						, CONFIG.isEnableServer())
 				.setDefaultValue(true)
 				.setTooltip(Component.translatable("text.sfcr.option.enableServer.@Tooltip"))
 				.setSaveConsumer(CONFIG::setEnableServer)
 				.build();
-		BooleanListEntry dhCompat = builder.entryBuilder()
+		BooleanListEntry deleteAfterQuit = entryBuilder
+				.startBooleanToggle(Component.translatable("text.sfcr.option.deleteDimensionAfterQuit",
+								Component.translatable("text.cloth-config.save_and_done")),
+						false)
+				.setDefaultValue(false)
+				.setSaveConsumer(value -> {})
+				.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
+				.build();
+		BooleanListEntry dhCompat = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.dHCompat"),
 						CONFIG.isEnableDHCompat())
 				.setDefaultValue(false)
@@ -73,35 +90,42 @@ public class ConfigScreen {
 				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
-				.setTitle(Client.isCustomDimensionConfig ?
+				.setTransparentBackground(true)
+				.setTitle(isCustomDimension ?
 						Component.translatable("text.sfcr.title.customDimensionMode", dimensionName) :
 						Component.translatable("text.sfcr.title")
 				)
 				.setSavingRunnable(() -> {
-					if (Client.isCustomDimensionConfig) {
-						CONFIG.save(dimensionName);
+					if (deleteAfterQuit.getValue()) {
+						Config.delete(dimensionName);
+						Common.setDimensionConfigJson(dimensionName, "");
+						CONFIG.load();
+						Client.isCustomDimensionConfig = false;
 					} else {
-						CONFIG.save();
+						Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
+						CONFIG.save(dimensionName);
+						if (isCustomDimension)
+							Client.isCustomDimensionConfig = true;
 					}
-					Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
 					DATA.setConfig(CONFIG);
 					Client.applyConfigChange(oldEnableDHCompat);
 				})
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.general"))
 						// Custom Dimension Warning
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startTextDescription(Component.translatable("text.sfcr.option.customDimensionMode.@PrefixText",
 										"§b" + dimensionName
 								))
-								.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
+								.setTooltip(Component.translatable("text.sfcr.option.customDimensionMode.@Tooltip"))
+								.setDisplayRequirement(Requirement.isTrue(() -> isCustomDimension))
 								.build())
 						// Config Override Warning
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startTextDescription(Component.translatable("text.sfcr.option.configHasBeenOverride.@PrefixText"))
 								.setDisplayRequirement(Requirement.isTrue(() -> Client.isConfigHasBeenOverride))
 								.build())
 						// enable cloud
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.enableMod")
 										, CONFIG.isEnableRender())
 								.setDefaultValue(true)
@@ -113,7 +137,7 @@ public class ConfigScreen {
 						//cull mode
 						.addEntry(cullMode)
 						//cull radian multiplier
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.cullRadianMultiplier")
 										,(int) (CONFIG.getCullRadianMultiplier() * 10)
 										,5
@@ -125,7 +149,7 @@ public class ConfigScreen {
 								.setSaveConsumer(value -> CONFIG.setCullRadianMultiplier(value / 10f))
 								.build())
 						//remesh interval
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.rebuildInterval")
 										, CONFIG.getRebuildInterval()
 										,0
@@ -144,7 +168,7 @@ public class ConfigScreen {
 				)
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.clouds"))
 						//cloud height
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
 										, CONFIG.getCloudHeight()
 										,-192
@@ -158,7 +182,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setCloudHeight)
 								.build())
 						//cloud block size
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startDropdownMenu(Component.translatable("text.sfcr.option.cloudBlockSize")
 										, DropdownMenuBuilder.TopCellElementBuilder.of(CONFIG.getCloudBlockSize(), Integer::parseInt))
 								.setDefaultValue(12)
@@ -168,7 +192,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setCloudBlockSize)
 								.build())
 						//cloud thickness
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudLayerThickness")
 										, CONFIG.getCloudLayerThickness()
 										,2
@@ -179,7 +203,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setCloudLayerThickness)
 								.build())
 						//cloud distance
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.cloudRenderDistance")
 										, CONFIG.getCloudRenderDistance()
 										,31
@@ -194,7 +218,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setCloudRenderDistance)
 								.build())
 						//cloud sample steps
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.sampleSteps")
 										, CONFIG.getSampleSteps()
 										,1
@@ -205,7 +229,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setSampleSteps)
 								.build())
 						//terrain dodge
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.enableTerrainDodge")
 										, CONFIG.isEnableTerrainDodge())
 								.setDefaultValue(true)
@@ -213,14 +237,14 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setEnableTerrainDodge)
 								.build())
 						//cloud color
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startAlphaColorField(Component.translatable("text.sfcr.option.cloudColor")
 										, CONFIG.getCloudColor())
 								.setDefaultValue(0xFFFFFFFF)
 								.setSaveConsumer(CONFIG::setCloudColor)
 								.build())
 						//dusk blush
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.enableDuskBlush")
 										, CONFIG.isEnableDuskBlush())
 								.setDefaultValue(true)
@@ -228,7 +252,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setEnableDuskBlush)
 								.build())
 						//bottomDim
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.enableBottomDim")
 										, CONFIG.isEnableBottomDim())
 								.setDefaultValue(true)
@@ -238,7 +262,7 @@ public class ConfigScreen {
 				)
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.density"))
 						// threshold
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startFloatField(Component.translatable("text.sfcr.option.densityThreshold")
 										, CONFIG.getDensityThreshold())
 								.setDefaultValue(1.3f)
@@ -248,7 +272,7 @@ public class ConfigScreen {
 								.setSaveConsumer(CONFIG::setDensityThreshold)
 								.build())
 						// threshold multiplier
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startFloatField(Component.translatable("text.sfcr.option.thresholdMultiplier")
 										, CONFIG.getThresholdMaxReduction())
 								.setDefaultValue(1.5f)
@@ -260,10 +284,10 @@ public class ConfigScreen {
 						//Dynamic
 						.addEntry(enableDynamic)
 						//weather group
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startSubCategory(Component.translatable("text.sfcr.option.cloudDensity.@PrefixText"), Arrays.asList(
 										//cloud common density
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.sfcr.option.cloudDensity")
 														, CONFIG.getCloudDensityPercent()
 														,0
@@ -273,7 +297,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setCloudDensityPercent)
 												.build(),
 										//rain density
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.sfcr.option.rainDensity")
 														, CONFIG.getRainDensityPercent()
 														,0
@@ -283,7 +307,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setRainDensityPercent)
 												.build(),
 										//thunder density
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.sfcr.option.thunderDensity")
 														, CONFIG.getThunderDensityPercent()
 														,0
@@ -293,7 +317,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setThunderDensityPercent)
 												.build(),
 										//night density
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.sfcr.option.densityAtNight"),
 														(int) (CONFIG.getDensityAtNight() * 10),
 														0,
@@ -303,7 +327,7 @@ public class ConfigScreen {
 												.setSaveConsumer(value -> CONFIG.setDensityAtNight(value / 10f))
 												.build(),
 										//weather pre-detect time
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.sfcr.option.weatherPreDetectTime")
 														, CONFIG.getWeatherPreDetectTime()
 														,0
@@ -317,7 +341,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setWeatherPreDetectTime)
 												.build(),
 										//cloud refresh speed
-										builder.entryBuilder()
+										entryBuilder
 												.startEnumSelector(Component.translatable("text.sfcr.option.cloudRefreshSpeed")
 														, CloudRefreshSpeed.class
 														, CONFIG.getNormalRefreshSpeed())
@@ -327,7 +351,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setNormalRefreshSpeed)
 												.build(),
 										//weather refresh speed
-										builder.entryBuilder()
+										entryBuilder
 												.startEnumSelector(Component.translatable("text.sfcr.option.weatherRefreshSpeed")
 														, CloudRefreshSpeed.class
 														, CONFIG.getWeatherRefreshSpeed())
@@ -337,7 +361,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setWeatherRefreshSpeed)
 												.build(),
 										//density changing speed
-										builder.entryBuilder()
+										entryBuilder
 												.startEnumSelector(Component.translatable("text.sfcr.option.densityChangingSpeed")
 														, CloudRefreshSpeed.class
 														, CONFIG.getDensityChangingSpeed())
@@ -347,7 +371,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setDensityChangingSpeed)
 												.build(),
 										//smooth change
-										builder.entryBuilder()
+										entryBuilder
 												.startBooleanToggle(Component.translatable("text.sfcr.option.enableSmoothChange")
 														, CONFIG.isEnableSmoothChange())
 												.setDefaultValue(false)
@@ -360,11 +384,10 @@ public class ConfigScreen {
 								.setDisplayRequirement(Requirement.isTrue(enableDynamic))
 								.build())
 						//biome group
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startSubCategory(Component.translatable("text.autoconfig.sfcr.option.precipitationDensity.@PrefixText"), Arrays.asList(
-
 										//snow
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.autoconfig.sfcr.option.snowDensity")
 														, CONFIG.getSnowDensity()
 														,0
@@ -374,7 +397,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setSnowDensity)
 												.build(),
 										//rain
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.autoconfig.sfcr.option.rainPrecipitationDensity")
 														, CONFIG.getRainDensity()
 														,0
@@ -384,7 +407,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setRainDensity)
 												.build(),
 										//none
-										builder.entryBuilder()
+										entryBuilder
 												.startIntSlider(Component.translatable("text.autoconfig.sfcr.option.noneDensity")
 														, CONFIG.getNoneDensity()
 														,0
@@ -394,7 +417,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setNoneDensity)
 												.build(),
 										//biome density affect by chunk
-										builder.entryBuilder()
+										entryBuilder
 												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityByChunk")
 														, CONFIG.isBiomeDensityByChunk())
 												.setDefaultValue(false)
@@ -402,7 +425,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setBiomeDensityByChunk)
 												.build(),
 										//biome density detect loaded chunk
-										builder.entryBuilder()
+										entryBuilder
 												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk")
 														, CONFIG.isBiomeDensityUseLoadedChunk())
 												.setDefaultValue(false)
@@ -410,7 +433,7 @@ public class ConfigScreen {
 												.setSaveConsumer(CONFIG::setBiomeDensityUseLoadedChunk)
 												.build(),
 										//biome filter
-										builder.entryBuilder()
+										entryBuilder
 												.startStrList(Component.translatable("text.sfcr.option.biomeFilter")
 														, CONFIG.getBiomeFilterList())
 												.setDefaultValue(Config.DEF_BIOME_FILTER_LIST)
@@ -426,7 +449,7 @@ public class ConfigScreen {
 						//NO CLOUD NO RAIN
 						.addEntry(ncnr)
 						//NO CLOUD NO RAIN logically
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.cloudRainLogically"),
 										CONFIG.isCloudRainLogically())
 								.setDefaultValue(false)
@@ -436,7 +459,7 @@ public class ConfigScreen {
 								.setRequirement(Requirement.isTrue(enableServer))
 								.build())
 						//particle rain
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startBooleanToggle(Component.translatable("text.sfcr.option.particleRainCompat"),
 										CONFIG.isEnableParticleRainCompat())
 								.setDefaultValue(false)
@@ -447,16 +470,18 @@ public class ConfigScreen {
 								.build()
 						)
 						//custom dimension
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startTextDescription(Component.translatable("text.sfcr.option.dimensionCompat.@PrefixText",
 										(Client.isCustomDimensionConfig ? "§a" : "§c") + dimensionName
 								))
 								.setTooltip(Component.translatable("text.sfcr.option.dimensionCompat.@Tooltip"))
 								.build())
+						//delete config after quit
+						.addEntry(deleteAfterQuit)
 						//distant horizons
 						.addEntry(dhCompat)
 						//distant horizons renderdistance
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startIntSlider(Component.translatable("text.sfcr.option.DHCompat.enhanceDistance"),
 										(int) (CONFIG.getDhRenderRangeMultiplier() * 10),
 										10,
@@ -467,8 +492,15 @@ public class ConfigScreen {
 								.setDisplayRequirement(Requirement.isTrue(dhCompat))
 								.setSaveConsumer(value -> CONFIG.setDhRenderRangeMultiplier(value / 10F))
 								.build())
+						.addEntry(entryBuilder
+								.startBooleanToggle(Component.translatable("text.sfcr.option.isThreadifyDHRemesh"),
+										CONFIG.isThreadifyDHRemesh())
+								.setTooltip(Component.translatable("text.sfcr.option.isThreadifyDHRemesh.@Tooltip"))
+								.setSaveConsumer(CONFIG::setThreadifyDHRemesh)
+								.setDisplayRequirement(Requirement.isTrue(dhCompat))
+								.build())
 						//seasons
-						.addEntry(builder.entryBuilder()
+						.addEntry(entryBuilder
 								.startStrList(Component.translatable("text.sfcr.option.seasonCompat", Common.seasonHandler != null ?
 												Common.seasonHandler.getClass().getSimpleName() :
 												"§4null"

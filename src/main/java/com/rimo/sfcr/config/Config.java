@@ -1,14 +1,10 @@
 package com.rimo.sfcr.config;
 
-import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
-import com.rimo.sfcr.PlatformUtil;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static com.rimo.sfcr.Common.MOD_ID;
@@ -22,14 +18,16 @@ public class Config extends SharedConfig {
 	private boolean enableSmoothChange = false;
 	private boolean isEnableDHCompat = false;
 	private float dhRenderRangeMultiplier = 1F;
+	private boolean isThreadifyDHRemesh = false;
 	private boolean isEnableParticleRainCompat = false;
 	private boolean isCloudRainLogically = false;
 
 	/**
-	 * Do you want to call .load() to read a local config?
+	 * Do you want to call {@link #load()} to read a local config?
 	 */
 	public Config() {}
-	public void setConfig(Config config) {
+
+	public void set(Config config) {
 		this.enableDebug                = config.enableDebug;
 		this.enableServer               = config.enableServer;
 		this.enableViewCulling          = config.enableViewCulling;
@@ -38,9 +36,10 @@ public class Config extends SharedConfig {
 		this.enableSmoothChange         = config.enableSmoothChange;
 		this.isEnableDHCompat           = config.isEnableDHCompat;
 		this.dhRenderRangeMultiplier    = config.dhRenderRangeMultiplier;
+		this.isThreadifyDHRemesh        = config.isThreadifyDHRemesh;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
 		this.isCloudRainLogically       = config.isCloudRainLogically;
-		setSharedConfig(config);
+		super.set(config);
 	}
 
 	public boolean isEnableDebug() {return enableDebug;}
@@ -51,6 +50,7 @@ public class Config extends SharedConfig {
 	public boolean isEnableSmoothChange() {return enableSmoothChange;}
 	public boolean isEnableDHCompat() {return isEnableDHCompat && Client.isDistantHorizonsLoaded;}
 	public float getDhRenderRangeMultiplier() {return dhRenderRangeMultiplier;}
+	public boolean isThreadifyDHRemesh() {return isThreadifyDHRemesh;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
 	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
 
@@ -62,74 +62,30 @@ public class Config extends SharedConfig {
 	public void setEnableSmoothChange(boolean isEnable) {enableSmoothChange = isEnable;}
 	public void setEnableDHCompat(boolean enableDHCompat) {isEnableDHCompat = enableDHCompat && Client.isDistantHorizonsLoaded;}
 	public void setDhRenderRangeMultiplier(float value) {dhRenderRangeMultiplier = value;}
+	public void setThreadifyDHRemesh(boolean enable) {isThreadifyDHRemesh = enable;}
 	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
 
-	/*
-	 * -----IO-----
+	/**
+	 * Load {@link #DEFAULT_PATH} file into this instance, or write this instance into {@link #DEFAULT_PATH} file if the file isn't exist.
+	 * @return {@code this}
 	 */
-
-	private static final Path DEFAULT_PATH = PlatformUtil.getConfigFolder().resolve(Common.MOD_ID + ".json");
-	public static final String OVERWORLD = "minecraft:overworld";
-
 	public Config load() {
 		load(OVERWORLD);
 		return this;
 	}
 
-	/**
-	 * Load dimensionName specific config then {@link #setConfig} to this instance.<br>
-	 * If specific config not exist, it'll load default config then {@link #setConfig}.<br>
-	 * File path like 'sfcr_modName_dimensionName.json'
-	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
-	 * @return true if success to load dimension specific config, false if not.
-	 */
-	public boolean load(String dimensionNamespace) {
-		Path path = DEFAULT_PATH;
-		if (!Files.exists(path))
-			save();  //write default file if not exist.
-		if (! dimensionNamespace.equals(OVERWORLD)) {
-			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
-			Path path2 = PlatformUtil.getConfigFolder().resolve(Common.MOD_ID + dimensionNamespace + ".json");
-			if (Files.exists(path2)) {
-				path = path2;  //load dimension config if exists, or load default (path unmodified if not exist)
-			} else {
-				return false;
-			}
-		}
-		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			setConfig(GSON.fromJson(reader, Config.class));
-		} catch (IOException | JsonParseException e) {
-			Common.LOGGER.error("{} failed to read config file: {}, is the file written by older version?", MOD_ID, path.getFileName());
-			return false;
-		}
+	@Override
+	protected void _load(BufferedReader reader, Path path) throws JsonSyntaxException {
+		set(GSON.fromJson(reader, Config.class));
 		if (isEnableDebug())
 			Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
-		return true;
 	}
 
+	/**
+	 * Write this config instance as a file into {@link #DEFAULT_PATH}
+	 */
 	public void save() {
 		save(OVERWORLD);
 	}
-
-	/**
-	 * Save config file to .minecraft/config/sfcr_modName_dimensionName.json
-	 * @param dimensionNamespace syntax like "minecraft:overworld" from RegistryKey.getRegistry().getValue().toString()
-	 */
-	public void save(String dimensionNamespace) {
-		Path path = DEFAULT_PATH;
-		if (! dimensionNamespace.equals(OVERWORLD)) {
-			dimensionNamespace = "_" + dimensionNamespace.replace(":", "_");
-			path = path.getParent().resolve(Common.MOD_ID + dimensionNamespace + ".json");
-		}
-		try {
-			Files.createDirectories(path.getParent());
-			try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-				GSON.toJson(this, writer);
-			}
-		} catch (IOException e) {
-			Common.LOGGER.error("{} failed to write config file: {}", MOD_ID, path.getFileName());
-		}
-	}
-
 }

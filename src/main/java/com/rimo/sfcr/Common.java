@@ -81,10 +81,11 @@ public class Common {
 	}
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
-	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO
+	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
+	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
-	public static String debugString;
+	public static String debugString = "";
 
 	public static void onTick(MinecraftServer server) {
 		if (server.getTickCount() % 20 != 0)
@@ -93,11 +94,11 @@ public class Common {
 		ServerLevel level = server.overworld();
 		// Sender
 		//~ if = 1.21.11 'server' -> 'level'
-		if (DATA.updateWeather(server)) {  // always update
-			if (! CONFIG.isEnableServer())
-				return;
+		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
-			PlatformUtil.sendToAllPlayers(server, new WeatherPayload(nextWeather));
+			playerWithSfcr.forEach(player ->
+					PlatformUtil.sendToPlayer(player, new WeatherPayload(nextWeather))
+			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 		}
@@ -131,7 +132,8 @@ public class Common {
 	// Dimension Packet Sender
 	public static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
 		MinecraftServer server = player.level().getServer();
-		if (! CONFIG.isEnableServer() && ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile())))
+		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
+		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player)))
 			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());
@@ -154,8 +156,8 @@ public class Common {
 	 */
 	private static DimensionData loadDimensionData(ServerLevel level) {
 		String name = level.dimension().identifier().toString();
-		Config config = new Config();
-		String configJson = config.load(name) ? config.toString() : "";
+		SharedConfig config = new SharedConfig();
+		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(level);
@@ -186,7 +188,7 @@ public class Common {
 	public static void setDimensionConfigJson(String dimensionName, String configJson) {
 		try {
 			DIMENSION_CACHE.computeIfPresent(dimensionName, (key, existing) -> {
-				existing.sampler.setConfig(new Config().fromString(configJson));
+				existing.sampler.setConfig(new SharedConfig().fromString(configJson));
 				return new DimensionData(existing.seed, configJson, existing.sampler());
 			});
 		} catch (JsonSyntaxException ignored) {}

@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.storage.ServerLevelData;
+import org.jetbrains.annotations.NotNull;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -29,11 +30,11 @@ public class Data {
 		setConfig(config);
 	}
 
-	public int getResamplingInterval() {
+	int getResamplingInterval() {
 		return ((isWeatherChange || isBiomeChange) ? weatheringRefreshSpeed : normalRefreshSpeed) / 5;
 	}
 
-	public void setConfig(Config config) {
+	public void setConfig(@NotNull Config config) {
 		normalRefreshSpeed = config.getNormalRefreshSpeed().getValue();
 		weatheringRefreshSpeed = config.getWeatherRefreshSpeed().getValue();
 		densityChangingSpeed = config.getDensityChangingSpeed().getValue();

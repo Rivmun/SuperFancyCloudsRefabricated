@@ -1,6 +1,7 @@
 package com.rimo.sfcr.core;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+//? if < 1.21
+//import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.rimo.sfcr.Common;
@@ -25,7 +26,7 @@ import net.minecraft.client.renderer.*;
 import static net.minecraft.client.renderer.RenderStateShard.*;
 //? }
 
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.rimo.sfcr.Common.*;
 
@@ -35,22 +36,32 @@ public class Renderer {
 	private static final RenderType SFCR = createCustomCloudRenderType(false);
 	private static final RenderType SFCR_DEPTH_ONLY = createCustomCloudRenderType(true);
 	//? }
-	private final ArrayList<CloudData> cloudDataGroup = new ArrayList<>();
+	protected final CopyOnWriteArrayList<CloudData> cloudDataGroup = new CopyOnWriteArrayList<>();
 	private VertexBuffer cloudsBuffer;
 	protected boolean isResampling = false;
 	protected Thread resamplingThread;
 	protected float cloudHeight;
+	protected float cloudBlockWidth, cloudBlockHeight;
 	protected int oldGridX, oldGridZ;
-	private Vec3 oldColor = Vec3.ZERO;
+	protected Vec3 oldColor = Vec3.ZERO;
 	protected double xOffset, zOffset;
 	protected double resamplingTimer = 0.0;  //manual update counter
-	private int rebuildTimer = 0;  //measure in ticks
+	protected int rebuildTimer = 0;  //measure in ticks
 	protected int cullStateSkipped, cullStateShown;  //debug counter
-	protected double debugRebuildTime, debugUploadTime;
+	protected double debugRebuildTime, debugUploadTime, debugSamplingTime;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
 		renderer.stop();
+		this.cloudDataGroup.addAll(renderer.cloudDataGroup);
+		this.cloudHeight = renderer.cloudHeight;
+		this.cloudBlockWidth = renderer.cloudBlockWidth;
+		this.cloudBlockHeight = renderer.cloudBlockHeight;
+		this.oldGridX = renderer.oldGridX;
+		this.oldGridZ = renderer.oldGridZ;
+		this.oldColor = renderer.oldColor;
+		this.xOffset = renderer.xOffset;
+		this.zOffset = renderer.zOffset;
 	}
 
 	/*
@@ -79,6 +90,7 @@ public class Renderer {
 	//? }
 
 	//Rewrite of vanilla renderClouds invoke by mixin
+	// data calculation and refresh
 	//? if = 1.16.5 {
 	/*public void render(PoseStack poseStack, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	*///? } else if < 1.21.1 {
@@ -87,22 +99,19 @@ public class Renderer {
 	public void render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, float tickDelta, double cameraX, double cameraY, double cameraZ,
 	//? }
 	                   ClientLevel level) {
-		float cloudHeight = level.effects().getCloudHeight();
+		int configHeight = CONFIG.getCloudHeight();
+		float cloudHeight = CONFIG.isForceRendering() || configHeight >= 0 ? configHeight : level.effects().getCloudHeight();
 		if (Float.isNaN(cloudHeight))
 			return;
-		int configHeight = CONFIG.getCloudHeight();
-		if (configHeight >= 0)
-			cloudHeight = configHeight;
 		this.cloudHeight = cloudHeight;
-		boolean isPause = Minecraft.getInstance().isPaused();
 
 		//vanilla cloud pos calculation
-		final float CLOUD_BLOCK_WIDTH = CONFIG.getCloudBlockSize();  //cloud size
-		final float CLOUD_BLOCK_HEIGHT = CLOUD_BLOCK_WIDTH / 2F;
+		cloudBlockWidth = CONFIG.getCloudBlockSize();  //cloud size
+		cloudBlockHeight = cloudBlockWidth / 2F;
 		double timeOffset = (level.getGameTime() + tickDelta) * 0.03F;
-		double cloudX = (cameraX + timeOffset) / CLOUD_BLOCK_WIDTH;  //grid pos where to draw cloud layer
+		double cloudX = (cameraX + timeOffset) / cloudBlockWidth;  //grid pos where to draw cloud layer
 		double cloudY = cloudHeight - (float) cameraY + 0.33F;
-		double cloudZ = cameraZ / CLOUD_BLOCK_WIDTH + 0.33F;
+		double cloudZ = cameraZ / cloudBlockWidth + 0.33F;
 		int GridX = (int) Math.floor(cloudX);  //cloud grid pos !!NOTICE that timeOffset is already contained.
 		//int GridY = (int) Math.floor(cloudY / CLOUD_BLOCK_HEIGHT);
 		int GridZ = (int) Math.floor(cloudZ);
@@ -116,20 +125,22 @@ public class Renderer {
 			xOffsetInGrid += GridX - oldGridX;
 			zOffsetInGrid += GridZ - oldGridZ;
 		}
-		this.xOffset = (xOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
-		this.zOffset = (zOffsetInGrid - 0.33F) * CLOUD_BLOCK_WIDTH;
-		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / CLOUD_BLOCK_HEIGHT);
+		this.xOffset = (xOffsetInGrid - 0.33F) * cloudBlockWidth;
+		this.zOffset = (zOffsetInGrid - 0.33F) * cloudBlockWidth;
+		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / cloudBlockHeight);
 
 		//refresh check
 		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
-		if (! isPause && ! isResampling) {
+		if (! Minecraft.getInstance().isPaused() && ! isResampling) {
 			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.distanceToSqr(cloudColor) > 2.0E-4) {
 				isResampling = true;
 				resamplingTimer = 0.0;
 				oldColor = cloudColor;
 				resamplingThread = new Thread(() -> {  //start data refresh thread
 					try {
+						long debugTime = System.nanoTime();
 						collectCloudData(GridX, cameraGridY, GridZ);
+						debugSamplingTime = (System.nanoTime() - debugTime) / 1000000000F;
 					} catch (Exception e) {
 						exceptionCatcher(e);
 					} finally {
@@ -156,7 +167,25 @@ public class Renderer {
 			}
 		}
 
-		//Setup render system
+		//? if = 1.16.5 {
+		/*_render(poseStack, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		*///? } else if < 1.21.1 {
+		/*_render(poseStack, projectionMatrix, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		*///? } else {
+		_render(poseStack, projectionMatrix, matrix4f2, cloudColor, xOffsetInGrid, cloudY, zOffsetInGrid);
+		//? }
+	}
+
+	// mesh building and draw call
+	//? if = 1.16.5 {
+	/*public void _render(PoseStack poseStack, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	*///? } else if < 1.21.1 {
+	/*public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	*///? } else {
+	public void _render(PoseStack poseStack, Matrix4f projectionMatrix, Matrix4f matrix4f2, Vec3 cloudColor, float xOffsetInGrid, double cloudY, float zOffsetInGrid) {
+	//? }
+		//? if < 1.21 {
+		/*//Setup render system
 		RenderSystem.disableCull();
 		RenderSystem.enableBlend();
 		//? if = 1.16.5
@@ -167,6 +196,7 @@ public class Renderer {
 		RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 		//? if ! 1.16.5
 		RenderSystem.depthMask(true);
+		*///? }
 
 		//cloud mesh rebuilt
 		/* NOTE:
@@ -176,7 +206,7 @@ public class Renderer {
 		 */
 		boolean enableCulling = CONFIG.getEnableViewCulling();
 		//if culling is disabled, no need to rebuild in every tick.
-		if (! isPause && (! enableCulling && rebuildTimer == 99 || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
+		if (! Minecraft.getInstance().isPaused() && (! enableCulling && isMarkedForRebuild() || enableCulling && ++ rebuildTimer > CONFIG.getRebuildInterval())) {
 			rebuildTimer = 0;
 			debugRebuildTime = System.nanoTime();
 			//? if > 1.21 {
@@ -240,8 +270,8 @@ public class Renderer {
 		poseStack.pushPose();
 		//? if = 1.21.1
 		poseStack.mulPose(projectionMatrix);
-		poseStack.scale(CLOUD_BLOCK_WIDTH, CLOUD_BLOCK_HEIGHT, CLOUD_BLOCK_WIDTH);
-		poseStack.translate(-xOffsetInGrid, cloudY / CLOUD_BLOCK_HEIGHT, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
+		poseStack.scale(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
+		poseStack.translate(-xOffsetInGrid, cloudY / cloudBlockHeight, -zOffsetInGrid);  //strange that if I use yOffsetInGrid here, cloudLayer height is unstable...
 		//~ if = 1.16.5 '.setShaderColor' -> '.color4f'
 		RenderSystem.setShaderColor((float) cloudColor.x, (float) cloudColor.y, (float) cloudColor.z, 1);
 
@@ -290,7 +320,11 @@ public class Renderer {
 		//RenderSystem.disableFog();
 	}
 
-	public void markForRebuild() {
+	protected boolean isMarkedForRebuild() {
+		return rebuildTimer == 99;
+	}
+
+	void markForRebuild() {
 		this.rebuildTimer = 99;
 	}
 
@@ -330,7 +364,7 @@ public class Renderer {
 
 		int customColor = CONFIG.getCloudColor();  //apply custom color
 		cloudColor = cloudColor.multiply(((customColor & 0xFF0000) >> 16) / 255F, ((customColor & 0xFF00) >> 8) / 255F, (customColor & 0xFF) / 255F);
-		float cloudAlpha = ((customColor & 0xFF000000) >>> 24) / 255F;
+		float cloudAlpha = (customColor >>> 24) / 255F;
 		if (CONFIG.isEnableDuskBlush())  //apply dawn/dusk blush
 			cloudColor = cloudColor.multiply(getBlushColorByTime(client.level.getDayTime()));
 
@@ -338,93 +372,88 @@ public class Renderer {
 		/*builder.clear();
 		//~ if ! 1.16.5 '7' -> 'VertexFormat.Mode.QUADS'
 		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
-		for (int i = 0; i < 4; i ++)  // empty builder will lead game crash... we draw a holder face to prevent that.
-			builder.vertex(i, -99, i).uv(0.5f, 0.5f).color(0, 0, 0, 0).normal(0, -1, 0).endVertex();
 		*///? } else {
 		BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR_NORMAL);
-		for (int i = 0; i < 4; i ++)
-			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
 		//? }
+
+		// empty builder will lead game crash... we draw a holder face to prevent that.
+		for (int i = 0; i < 4; i ++)
+			//? if < 1.21 {
+			/*builder.vertex(i, -99, i).uv(0.5f, 0.5f).color(0, 0, 0, 0).normal(0, -1, 0).endVertex();
+			*///? } else {
+			builder.addVertex(i, -99, i).setUv(0.5f, 0.5f).setColor(0, 0, 0, 0).setNormal(0, -1, 0);
+			//? }
 
 		cullStateShown = 0;
 		cullStateSkipped = 0;
 
 		final int refreshSpeed = CONFIG.getNormalRefreshSpeed().getValue();
 		int cloudBlockSize = CONFIG.getCloudBlockSize();
+		int minCullDistSqr = cloudBlockSize * 2 * cloudBlockSize * 2;
 		boolean enableBottomDim = CONFIG.isEnableBottomDim();
 		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
+				float cloudAlphaByType = cloudAlpha;
 				switch (data.getDataType()) {  // Smooth Change: Alpha changed by cloud type and lifetime
-					case TRANS_IN: cloudAlpha *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
-					case TRANS_OUT: cloudAlpha *= data.getLifeTime() / refreshSpeed * 5F; break;
+					case TRANS_IN: cloudAlphaByType *= 1F - data.getLifeTime() / refreshSpeed * 5F; break;
+					case TRANS_OUT: cloudAlphaByType *= data.getLifeTime() / refreshSpeed * 5F; break;
 					default: break;
 				}
 
-				ArrayList<Integer> vertexList = data.meshData;  //make a snapshot to prevent concurrent violate
-				int normCount = vertexList.size() / 4;
+				for (CloudData.CompressedFace face : data.meshData) {  //make a snapshot to prevent concurrent violate
+					int[][] vertexList = face.getVertexList();
 
-				for (int i = 0; i < normCount; i++) {
-					int[][] verCache = new int[][]{		// exacting data...
-							CloudData.depressVertex(vertexList.get(i * 4)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 1)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 2)),
-							CloudData.depressVertex(vertexList.get(i * 4 + 3))
-					};
-					boolean isDrawn = false;
-
-					if (isDebug && ! Common.isNoCloudCovered(Minecraft.getInstance().level,
-							(verCache[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
-							63,
-							(verCache[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
-					)) {
-						cloudColor = cloudColor.multiply(0, 1, 0);
-					}
-
-					for (int j = 0; j <= 3; j ++) {
-						if (enableCulling) {
+					if (enableCulling) {
+						boolean isDrawn = false;
+						for (int[] vertex : vertexList) {
 							Vec3 cloudVec = new Vec3(  // turns to exactly pos & size to calc position culling (camera relative)
-									(verCache[j][0] + offset - 1) * cloudBlockSize,
-									verCache[j][1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
-									(verCache[j][2] - 1) * cloudBlockSize + 0.33f
+									(vertex[0] + offset - 1) * cloudBlockSize,
+									vertex[1] * cloudBlockSize / 2f + cloudHeight + 0.33f - camera.getPosition().y(),
+									(vertex[2] - 1) * cloudBlockSize + 0.33f
 							);
-							double depth = look.dot(cloudVec);
-							if (depth < 0.05F ||
-									Math.abs(up.dot(cloudVec)) / depth > tanHalfFov ||
-									Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
-								continue;
+							if (cloudVec.lengthSqr() > minCullDistSqr) {  // don't culling near faces
+								double depth = look.dot(cloudVec);
+								if (depth < 0.05F)
+									break;  // if a vec is on player behind, jump whole face
+								if (Math.abs(up.dot(cloudVec)) / depth > tanHalfFov || Math.abs(right.dot(cloudVec)) / depth > tanHalfFovHorizontal)
+									continue;
+							}
+							isDrawn = true;
+							break;
 						}
-						CloudData.Facing facing = CloudData.Facing.get(CloudData.depressFromHead(vertexList.get(i * 4)));
-						Vec3 faceColor = cloudColor.multiply(facing.color);
-						if (enableBottomDim) {
-							faceColor = faceColor.scale(Mth.clamp((255 - CloudData.depressFromHead(vertexList.get(i * 4 + 1)) * 8) / 255f, 0f, 1f));
+						if (! isDrawn) {
+							cullStateSkipped++;
+							continue;
 						}
-						int nx = facing.normal.getX();
-						int ny = facing.normal.getY();
-						int nz = facing.normal.getZ();
-						for (int k = 0; k < 4; k++) {
-							//? if < 1.21 {
-							/*builder.vertex(verCache[k][0], verCache[k][1], verCache[k][2])
-									.uv(0.5f, 0.5f)
-									.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
-									.normal(nx, ny, nz)
-									.endVertex();
-							*///? } else {
-							builder.addVertex(verCache[k][0], verCache[k][1], verCache[k][2])
-									.setUv(0.5f, 0.5f)
-									.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.8F * cloudAlpha)
-									.setNormal(nx, ny, nz);
-							//? }
-						}
-						isDrawn = true;
-						break;
 					}
+					cullStateShown++;
 
-					if (isDrawn) {
-						cullStateShown++;
-					} else {
-						cullStateSkipped++;
+					if (isDebug && ! Common.isNoCloudCovered(  //NCNR logical debug
+							Minecraft.getInstance().level,
+							(vertexList[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
+							63,
+							(vertexList[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
+					)) cloudColor = cloudColor.multiply(0, 1, 0);
+
+					CloudData.Facing facing = face.getFacing();
+					Vec3 faceColor = cloudColor.multiply(facing.color[0], facing.color[1], facing.color[2]);
+					if (enableBottomDim) {
+						faceColor = faceColor.scale(Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f));
 					}
+					for (int k = 0; k < 4; k++)
+						//? if < 1.21 {
+						/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
+								.uv(0.5f, 0.5f)
+								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
+								.normal(facing.normal[0], facing.normal[1], facing.normal[2])
+								.endVertex();
+						*///? } else {
+						builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
+								.setUv(0.5f, 0.5f)
+								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
+								.setNormal(facing.normal[0], facing.normal[1], facing.normal[2]);
+						//? }
 				}
 
 				if (data.getDataType().equals(CloudData.Type.NORMAL)) {
@@ -456,15 +485,16 @@ public class Renderer {
 		}
 	}
 
-	protected void collectCloudData(int x, int y, int z) {
-		CloudData tmp;
+	private void collectCloudData(int x, int y, int z) {
+		CloudData newData;
 		CloudData fadeIn = null, fadeOut = null, midBody = null;
 
-		tmp = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
+		newData = new CloudData(x, y, z, DATA.densityByWeather, DATA.densityByBiome).buildMesh();
 		if (!cloudDataGroup.isEmpty() && CONFIG.isEnableSmoothChange()) {
-			fadeIn = new CloudData.CloudFadeData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_IN).buildMesh();
-			fadeOut = new CloudData.CloudFadeData(tmp, cloudDataGroup.get(0), CloudData.Type.TRANS_OUT).buildMesh();
-			midBody = new CloudData.CloudMidData(cloudDataGroup.get(0), tmp, CloudData.Type.TRANS_MID_BODY).buildMesh();
+			CloudData oldData = cloudDataGroup.get(cloudDataGroup.size() - 1);
+			fadeIn = new CloudData.CloudFadeData(oldData, newData, CloudData.Type.TRANS_IN).buildMesh();
+			fadeOut = new CloudData.CloudFadeData(newData, oldData, CloudData.Type.TRANS_OUT).buildMesh();
+			midBody = new CloudData.CloudMidData(oldData, newData, CloudData.Type.TRANS_MID_BODY).buildMesh();
 		}
 		cloudDataGroup.forEach(CloudData::stop);
 		synchronized (this) {
@@ -474,7 +504,7 @@ public class Renderer {
 				cloudDataGroup.add(fadeOut);
 				cloudDataGroup.add(midBody);
 			}
-			cloudDataGroup.add(tmp);
+			cloudDataGroup.add(newData);
 		}
 	}
 
@@ -499,7 +529,7 @@ public class Renderer {
 		return new Vec3(r / 255F, g / 255F, b / 255F);
 	}
 
-	protected Vec3 getBrightMultiplier(Vec3 cloudColor) {
+	private Vec3 getBrightMultiplier(Vec3 cloudColor) {
 		return cloudColor.add(
 				(1 - cloudColor.x) * CONFIG.getCloudBrightMultiplier(),
 				(1 - cloudColor.y) * CONFIG.getCloudBrightMultiplier(),
@@ -507,7 +537,7 @@ public class Renderer {
 		);
 	}
 
-	public float getCloudHeight() {
+	float getCloudHeight() {
 		return cloudHeight;
 	}
 
@@ -520,9 +550,13 @@ public class Renderer {
 	}
 
 	public String getDebugString() {
-		return "[SFCR] build " + cullStateShown + "/" +
-				(cullStateSkipped + cullStateShown) + " faces, cost " +
-				debugRebuildTime + "ms, upload in " +
-				debugUploadTime + "ms";
+		return String.format(
+				"[SFCR] build %s/%s faces in %.3fms, upload in %.3fms, last sampling in %.3fs",
+				cullStateShown,
+				cullStateShown + cullStateSkipped,
+				debugRebuildTime,
+				debugUploadTime,
+				debugSamplingTime
+		);
 	}
 }

@@ -3,11 +3,11 @@ package com.rimo.sfcr.core;
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 
 import static com.rimo.sfcr.Client.RENDERER;
 import static com.rimo.sfcr.Common.*;
@@ -16,19 +16,19 @@ public class CloudData {
 	public static Sampler sampler = new Sampler();
 	private final Type dataType;
 	private float lifeTime;
-	protected ArrayList<Integer> meshData = new ArrayList<>();
+	ArrayList<CompressedFace> meshData = new ArrayList<>();
 	protected boolean[][][] _cloudData;
 	protected int width;
 	protected int height;
 	protected int gridCenterX;
 	protected int gridCenterZ;
 	// We want build inner faces earlier (no through culling equation to build useless faces), so this arg place here instead of Renderer.
-	protected int gridYFromClouds;
+	int gridYFromClouds;
 	private boolean isOnBuild = false;
 	private Thread buildThread;
 
 	// Normal constructor
-	public CloudData(int x, int y, int z, float densityByWeather, float densityByBiome) {
+	CloudData(int x, int y, int z, float densityByWeather, float densityByBiome) {
 		dataType = Type.NORMAL;
 		width = CONFIG.getCloudRenderDistance() * 2 + 1;
 		height = CONFIG.getCloudLayerThickness();
@@ -41,18 +41,18 @@ public class CloudData {
 	}
 
 	// for child
-	public CloudData(Type type) {
+	CloudData(Type type) {
 		dataType = type;
 		lifeTime = CONFIG.getNormalRefreshSpeed().getValue() / 5f;
 	}
 
-	public void tick() {
-		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f;
+	void tick() {
+		lifeTime -= VersionUtil.getLastFrameDuration() * 0.25f * 0.25f * (CONFIG.getRebuildInterval() + 1);
 	}
 
 	// Access
-	public Type getDataType() {return dataType;}
-	public float getLifeTime() {return lifeTime;}
+	Type getDataType() {return dataType;}
+	float getLifeTime() {return lifeTime;}
 
 	boolean isCloudCovered(double x, double y, double z) {
 		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
@@ -89,19 +89,19 @@ public class CloudData {
 
 	/* - - - - - Mesh Computing - - - - - */
 
-	public CloudData buildMesh() {
+	CloudData buildMesh() {
 		buildMesh(meshData);
 		return this;
 	}
 
-	public void tryRebuildMesh(int y) {
+	void tryRebuildMesh(int y) {
 		if (isOnBuild)
   			return;
 		isOnBuild = true;
 		gridYFromClouds = y;
 		buildThread = new Thread(() -> {
 			try {
-				ArrayList<Integer> newMeshData = new ArrayList<>();
+				ArrayList<CompressedFace> newMeshData = new ArrayList<>();
 				buildMesh(newMeshData);
 				meshData = newMeshData;
 			} catch (Exception e) {
@@ -114,7 +114,7 @@ public class CloudData {
 		buildThread.start();
 	}
 
-	public void stop() {
+	void stop() {
 		try {
 			if (buildThread != null)
 				buildThread.join();
@@ -124,9 +124,73 @@ public class CloudData {
 	}
 
 	/*
+	   Compress structure:
+	   0 0 0 0 0 0 0 0  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
+	   └─┬─────────┘ |  | └─────┬─────┘   └──────┬──────┘   └──────┬──────┘
+	     |   sign of x, z.      y             unsign x          unsign z
+	     └─ thickness
+	   Y no have negative value, and yet don't need up to 200+, so just store max to 127 (bit 01111111) save 1 bit for thickness.
+	   Thickness max base to y.
+	 */
+	static class CompressedFace {
+		private static final EnumMap<Facing, int[][]> OFFSET_MAP = new EnumMap<>(Facing.class);
+		private final Facing facing;
+		private final int data;
+
+		static {
+			OFFSET_MAP.put(Facing.EAST,   new int[][]{{1, 0, 0},{1, 0, 1},{1, 1, 1},{1, 1, 0}});
+			OFFSET_MAP.put(Facing.WEST,   new int[][]{{0, 0, 0},{0, 0, 1},{0, 1, 1},{0, 1, 0}});
+			OFFSET_MAP.put(Facing.TOP,    new int[][]{{0, 1, 0},{1, 1, 0},{1, 1, 1},{0, 1, 1}});
+			OFFSET_MAP.put(Facing.BOTTOM, new int[][]{{0, 0, 0},{1, 0, 0},{1, 0, 1},{0, 0, 1}});
+			OFFSET_MAP.put(Facing.SOUTH,  new int[][]{{0, 0, 1},{1, 0, 1},{1, 1, 1},{0, 1, 1}});
+			OFFSET_MAP.put(Facing.NORTH,  new int[][]{{0, 0, 0},{1, 0, 0},{1, 1, 0},{0, 1, 0}});
+		}
+
+		CompressedFace(Facing facing, int x, int y, int z, int thick) {
+			int i = 0;
+			i |= (255 & x) << 8;  // 00000000 00000000 00000000 11111111
+			i |= (127 & y) << 16;    // 00000000 00000000 00000000 01111111
+			i |= (255 & z);
+			i |= (Integer.MIN_VALUE & x) >>> 7;  // 10000000 00000000 00000000 00000000
+			i |= (Integer.MIN_VALUE & z) >>> 8;
+			i |= thick << 25;
+			this.facing = facing;
+			data = i;
+		}
+
+		Facing getFacing() {
+			return facing;
+		}
+
+		int getThickness() {
+			return data >>> 25;
+		}
+
+		int[][] getVertexList() {
+			int x = (data << 7 & Integer.MIN_VALUE) == 0 ?  //is positive?
+					data >> 8 & 255 :
+					(data >> 8 & 255) - 256;  // -256 equals to | 0xFFFFFF00;
+			int y = data >> 16 & 127;
+			int z = (data << 8 & Integer.MIN_VALUE) == 0 ?
+					data & 255 :
+					(data & 255) - 256;
+
+			int[][] offset = OFFSET_MAP.get(facing);
+
+			int[][] vertex = new int[4][3];
+			for (int i = 0; i < 4; i++) {
+				vertex[i][0] = x + offset[i][0];
+				vertex[i][1] = y + offset[i][1];
+				vertex[i][2] = z + offset[i][2];
+			}
+			return vertex;
+		}
+	}
+
+	/*
 	 * try port 1.21.6+ vanilla mesh build function here...
 	 */
-	private void buildMesh(ArrayList<Integer> meshData) {
+	private void buildMesh(ArrayList<CompressedFace> meshData) {
 		int cy = gridYFromClouds;
 		if (cy >= 0 && cy < height) {
 			int cx = width / 2;
@@ -135,8 +199,8 @@ public class CloudData {
 				encodeFace(meshData, 1, cy, 0, Facing.WEST, 0);
 				encodeFace(meshData, 0, cy - 1, 0, Facing.TOP, 0);
 				encodeFace(meshData, 0, cy + 1, 0, Facing.BOTTOM, 0);
-				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
 				encodeFace(meshData, 0, cy, -1, Facing.SOUTH, 0);
+				encodeFace(meshData, 0, cy, 1, Facing.NORTH, 0);
 				return;
 			}
 		}
@@ -172,87 +236,14 @@ public class CloudData {
 		}
 	}
 
-	/*
-	   Compress structure:
-	   0 0 0 0 0 0 0 0  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
-	                 |  | └─────┬─────┘   └──────┬──────┘   └──────┬──────┘
-	         sign of x, z.      y             unsign x          unsign z
-	   That's 1 vertex, we need 4 for 1 face.
-	   Y no have negative value, and yet don't need up to 200+, so just store max to 127 (bit 01111111) save 1 bit for thickness
-	   FACING information needs 3 bit (max ordinal 5 = bit 00000101), we compress at 1st vertex.
-	   Thickness max base to y, we compress it in 2nd vertex int head.
-	 */
-	private void encodeFace(ArrayList<Integer> meshData, int x, int y, int z, Facing facing, int thickness) {
-		switch (facing) {
-			case EAST:
-				meshData.add(compressToHead(compressVertex(x + 1, y, z), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x + 1, y, z + 1), thickness));
-				meshData.add(compressVertex(x + 1, y + 1, z + 1));
-				meshData.add(compressVertex(x + 1, y + 1, z));
-			break;
-			case WEST:
-				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x, y, z + 1), thickness));
-				meshData.add(compressVertex(x, y + 1, z + 1));
-				meshData.add(compressVertex(x, y + 1, z));
-			break;
-			case TOP:
-				meshData.add(compressToHead(compressVertex(x, y + 1, z), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x + 1, y + 1, z), thickness));
-				meshData.add(compressVertex(x + 1, y + 1, z + 1));
-				meshData.add(compressVertex(x, y + 1, z + 1));
-			break;
-			case BOTTOM:
-				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x + 1, y, z), thickness));
-				meshData.add(compressVertex(x + 1, y, z + 1));
-				meshData.add(compressVertex(x, y, z + 1));
-			break;
-			case SOUTH:
-				meshData.add(compressToHead(compressVertex(x, y, z + 1), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x + 1, y, z + 1), thickness));
-				meshData.add(compressVertex(x + 1, y + 1, z + 1));
-				meshData.add(compressVertex(x, y + 1, z + 1));
-			break;
-			case NORTH:
-				meshData.add(compressToHead(compressVertex(x, y, z), facing.ordinal()));
-				meshData.add(compressToHead(compressVertex(x + 1, y, z), thickness));
-				meshData.add(compressVertex(x + 1, y + 1, z));
-				meshData.add(compressVertex(x, y + 1, z));
-			break;
-		}
-	}
-	private static int compressVertex(int x, int y, int z) {
-		int i = 0;
-		i |= (255 & x) << 8;  // 00000000 00000000 00000000 11111111
-		i |= (127 & y) << 16;    // 00000000 00000000 00000000 01111111
-		i |= (255 & z);
-		i |= (Integer.MIN_VALUE & x) >>> 7;  // 10000000 00000000 00000000 00000000
-		i |= (Integer.MIN_VALUE & z) >>> 8;
-		return i;
-	}
-	private static int compressToHead(int i, int j) {
-		return i | j << 25;
-	}
-	static int[] depressVertex(int i) {
-		int x, y, z;
-		x = (i << 7 & Integer.MIN_VALUE) == 0 ?  //is positive?
-				 i >> 8 & 255 :
-				(i >> 8 & 255) - 256;  // -256 equals to | 0xFFFFFF00;
-		y = i >> 16 & 127;
-		z = (i << 8 & Integer.MIN_VALUE) == 0 ?
-				 i & 255 :
-				(i & 255) - 256;
-		return new int[]{x, y, z};
-	}
-	static int depressFromHead(int i) {
-		return i >> 25;
+	private void encodeFace(ArrayList<CompressedFace> meshData, int x, int y, int z, Facing facing, int thickness) {
+		meshData.add(new CompressedFace(facing, x, y, z, thickness));
 	}
 
 	/**
 	 * @return true if a cell was built, false if not.
 	 */
-	private boolean tryBuildCell(ArrayList<Integer> meshData, int xOffset, int y, int zOffset, int renderDistance, int thickness) {
+	private boolean tryBuildCell(ArrayList<CompressedFace> meshData, int xOffset, int y, int zOffset, int renderDistance, int thickness) {
 		int x = xOffset + renderDistance;  //trans to list index
 		int z = zOffset + renderDistance;
 		if (!_cloudData[x][y][z])
@@ -269,7 +260,7 @@ public class CloudData {
 		return true;
 	}
 
-	private void buildExtrudedCell(ArrayList<Integer> meshData, int x, int y, int z, int cellState) {
+	private void buildExtrudedCell(ArrayList<CompressedFace> meshData, int x, int y, int z, int cellState) {
 		int thickness = cellState >> 6;
 		if (hasBorderTop(cellState) && y < gridYFromClouds)  //facing (normals) culling...
 			encodeFace(meshData, x, y, z, Facing.TOP, thickness);
@@ -303,7 +294,7 @@ public class CloudData {
 		return (packed >> 0 & 1) != 0;
 	}
 
-	public enum Type {
+	enum Type {
 		NORMAL,
 		TRANS_IN,
 		TRANS_MID_BODY,
@@ -311,23 +302,19 @@ public class CloudData {
 	}
 
 	enum Facing {
-		EAST  (new Vec3i(1, 0, 0),  new Vec3(0.95f, 0.9f,  0.9f)),
-		WEST  (new Vec3i(-1, 0, 0), new Vec3(0.75f, 0.75f, 0.75f)),
-		TOP   (new Vec3i(0, 1, 0),  new Vec3(1f,    1f,    1f)),
-		BOTTOM(new Vec3i(0, -1, 0), new Vec3(0.6f,  0.6f,  0.6f)),
-		SOUTH (new Vec3i(0, 0, 1),  new Vec3(0.92f, 0.85f, 0.85f)),
-		NORTH (new Vec3i(0, 0, -1), new Vec3(0.8f,  0.8f,  0.8f));
+		EAST  (new int[]{ 1,  0,  0}, new float[]{0.95f, 0.9f,  0.9f }),
+		WEST  (new int[]{-1,  0,  0}, new float[]{0.75f, 0.75f, 0.75f}),
+		TOP   (new int[]{ 0,  1,  0}, new float[]{1f,    1f,    1f   }),
+		BOTTOM(new int[]{ 0, -1,  0}, new float[]{0.6f,  0.6f,  0.6f }),
+		SOUTH (new int[]{ 0,  0,  1}, new float[]{0.92f, 0.85f, 0.85f}),
+		NORTH (new int[]{ 0,  0, -1}, new float[]{0.8f,  0.8f,  0.8f });
 
-		final Vec3i normal;
-		final Vec3 color;
+		final int[] normal;
+		final float[] color;
 
-		Facing(Vec3i normal, Vec3 color) {
+		Facing(int[] normal, float[] color) {
 			this.normal = normal;
 			this.color = color;
-		}
-
-		static Facing get(int i) {
-			return Facing.values()[i];
 		}
 	}
 
@@ -336,9 +323,9 @@ public class CloudData {
 	 *  class of abandon function 'smooth change'
 	 */
 
-	public static class CloudFadeData extends CloudData {
+	static class CloudFadeData extends CloudData {
 		// Reverse input to get between fade-in and fade-out data
-		public CloudFadeData(CloudData prevData, CloudData nextData, Type type) {
+		CloudFadeData(CloudData prevData, CloudData nextData, Type type) {
 			super(type);
 			width = nextData.width;
 			height = nextData.height;
@@ -367,8 +354,8 @@ public class CloudData {
 		}
 	}
 
-	public static class CloudMidData extends CloudData {
-		public CloudMidData(CloudData prevData, CloudData nextData, Type type) {
+	static class CloudMidData extends CloudData {
+		CloudMidData(CloudData prevData, CloudData nextData, Type type) {
 			super(type);
 			width = Math.max(prevData.width, nextData.width);
 			height = Math.max(prevData.height, nextData.height);

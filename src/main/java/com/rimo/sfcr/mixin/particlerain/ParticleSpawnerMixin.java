@@ -6,6 +6,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Final;
@@ -60,7 +61,7 @@ public abstract class ParticleSpawnerMixin {
 
 	// still splash? do it again!
 	@Inject(method = "tickBlockFX", at = @At("HEAD"))
-	private static void sfcr$catchBlockPos(BlockPos.MutableBlockPos sourcePos, BlockState state, CallbackInfo ci) {
+	private static void sfcr$catchBlockPos(BlockPos.MutableBlockPos sourcePos, BlockState state, RandomSource random, CallbackInfo ci) {
 		sfcr$x = sourcePos.getX();
 		sfcr$y = sourcePos.getY();
 		sfcr$z = sourcePos.getZ();

@@ -2,6 +2,8 @@ package com.rimo.sfcr.mixin;
 
 import com.rimo.sfcr.Common;
 import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 //? if > 1.19 {
 import net.minecraft.client.OptionInstance;
 import org.spongepowered.asm.mixin.Final;
@@ -28,7 +30,11 @@ public abstract class OptionsMixin {
 		if (Common.CONFIG.isCloudRenderDistanceFitToView()) {
 			//~ if < 1.19 'renderDistance.get()' -> 'renderDistance'
 			Common.CONFIG.setCloudRenderDistance(renderDistance.get() * 12);
-			Common.CONFIG.save();
+			ClientLevel level = Minecraft.getInstance().level;
+			if (level != null)
+				Common.CONFIG.save(level.dimension().location().toString());
+			else
+				Common.CONFIG.save();
 		}
 	}
 

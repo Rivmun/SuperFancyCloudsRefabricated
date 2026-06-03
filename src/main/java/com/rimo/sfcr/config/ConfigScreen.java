@@ -424,14 +424,6 @@ public class ConfigScreen {
 												.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
 												.setSaveConsumer(CONFIG::setBiomeDensityByChunk)
 												.build(),
-										//biome density detect loaded chunk
-										entryBuilder
-												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk")
-														, CONFIG.isBiomeDensityUseLoadedChunk())
-												.setDefaultValue(false)
-												.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
-												.setSaveConsumer(CONFIG::setBiomeDensityUseLoadedChunk)
-												.build(),
 										//biome filter
 										entryBuilder
 												.startStrList(Component.translatable("text.sfcr.option.biomeFilter")

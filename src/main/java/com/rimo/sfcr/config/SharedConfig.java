@@ -57,7 +57,6 @@ public class SharedConfig {
 	private int rainDensity = 90;
 	private int noneDensity = 0;
 	private boolean isBiomeDensityByChunk = false;
-	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
 	private List<String> seasonDensityPercentMap = DEF_SEASON_DENSITY_MAP;
 
@@ -90,7 +89,6 @@ public class SharedConfig {
 		this.rainDensity                  = config.rainDensity;
 		this.noneDensity                  = config.noneDensity;
 		this.isBiomeDensityByChunk        = config.isBiomeDensityByChunk;
-		this.isBiomeDensityUseLoadedChunk = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList              = config.biomeFilterList;
 		this.seasonDensityPercentMap      = config.seasonDensityPercentMap;
 	}
@@ -114,7 +112,6 @@ public class SharedConfig {
 	public int getRainDensity() {return rainDensity;}
 	public int getNoneDensity() {return noneDensity;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
-	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
@@ -147,7 +144,6 @@ public class SharedConfig {
 	public void setRainDensity(int density) {rainDensity = density;}
 	public void setNoneDensity(int density) {noneDensity = density;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
-	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = Math.min(distance, 192);}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}

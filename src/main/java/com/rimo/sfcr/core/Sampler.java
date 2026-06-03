@@ -4,7 +4,6 @@ import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
@@ -98,25 +97,22 @@ public class Sampler {
 			densityMultiplier = 1F;
 			timeOffset = 0.0;
 			f = threshold;
+
 			if (isEnableDynamic) {
 				densityMultiplier = getDensityMultiplier(time);
 				timeOffset = time / 20.0;
-				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
-			}
 
-			int bx = x * cloudBlockSize - xOffsetNoDelta;
-			int bz = z * cloudBlockSize;
-
-			// biome detect by chunk
-			if (isEnableDynamic && isBiomeByChunk && level.hasChunk(bx / 16, bz / 16)) {
-				BlockPos pos = new BlockPos(
-						bx,
-						level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz),
-						bz
-				);
-				Holder<Biome> biome = level.getBiome(pos);
-				if (! CONFIG.isFilterListHasBiome(biome))
-					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel())));
+				if (! isBiomeByChunk) {
+					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
+				} else {  // biome detect by chunk
+					int bx = x * cloudBlockSize - xOffsetNoDelta;
+					int bz = z * cloudBlockSize;
+					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
+					BlockPos pos = new BlockPos(bx, topY, bz);
+					Holder<Biome> biome = level.getBiome(pos);
+					if (! CONFIG.isFilterListHasBiome(biome))
+						f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel())));
+				}
 			}
 		}
 

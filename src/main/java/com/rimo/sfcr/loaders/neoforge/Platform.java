@@ -7,6 +7,7 @@ import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.config.ConfigScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
@@ -17,22 +18,27 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.nio.file.Path;
+
 @Mod(Common.MOD_ID)
-public class EntryPoint {
-	public EntryPoint(IEventBus bus) {}
+public class Platform {
+	public Platform(IEventBus bus) {}
 
 	@SubscribeEvent
 	public static void onLevelLoad(LevelEvent.Load event) {
@@ -138,6 +144,23 @@ public class EntryPoint {
 		public static void registerCommand(RegisterCommandsEvent event) {
 			DedicatedServer.registerCommand(event.getDispatcher());
 		}
+	}
+
+	// - - - - - Platform specific function - - - - -
+	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+		PacketDistributor.sendToPlayer(player, payload);
+	}
+	public static void sendToServer(CustomPacketPayload payload) {
+		ClientPacketDistributor.sendToServer(payload);
+	}
+	public static boolean isModLoaded(String id) {
+		return ModList.get().isLoaded(id);
+	}
+	public static Path getConfigFolder() {
+		return FMLPaths.CONFIGDIR.get();
+	}
+	public static boolean isFabric() {
+		return false;
 	}
 }
 *///? }

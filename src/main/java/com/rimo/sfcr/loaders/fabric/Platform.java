@@ -26,8 +26,12 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 //~ if = 1.21.11 'ClientCommands' -> 'ClientCommandManager'
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
 
-public class EntryPoint implements ModInitializer, ClientModInitializer, DedicatedServerModInitializer {
+import java.nio.file.Path;
+
+public class Platform implements ModInitializer, ClientModInitializer, DedicatedServerModInitializer {
 	@Override
 	public void onInitialize() {
 		//~ if = 1.21.11 'ServerLevelEvents' -> 'ServerWorldEvents' {
@@ -100,6 +104,23 @@ public class EntryPoint implements ModInitializer, ClientModInitializer, Dedicat
 		ServerPlayNetworking.registerGlobalReceiver(Common.DimensionPayload.TYPE, (payload, context) ->
 				DedicatedServer.handleDimensionPayload(payload, context.player())
 		);
+	}
+
+	// - - - - - Platform specific function - - - - -
+	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+		ServerPlayNetworking.send(player, payload);
+	}
+	public static void sendToServer(CustomPacketPayload payload) {
+		ClientPlayNetworking.send(payload);
+	}
+	public static boolean isModLoaded(String id) {
+		return FabricLoader.getInstance().isModLoaded(id);
+	}
+	public static Path getConfigFolder() {
+		return FabricLoader.getInstance().getConfigDir();
+	}
+	public static boolean isFabric() {
+		return true;
 	}
 }
 //? }

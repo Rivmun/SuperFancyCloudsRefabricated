@@ -3,6 +3,8 @@ package com.rimo.sfcr;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.core.*;
+//~ if neoforge 'fabric' -> 'neoforge'
+import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.Level;
@@ -12,8 +14,8 @@ import java.util.Random;
 import static com.rimo.sfcr.Common.*;
 
 public class Client {
-	public static final boolean isDistantHorizonsLoaded = PlatformUtil.isModLoaded("distanthorizons");
-	public static final boolean isParticleRainLoaded = PlatformUtil.isModLoaded("particlerain");
+	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
+	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
 	public static boolean isIrisLoadedShader = false;
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
@@ -103,7 +105,7 @@ public class Client {
 			return;
 		String name = level.dimension().identifier().toString();
 		String configJson = CONFIG.toString();
-		PlatformUtil.sendToServer(new DimensionPayload(
+		Platform.sendToServer(new DimensionPayload(
 				name,
 				configJson,
 				0L

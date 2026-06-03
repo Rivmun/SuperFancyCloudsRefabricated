@@ -20,13 +20,13 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
+      "${mod_group}.${mod_id}.loaders.fabric.Platform"
     ],
     "client": [
-      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
+      "${mod_group}.${mod_id}.loaders.fabric.Platform"
     ],
     "server": [
-      "${mod_group}.${mod_id}.loaders.fabric.EntryPoint"
+      "${mod_group}.${mod_id}.loaders.fabric.Platform"
     ],
     "modmenu": [
       "${mod_group}.${mod_id}.loaders.fabric.ModMenuEntryPoint"

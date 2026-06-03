@@ -1,8 +1,9 @@
 package com.rimo.sfcr.core;
 
-import com.rimo.sfcr.PlatformUtil;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.ConfigScreen;
+//~ if neoforge 'fabric' -> 'neoforge'
+import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,9 +31,9 @@ public abstract class AbstractSeasonCompat {
 	 */
 	public static @Nullable AbstractSeasonCompat getInstance(Config config) {
 		try {
-			if (PlatformUtil.isModLoaded("sereneseasons"))
+			if (Platform.isModLoaded("sereneseasons"))
 				return new SereneSeasons(config);
-			if (PlatformUtil.isFabric() && PlatformUtil.isModLoaded("seasons"))
+			if (Platform.isFabric() && Platform.isModLoaded("seasons"))
 				return new FabricSeasons(config);
 		} catch (RuntimeException e) {
 			LOGGER.error("{} Failed to initialize season listener, is season mod api changed? Please report.", MOD_ID, e);

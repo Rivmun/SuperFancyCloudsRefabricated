@@ -40,7 +40,7 @@ dependencies {
 	compileOnly("dev.isxander:yet-another-config-lib:${project.yacl_version}")
 
 	//Mod Menu
-//	compileOnly "com.terraformersmc:modmenu:${project.mod_menu_version}"
+	implementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
 	//Distant Horizon Api
 //	compileOnly "maven.modrinth:DistantHorizonsApi:${project.distant_horizon_api_version}"
 	//Distant Horizon

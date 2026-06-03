@@ -105,7 +105,7 @@ public class Client {
 			LOGGER.info("{} send current config to server", MOD_ID);
 	}
 
-	public static void applyConfigChange(boolean oldEnableDHCompat) {
+	public static void applyConfigChange() {
 		if (! CONFIG.isEnableRender()) {
 			RENDERER.stop();
 		}

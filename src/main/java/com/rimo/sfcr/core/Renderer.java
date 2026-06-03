@@ -1,5 +1,6 @@
 package com.rimo.sfcr.core;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
@@ -7,8 +8,6 @@ import com.mojang.blaze3d.pipeline.*;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -23,8 +22,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
 import static com.rimo.sfcr.Common.*;
 import static net.minecraft.client.renderer.RenderPipelines.MATRICES_FOG_SNIPPET;
@@ -57,11 +56,11 @@ public class Renderer {
 				"core/rendertype_superfancyclouds" :
 				"core/rendertype_superfancyclouds_nth";
 		return RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipeline
-						.builder(new RenderPipeline.Snippet[]{MATRICES_FOG_SNIPPET})
+				.builder(new RenderPipeline.Snippet[]{MATRICES_FOG_SNIPPET})
 						.withVertexShader(vshPath)
 						.withFragmentShader("core/rendertype_clouds")
 						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-						.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
+						.withPrimitiveTopology(PrimitiveTopology.QUADS)
 						.withBindGroupLayout(BindGroupLayouts.CLOUD_INFO)
 						.withDepthStencilState(DepthStencilState.DEFAULT)
 						.buildSnippet()
@@ -222,7 +221,7 @@ public class Renderer {
 			this.gridZ = gridZ;
 
 			faceBuffer.rotate();
-			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
+			try (GpuBufferSlice.MappedView mappedView = faceBuffer.currentBuffer().map(false, true)) {
 				buildMesh(mappedView.data(), cloudGrid, renderRange);
 				quadCount = mappedView.data().position() / (renderPipeline == SUPER_FANCY_CLOUDS ? 5 : 4);
 			}
@@ -230,14 +229,14 @@ public class Renderer {
 
 		// render
 		if (quadCount != 0) {
-			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(infoBuffer.currentBuffer(), false, true)) {
+			try (GpuBufferSlice.MappedView mappedView = infoBuffer.currentBuffer().map(false, true)) {
 				Std140Builder.intoBuffer(mappedView.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
 			}
 
 			GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
 			RenderTarget mainRenderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
 			RenderTarget cloudTarget = Minecraft.getInstance().levelRenderer.cloudsTarget();
-			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
 			GpuBuffer indexBuffer = indices.getBuffer(6 * this.quadCount);
 			GpuTextureView colorTexture;
 			GpuTextureView depthTexture;
@@ -249,14 +248,14 @@ public class Renderer {
 				depthTexture = mainRenderTarget.getDepthTextureView();
 			}
 
-			try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Clouds", colorTexture, OptionalInt.empty(), depthTexture, OptionalDouble.empty())) {
+			try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Clouds", colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
 				renderPass.setPipeline(renderPipeline);
 				RenderSystem.bindDefaultUniforms(renderPass);
 				renderPass.setUniform("DynamicTransforms", dynamicTransforms);
 				renderPass.setIndexBuffer(indexBuffer, indices.type());
 				renderPass.setUniform("CloudInfo", infoBuffer.currentBuffer());
 				renderPass.setUniform("CloudFaces", faceBuffer.currentBuffer());
-				renderPass.drawIndexed(0, 0, 6 * this.quadCount, 1);
+				renderPass.drawIndexed(6 * this.quadCount, 1, 0, 0, 0);
 			}
 		}
 	}

@@ -24,6 +24,9 @@
 		],
 		"server": [
 			"com.rimo.sfcr.loaders.fabric.EntryPoint"
+		],
+		"modmenu": [
+			"com.rimo.sfcr.loaders.fabric.ModMenuEntryPoint"
 		]
 	},
 	"mixins": [
@@ -38,7 +41,6 @@
 	},
 	"suggests": {
 		"modmenu": "*",
-		"cloth-config2":"*",
 		"yet_another_config_lib_v3": "*"
 	},
 	"conflicts": {

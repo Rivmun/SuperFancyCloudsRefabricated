@@ -25,9 +25,6 @@ public class SharedConfig {
 	public static final List<String> DEF_BIOME_FILTER_LIST = List.of(
 			"#minecraft:is_river"
 	);
-	public static final List<String> DEF_SEASON_DENSITY_MAP = List.of(
-			"MID_SUMMER=130,LATE_WINTER=70"
-	);
 
 	private boolean isEnableRender = true;
 	protected boolean isEnableCloudRain = false;
@@ -51,13 +48,9 @@ public class SharedConfig {
 	private CloudRefreshSpeed normalRefreshSpeed = CloudRefreshSpeed.SLOW;
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
-	private int snowDensity = 60;
-	private int rainDensity = 90;
-	private int noneDensity = 0;
+	private int biomeAffectPercent = 70;
 	private boolean isBiomeDensityByChunk = false;
-	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
-	private List<String> seasonDensityPercentMap = DEF_SEASON_DENSITY_MAP;
 
 	public SharedConfig() {}
 
@@ -84,13 +77,9 @@ public class SharedConfig {
 		this.normalRefreshSpeed           = config.normalRefreshSpeed;
 		this.weatherRefreshSpeed          = config.weatherRefreshSpeed;
 		this.densityChangingSpeed         = config.densityChangingSpeed;
-		this.snowDensity                  = config.snowDensity;
-		this.rainDensity                  = config.rainDensity;
-		this.noneDensity                  = config.noneDensity;
+		this.biomeAffectPercent           = config.biomeAffectPercent;
 		this.isBiomeDensityByChunk        = config.isBiomeDensityByChunk;
-		this.isBiomeDensityUseLoadedChunk = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList              = config.biomeFilterList;
-		this.seasonDensityPercentMap      = config.seasonDensityPercentMap;
 	}
 
 	public boolean isEnableRender() {return isEnableRender;}
@@ -108,8 +97,8 @@ public class SharedConfig {
 	public int getThunderDensityPercent() {return thunderDensityPercent;}
 	public float getDensityAtNight() {return densityAtNight;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
+	public int getBiomeAffectPercent() {return biomeAffectPercent;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
-	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public CloudRefreshSpeed getNormalRefreshSpeed() {return normalRefreshSpeed;}
@@ -118,7 +107,6 @@ public class SharedConfig {
 	public boolean isEnableBottomDim() {return this.enableBottomDim;}
 	public boolean isEnableDuskBlush() {return this.enableDuskBlush;}
 	public boolean isEnableCloudRain() {return isEnableCloudRain && isEnableRender;}
-	public List<String> getSeasonDensityPercentMap() {return seasonDensityPercentMap;}
 
 	public void setEnableRender(boolean isEnable) {
 		isEnableRender = isEnable;}
@@ -138,8 +126,8 @@ public class SharedConfig {
 	public void setThunderDensityPercent(int density) {thunderDensityPercent = density;}
 	public void setDensityAtNight(float density) {this.densityAtNight = density;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
+	public void setBiomeAffectPercent(int value) {biomeAffectPercent = value;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
-	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = Math.min(distance, 192);}
 	public void setNormalRefreshSpeed(CloudRefreshSpeed speed) {normalRefreshSpeed = speed;}

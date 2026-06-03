@@ -57,6 +57,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setEnableServer(context.getArgument("e", Boolean.class));
+									CONFIG.save();  //dedicated server not replaced config instance while dimension load, we can save() directly.
 									VersionUtil.sendSystemMessage(context, "[SFCRe] service status changed!");
 									return 1;
 								})
@@ -67,6 +68,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setCloudRainLogically(context.getArgument("e", Boolean.class));
+									CONFIG.save();
 									VersionUtil.sendSystemMessage(context, "[SFCRe] NoCloudNoRain for logical side status changed!");
 									return 1;
 								})
@@ -77,6 +79,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
+									CONFIG.save();
 									VersionUtil.sendSystemMessage(context, "[SFCRe] Debug status changed!");
 									return 1;
 								})

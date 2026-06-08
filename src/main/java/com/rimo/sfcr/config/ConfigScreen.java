@@ -113,7 +113,7 @@ public class ConfigScreen {
 				.build();
 		IntegerSliderEntry cloudHeight = entryBuilder
 				.startIntSlider(Component.translatable("text.sfcr.option.cloudHeight")
-						, CONFIG.getCloudHeight()
+						, CONFIG.getCloudHeight() < 0 ? -1 : CONFIG.getCloudHeight() / cloudBlockSize.getValue() * 2
 						, - 1
 						, 384 / cloudBlockSize.getValue() * 2)
 				.setDefaultValue(- 1)

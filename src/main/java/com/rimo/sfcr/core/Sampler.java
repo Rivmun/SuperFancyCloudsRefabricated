@@ -109,35 +109,31 @@ public class Sampler {
 			densityMultiplier = 1F;
 			timeOffset = 0.0;
 			f = threshold;
+
 			if (isEnableDynamic) {
 				densityMultiplier = getDensityMultiplier(time);
 				timeOffset = time / 20.0;
-				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
-			}
-
-			int bx = x * cloudBlockSize - xOffsetNoDelta;
-			int bz = z * cloudBlockSize;
-
-			// biome detect by chunk
-			if (isEnableDynamic && isBiomeByChunk && level.hasChunk(bx / 16, bz / 16)) {
-				BlockPos pos = new BlockPos(
-						bx,
-						level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz),
-						bz
-				);
-				//? if ! 1.16.5 {
-				Holder<Biome> biome = level.getBiome(pos);
-				if (! CONFIG.isFilterListHasBiome(biome))
-				//? } else {
-				/*Biome biome = level.getBiome(pos);
-				if (! CONFIG.isFilterListHasBiome(biome.getBiomeCategory()))
-				*///? }
-					//? if > 1.20 {
-					f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
+				if (isBiomeByChunk) {
+					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
+				} else {  // biome detect by chunk
+					int bx = x * cloudBlockSize - xOffsetNoDelta;
+					int bz = z * cloudBlockSize;
+					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
+					BlockPos pos = new BlockPos(bx, topY, bz);
+					//? if ! 1.16.5 {
+					Holder<Biome> biome = level.getBiome(pos);
+					if (! CONFIG.isFilterListHasBiome(biome))
 					//? } else {
-					/*//~ if ! 1.16.5 'biome.' -> 'biome.value().'
-					f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().getDownfall());
+					/*Biome biome = level.getBiome(pos);
+					if (! CONFIG.isFilterListHasBiome(biome.getBiomeCategory()))
 					*///? }
+						//? if > 1.20 {
+						f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos)));
+						//? } else {
+						/*//~ if ! 1.16.5 'biome.' -> 'biome.value().'
+						f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().getDownfall());
+						*///? }
+				}
 			}
 		}
 

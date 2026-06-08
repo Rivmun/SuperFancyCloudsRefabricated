@@ -63,7 +63,6 @@ public class SharedConfig {
 	private CloudRefreshSpeed weatherRefreshSpeed = CloudRefreshSpeed.FAST;
 	private CloudRefreshSpeed densityChangingSpeed = CloudRefreshSpeed.SLOW;
 	private boolean isBiomeDensityByChunk = false;
-	private boolean isBiomeDensityUseLoadedChunk = false;
 	private List<String> biomeFilterList = DEF_BIOME_FILTER_LIST;
 	private List<String> seasonDensityPercentMap = DEF_SEASON_DENSITY_MAP;
 
@@ -105,7 +104,6 @@ public class SharedConfig {
 		this.noneDensity                  = config.noneDensity;
 		//? }
 		this.isBiomeDensityByChunk        = config.isBiomeDensityByChunk;
-		this.isBiomeDensityUseLoadedChunk = config.isBiomeDensityUseLoadedChunk;
 		this.biomeFilterList              = config.biomeFilterList;
 		this.seasonDensityPercentMap      = config.seasonDensityPercentMap;
 	}
@@ -128,7 +126,6 @@ public class SharedConfig {
 	public float getDensityAtNight() {return densityAtNight;}
 	public CloudRefreshSpeed getDensityChangingSpeed() {return densityChangingSpeed;}
 	public boolean isBiomeDensityByChunk() {return isBiomeDensityByChunk;}
-	public boolean isBiomeDensityUseLoadedChunk() {return isBiomeDensityUseLoadedChunk;}
 	public List<String> getBiomeFilterList() {return biomeFilterList;}
 	public int getCloudRenderDistance() {return cloudRenderDistance;}
 	public boolean isCloudRenderDistanceFitToView() {return cloudRenderDistanceFitToView;}
@@ -162,7 +159,6 @@ public class SharedConfig {
 	public void setDensityAtNight(float density) {this.densityAtNight = density;}
 	public void setDensityChangingSpeed(CloudRefreshSpeed speed) {densityChangingSpeed = speed;}
 	public void setBiomeDensityByChunk(boolean isEnable) {isBiomeDensityByChunk = isEnable;}
-	public void setBiomeDensityUseLoadedChunk(boolean isEnable) {isBiomeDensityUseLoadedChunk = isEnable;}
 	public void setBiomeFilterList(List<String> list) {biomeFilterList = list;}
 	public void setCloudRenderDistance(int distance) {cloudRenderDistance = Math.min(distance, 192);}
 	public void setCloudRenderDistanceFitToView(boolean isEnable) {cloudRenderDistanceFitToView = isEnable;}

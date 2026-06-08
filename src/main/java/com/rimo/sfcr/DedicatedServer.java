@@ -115,7 +115,7 @@ public class DedicatedServer {
 										return 1;
 									}
 									if (! playersWithSfcr.contains(player)) {
-										VersionUtil.sendSystemMessage(context, "$4[SFCRe] You may install SFCR first!");
+										VersionUtil.sendSystemMessage(context, "§4[SFCRe] You may install SFCR first!");
 										return 1;
 									}
 									//? if < 1.21 {

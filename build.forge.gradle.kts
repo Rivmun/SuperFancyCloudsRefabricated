@@ -109,7 +109,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
 
     //particle rain
     if (sc.current.parsed > "1.20") {
@@ -121,7 +121,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/*.accesswidener", "**/neoforge.mods.toml", "**/*.vsh")
+        exclude("**/fabric.mod.json", "**/*.accesswidener", "**/neoforge.mods.toml")
     }
 
     register<Copy>("buildAndCollect") {

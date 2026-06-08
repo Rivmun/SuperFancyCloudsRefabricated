@@ -6,7 +6,7 @@ val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
-    if (sc.current.parsed > "1.21.1") accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+//    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
 tasks.named<ProcessResources>("processResources") {
@@ -34,7 +34,7 @@ tasks.named<ProcessResources>("processResources") {
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["fabricseasons_min_version"] = prop("fabricseasons_min_version")
 
-        this["access_widener"] = "${prop("mod.id")}.accesswidener"
+//        this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
         this["GameRendererMixin"] = if (sc.current.parsed.eq("1.16.5")) "" else "\"GameRendererMixin\","
@@ -90,7 +90,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
 
     //particle rain
     if (sc.current.parsed > "1.20") {
@@ -110,9 +110,9 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/${project.property("mod.id")}.unobf.accesswidener", "**/*.mcmeta")
+        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/*.mcmeta")
         if (sc.current.parsed <= "1.21.1") {
-            exclude("**/*.vsh", "**/${project.property("mod.id")}.accesswidener")
+            exclude("**/${project.property("mod.id")}.accesswidener")
         }
     }
 

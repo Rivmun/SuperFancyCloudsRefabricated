@@ -1,3 +1,8 @@
+# 2.9.2.1
+- Remove `BiomeDetectUseLoadedChunk` option from configScreen cuz its function already removed.
+- Update icon.
+- Fix dedicated server command doesn't trigger config to save.
+
 # 2.9.2
 Dozens of fixes & optimizations here.
 ### Compatibility

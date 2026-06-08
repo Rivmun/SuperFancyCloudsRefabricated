@@ -32,7 +32,7 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_modrinth"] =  prop("mod.modrinth")
         this["mod_mcmod"] =     prop("mod.mcmod")
         this["mod_license"] =   prop("mod.license")
-        this["mod_icon"] =      prop("mod.icon")
+        this["mod_icon"] =      prop("mod.icon") + "fabric"
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
@@ -81,7 +81,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/${project.property("mod.id")}.accesswidener")
+        exclude("**/fabric.mod.json", "**/icon-fabric.png", "**/${project.property("mod.id")}.accesswidener")
     }
 
     jar {

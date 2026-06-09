@@ -207,7 +207,8 @@ public class Common {
 						size, size / 20F, time / 20, time / size);
 				apiDebugTime.clear();
 			}
-			Plugin.checkMixinApplied();
+			if (CONFIG.isEnableDebug())
+				Plugin.checkMixinApplied();
 		});
 
 		if (seasonHandler == null)

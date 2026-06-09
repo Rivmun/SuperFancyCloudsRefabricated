@@ -21,6 +21,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+//? if neoforge
+//import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 //? if = 1.16.5 {
 /*import org.apache.logging.log4j.LogManager;
@@ -155,8 +157,8 @@ public class Common {
 
 		// Dimension Sender
 		PlayerEvent.PLAYER_JOIN.register(player -> {
-			//~ if > 1.21 'PACKET_DIMENSION' -> 'DimensionPayload.TYPE'
-			if (NetworkManager.canPlayerReceive(player, DimensionPayload.TYPE)) {
+			//~ if > 1.21 'PACKET_WEATHER' -> 'WeatherPayload.TYPE'
+			if (NetworkManager.canPlayerReceive(player, WeatherPayload.TYPE)) {
 				playersWithSfcr.add(player);
 			} else {
 				return;
@@ -237,6 +239,7 @@ public class Common {
 				.writeVarLong(data.seed)
 		);
 		*///? } else {
+		//~ if neoforge 'NetworkManager.' -> 'PacketDistributor.'
 		NetworkManager.sendToPlayer(player, new DimensionPayload(
 				name,
 				data.configJson,

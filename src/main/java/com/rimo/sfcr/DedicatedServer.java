@@ -128,8 +128,7 @@ public class DedicatedServer {
 				)
 		);
 
-		// Shared Config Receiver
-		// allows server can get a new dimension config uploaded by player
+		//? if !neoforge {
 		//? if < 1.21 {
 		/*NetworkManager.registerReceiver(NetworkManager.Side.C2S, PACKET_DIMENSION, (buf, context) -> {
 			String name = buf.readUtf();
@@ -142,23 +141,30 @@ public class DedicatedServer {
 			long l = payload.seed();
 		//? }
 			Player player = context.getPlayer();
-			if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
-				VersionUtil.sendMessage(player, "§4[SFCRe] Your permission is not enough to upload config!");
-				LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?",
-						MOD_ID, player.getName().getString());
-				return;
-			}
-			SharedConfig config = new SharedConfig();
-			try {
-				config.fromString(configJson);
-				config.save(name);
-				setDimensionConfigJson(name, configJson);
-				VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
-				LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
-			} catch (JsonSyntaxException e) {
-				VersionUtil.sendMessage(player, "§4[SFCRe] You upload a config that server cannot read, please check your mod version!");
-				LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
-			}
+			handleDimensionPayload(name, configJson, player);
 		});
+		//? }
+	}
+
+	// Shared Config Receiver
+	// allows server can get a new dimension config uploaded by player
+	public static void handleDimensionPayload(String name, String configJson, Player player) {
+		if (! player.createCommandSourceStack().hasPermission(4)) {  //check permission again
+			VersionUtil.sendMessage(player, "§4[SFCRe] Your permission is not enough to upload config!");
+			LOGGER.warn("{} was refuse a configJson uploaded by {} because his/her permission check was fail. But why he/she can use 'upload' command?",
+					MOD_ID, player.getName().getString());
+			return;
+		}
+		SharedConfig config = new SharedConfig();
+		try {
+			config.fromString(configJson);
+			config.save(name);
+			setDimensionConfigJson(name, configJson);
+			VersionUtil.sendMessage(player, "[SFCRe] Config was successful upload!");
+			LOGGER.info("{} receive a config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
+		} catch (JsonSyntaxException e) {
+			VersionUtil.sendMessage(player, "§4[SFCRe] You upload a config that server cannot read, please check your mod version!");
+			LOGGER.error("{} receive a broken config of {}, uploaded by {}", MOD_ID, name, player.getName().getString());
+		}
 	}
 }

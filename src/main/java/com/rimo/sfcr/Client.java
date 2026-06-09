@@ -18,6 +18,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.Level;
 //~ if < 1.19 'Component' -> 'TranslatableComponent'
 import net.minecraft.network.chat.Component;
+//? if neoforge
+//import net.neoforged.neoforge.network.PacketDistributor;
 //? if < 1.21 {
 /*import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
@@ -108,6 +110,11 @@ public class Client {
 		//? }
 
 		//dimension packet receiver
+		/*
+		 * arch-api cannot register dimension payload on both side in neoforge-1.21.1, we're register it through neo original event hook.
+		 * in that way the arch-system doesn't have dimension payload identifier that we cannot receive this payload through arch, so those code is useless.
+		 */
+		//? if !neoforge {
 		//? if < 1.21 {
 		/*NetworkManager.registerReceiver(NetworkManager.Side.S2C, PACKET_DIMENSION, (buf, context) -> {
 			String name = buf.readUtf();
@@ -119,28 +126,9 @@ public class Client {
 			String configJson = payload.sharedConfigJson();
 			long seed = payload.seed();
 		//? }
-			hasServer = true;
-			if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
-				try {
-					CONFIG.fromString(configJson);
-					if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
-						isConfigHasBeenOverride = true;
-					if (! name.equals(Config.OVERWORLD))
-						isCustomDimensionConfig = true;
-					if (CONFIG.isEnableDebug())
-						LOGGER.info("{} receive sharedConfig of '{}'", MOD_ID, name);
-				} catch (JsonSyntaxException e) {
-					LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
-				}
-			} else {
-				if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
-					isCustomDimensionConfig = true;
-				isConfigHasBeenOverride = false;
-				if (CONFIG.isEnableDebug())
-					LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
-			}
-			CloudData.sampler.setSeed(seed).setConfig(CONFIG);
+			handleDimensionPayload(name, configJson, seed);
 		});
+		//? }
 
 		//weather receiver
 		//? if < 1.21 {
@@ -172,6 +160,7 @@ public class Client {
 					.writeVarLong(0L)
 			);
 			*///? } else {
+			//~ if neoforge 'NetworkManager.' -> 'PacketDistributor.'
 			NetworkManager.sendToServer(new DimensionPayload(
 					name,
 					configJson,
@@ -181,6 +170,30 @@ public class Client {
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);
 		});
+	}
+
+	public static void handleDimensionPayload(String name, String configJson, long seed) {
+		hasServer = true;
+		if (! configJson.isEmpty() && CONFIG.isEnableServer()) {
+			try {
+				CONFIG.fromString(configJson);
+				if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
+					isConfigHasBeenOverride = true;
+				if (! name.equals(Config.OVERWORLD))
+					isCustomDimensionConfig = true;
+				if (CONFIG.isEnableDebug())
+					LOGGER.info("{} receive sharedConfig of '{}'", MOD_ID, name);
+			} catch (JsonSyntaxException e) {
+				LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
+			}
+		} else {
+			if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
+				isCustomDimensionConfig = true;
+			isConfigHasBeenOverride = false;
+			if (CONFIG.isEnableDebug())
+				LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);
+		}
+		CloudData.sampler.setSeed(seed).setConfig(CONFIG);
 	}
 
 	public static void applyConfigChange(boolean oldEnableDHCompat) {

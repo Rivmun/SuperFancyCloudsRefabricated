@@ -94,12 +94,13 @@ public class Client {
 		// client command for configScreen
 		//~ if > 1.19 '(dispatcher)' -> '(dispatcher, dedicated)'
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
-				.register(ClientCommandRegistrationEvent.literal(MOD_ID).executes(context -> {
+				// Don't use only 'sfcr' that will override server command when connect to a server on fabric-1.21.1
+				.register(ClientCommandRegistrationEvent.literal(MOD_ID + "config").executes(context -> {
 					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
 					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isNeoForge() && Platform.isModLoaded("cloth_config")) {
 						Minecraft client = Minecraft.getInstance();
-						//~ if > 1.18 && < 1.20 'client.execute' -> 'client.tell'
-						client.execute(() -> client.setScreen(new ConfigScreen().build()));
+						//~ if > 1.18 && < 1.20 || = 1.21.1 && fabric 'client.execute' -> 'client.tell'
+						client.tell(() -> client.setScreen(new ConfigScreen().build()));
 					} else {
 						//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'
 						context.getSource().arch$sendFailure(Component.translatable("text.sfcr.requiredCloth"));
@@ -121,6 +122,8 @@ public class Client {
 			String configJson = buf.readUtf();
 			long seed = buf.readVarLong();
 		*///? } else {
+		// register c2s codec into arch-api...
+		NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {});
 		NetworkManager.registerReceiver(NetworkManager.Side.S2C, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
 			String name = payload.name();
 			String configJson = payload.sharedConfigJson();

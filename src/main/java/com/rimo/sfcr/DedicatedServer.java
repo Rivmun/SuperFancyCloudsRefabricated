@@ -135,6 +135,7 @@ public class DedicatedServer {
 			String configJson = buf.readUtf();
 			long l = buf.readVarLong();
 		*///? } else {
+		NetworkManager.registerS2CPayloadType(DimensionPayload.TYPE, DimensionPayload.CODEC);
 		NetworkManager.registerReceiver(NetworkManager.Side.C2S, DimensionPayload.TYPE, DimensionPayload.CODEC, (payload, context) -> {
 			String name = payload.name();
 			String configJson = payload.sharedConfigJson();

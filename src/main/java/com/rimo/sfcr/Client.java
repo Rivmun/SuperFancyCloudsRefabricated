@@ -77,6 +77,8 @@ public class Client {
 
 		// Quit reset
 		ClientPlayerEvent.CLIENT_PLAYER_QUIT.register(player -> {
+			if (player == null)
+				return;  // prevent those code runs when join a world?
 			hasServer = false;
 			isCustomDimensionConfig = false;
 			isConfigHasBeenOverride = false;

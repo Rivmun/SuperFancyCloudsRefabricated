@@ -1,3 +1,16 @@
+# 1.9.2.1
+Bug fixes, mainly fix the server connect issue on mc 1.21.1.
+- Fix dimension payload register issue that causing client cannot connect to server which both installed SFCR on mc1.21.1 (affected both on fabric & neoforge).
+- Fix client command `/sfcr` (use to open configScreen) no functioning on fabric-1.20.1, 1.21.1.
+- Fix server command will override by client command when connect to a server.
+  - client command `/sfcr` now rename to `/sfcrconfig` to prevent that issue.
+- Fix config will meaningless reload when open createNewWorld screen & connectingServer screen.
+- Fix server config forgot to save after server command callback.
+- Fix cloudHeight will get infinity increased when open & close configScreen continuously.
+- Remove biomeDetectUseLoadedChunk option cuz it useless.
+- Slightly improved threshold calculation.
+- Mod icon update & other small fix.
+
 # 1.9.2
 Dozens of fixes and optimizations here.
 ### Compatibility Fixes

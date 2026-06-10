@@ -127,7 +127,7 @@ public class Platform {
 		}
 		@SubscribeEvent
 		public static void onQuit(ClientPlayerNetworkEvent.LoggingOut event) {
-			Client.onQuit();
+			Client.onQuit(event.getPlayer());
 		}
 	}
 

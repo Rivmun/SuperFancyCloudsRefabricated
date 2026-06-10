@@ -88,10 +88,11 @@ public class Platform implements ModInitializer, ClientModInitializer, Dedicated
 				Client.handleUploadRequestPayload()
 		);
 
-		//~ if = 1.21.11 'ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE' -> 'ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE'
-		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> Client.onLevelLoad(level));
-		ClientTickEvents.END_CLIENT_TICK.register(Client::onTick);
-		ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> Client.onQuit());
+			//~ if = 1.21.11 'ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE' -> 'ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE'
+			ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> Client.onLevelLoad(level));  //this event can be invoked both on player join & changed dimension.
+			ClientTickEvents.END_CLIENT_TICK.register(Client::onTick);
+			ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> Client.onQuit(client.player));
+		}
 	}
 
 	@Override

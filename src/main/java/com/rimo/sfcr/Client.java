@@ -7,7 +7,9 @@ import com.rimo.sfcr.core.*;
 import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.Level;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Random;
 
@@ -54,7 +56,9 @@ public class Client {
 			Renderer.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 	}
 
-	public static void onQuit() {
+	public static void onQuit(@Nullable LocalPlayer player) {
+		if (player == null)
+			return;
 		hasServer = false;
 		isCustomDimensionConfig = false;
 		isConfigHasBeenOverride = false;

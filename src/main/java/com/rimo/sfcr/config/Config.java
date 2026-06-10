@@ -6,6 +6,7 @@ import com.rimo.sfcr.Common;
 
 import java.io.BufferedReader;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import static com.rimo.sfcr.Common.MOD_ID;
 
@@ -78,8 +79,13 @@ public class Config extends SharedConfig {
 	@Override
 	protected void _load(BufferedReader reader, Path path) throws JsonSyntaxException {
 		set(GSON.fromJson(reader, Config.class));
-		if (isEnableDebug())
-			Common.LOGGER.info("{} load config file: {}", MOD_ID, path.getFileName());
+		if (isEnableDebug()) {
+			StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+			StringBuilder str = new StringBuilder();
+			for(StackTraceElement e : Arrays.stream(stack).skip(2).limit(5).toList())
+				str.append("\n    ").append(e);
+			Common.LOGGER.info("{} load config file: {}, call from {}", MOD_ID, path.getFileName(), str);
+		}
 	}
 
 	/**

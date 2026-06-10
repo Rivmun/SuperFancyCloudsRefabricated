@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -37,16 +36,23 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import java.nio.file.Path;
 
 @Mod(Common.MOD_ID)
+@EventBusSubscriber(modid = Common.MOD_ID)
 public class Platform {
-	public Platform(IEventBus bus) {}
-
+	@SubscribeEvent
+	public static void registerPayloadType(RegisterPayloadHandlersEvent event) {
+		final PayloadRegistrar registrar = event.registrar("1");
+		registrar.commonToClient(Common.WeatherPayload.TYPE, Common.WeatherPayload.CODEC);
+		registrar.commonToClient(Common.UploadRequestPayload.TYPE, Common.UploadRequestPayload.CODEC);
+	}
 	@SubscribeEvent
 	public static void onLevelLoad(LevelEvent.Load event) {
-		Common.addDimensionData((ServerLevel) event.getLevel());
+		if (event.getLevel() instanceof ServerLevel serverLevel)  //this event invoked both on client/server, we must ensure it only runs on server
+			Common.addDimensionData(serverLevel);
 	}
 	@SubscribeEvent
 	public static void onLevelUnload(LevelEvent.Unload event) {
-		Common.removeDimensionData((ServerLevel) event.getLevel());
+		if (event.getLevel() instanceof ServerLevel serverLevel)
+			Common.removeDimensionData(serverLevel);
 	}
 	@SubscribeEvent
 	public static void onTick(ServerTickEvent.Post event) {
@@ -54,24 +60,21 @@ public class Platform {
 	}
 	@SubscribeEvent
 	public static void onLevelTick(LevelTickEvent.Post event) {
-		Common.onLevelTick((ServerLevel) event.getLevel());
+		if (event.getLevel() instanceof ServerLevel serverLevel)
+			Common.onLevelTick(serverLevel);
 	}
 	@SubscribeEvent
 	public static void onJoin(PlayerEvent.PlayerLoggedInEvent event) {
-		if (((ServerPlayer) event.getEntity()).connection.hasChannel(Common.DimensionPayload.TYPE)) {
-			Common.playerWithSfcr.add((ServerPlayer) event.getEntity());
-		} else {
-			return;
-		}
-		Common.sendDimensionPacket((ServerPlayer) event.getEntity(), event.getEntity().level().dimension());
+		Common.onPlayerJoin((ServerPlayer) event.getEntity());
 	}
 	@SubscribeEvent
 	public static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-		Common.sendDimensionPacket((ServerPlayer) event.getEntity(), event.getTo());
+		if (event.getEntity() instanceof ServerPlayer player)
+			Common.onPlayerChangedDimension(player, event.getTo());
 	}
 	@SubscribeEvent
 	public static void onQuit(PlayerEvent.PlayerLoggedOutEvent event) {
-		Common.playerWithSfcr.remove((ServerPlayer) event.getEntity());
+		Common.onPlayerQuit((ServerPlayer) event.getEntity());
 	}
 
 	@OnlyIn(Dist.CLIENT)
@@ -94,7 +97,7 @@ public class Platform {
 		public static void registerCommand(RegisterClientCommandsEvent event) {
 			if (! ModList.get().isLoaded("cloth_config"))
 				return;
-			event.getDispatcher().register(Commands.literal(Common.MOD_ID).executes(context -> {
+			event.getDispatcher().register(Commands.literal(Common.MOD_ID + "config").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
 				client.execute(() -> client.setScreen(new ConfigScreen().build()));
 				return 1;
@@ -102,15 +105,14 @@ public class Platform {
 		}
 		@SubscribeEvent
 		public static void registerPayload(RegisterPayloadHandlersEvent event) {
-			final PayloadRegistrar registrar = event.registrar("1");
-			registrar.commonToClient(Common.WeatherPayload.TYPE, Common.WeatherPayload.CODEC);
-			registrar.commonToClient(Common.DimensionPayload.TYPE, Common.DimensionPayload.CODEC);
-			registrar.commonToClient(Common.UploadRequestPayload.TYPE, Common.UploadRequestPayload.CODEC);
+			event.registrar("1").commonBidirectional(Common.DimensionPayload.TYPE, Common.DimensionPayload.CODEC,
+					(payload, context) -> {},  // Do nothing on toServer packet.
+					(payload, context) -> Client.handleDimensionPayload(payload)
+			);
 		}
 		@SubscribeEvent
-		public static void registerClientHandler(RegisterClientPayloadHandlersEvent event) {
+		public static void registerPayloadHandler(RegisterClientPayloadHandlersEvent event) {
 			event.register(Common.WeatherPayload.TYPE, (payload, context) -> Client.handleWeatherPayload(payload));
-			event.register(Common.DimensionPayload.TYPE, (payload, context) -> Client.handleDimensionPayload(payload));
 			event.register(Common.UploadRequestPayload.TYPE, (payload, context) -> Client.handleUploadRequestPayload());
 		}
 		@SubscribeEvent
@@ -136,8 +138,9 @@ public class Platform {
 	public static class ServerInit {
 		@SubscribeEvent
 		public static void registerNetwork(RegisterPayloadHandlersEvent event) {
-			event.registrar("1").commonToServer(Common.DimensionPayload.TYPE, Common.DimensionPayload.CODEC, (payload, context) ->
-					DedicatedServer.handleDimensionPayload(payload, context.player())
+			event.registrar("1").commonBidirectional(Common.DimensionPayload.TYPE, Common.DimensionPayload.CODEC,
+					(payload, context) -> DedicatedServer.handleDimensionPayload(payload, context.player()),
+					(payload, context) -> {}  // Wants to handler a toClient packet on DedicatedServer? ur joking...
 			);
 		}
 		@SubscribeEvent
@@ -147,9 +150,13 @@ public class Platform {
 	}
 
 	// - - - - - Platform specific function - - - - -
+	public static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+		return player.connection.hasChannel(type);
+	}
 	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
 		PacketDistributor.sendToPlayer(player, payload);
 	}
+	@OnlyIn(Dist.CLIENT)
 	public static void sendToServer(CustomPacketPayload payload) {
 		ClientPacketDistributor.sendToServer(payload);
 	}

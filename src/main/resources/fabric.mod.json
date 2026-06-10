@@ -23,10 +23,10 @@
       "${mod_group}.${mod_id}.loaders.fabric.Platform"
     ],
     "client": [
-      "${mod_group}.${mod_id}.loaders.fabric.Platform"
+      "${mod_group}.${mod_id}.loaders.fabric.Platform\u0024ClientInit"
     ],
     "server": [
-      "${mod_group}.${mod_id}.loaders.fabric.Platform"
+      "${mod_group}.${mod_id}.loaders.fabric.Platform\u0024ServerInit"
     ],
     "modmenu": [
       "${mod_group}.${mod_id}.loaders.fabric.ModMenuEntryPoint"

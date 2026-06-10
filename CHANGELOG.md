@@ -1,4 +1,4 @@
-# 1.9.2.1
+# 1.9.3
 Bug fixes, mainly fix the server connect issue on mc 1.21.1.
 - Fix dimension payload register issue that causing client cannot connect to server which both installed SFCR on mc1.21.1 (affected both on fabric & neoforge).
 - Fix client command `/sfcr` (use to open configScreen) no functioning on fabric-1.20.1, 1.21.1.

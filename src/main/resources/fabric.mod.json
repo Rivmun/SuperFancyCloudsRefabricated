@@ -17,13 +17,13 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.rimo.sfcr.loaders.fabric.EntryPoint"
+			"com.rimo.sfcr.loaders.fabric.Platform"
 		],
 		"client": [
-			"com.rimo.sfcr.loaders.fabric.EntryPoint"
+			"com.rimo.sfcr.loaders.fabric.Platform\u0024ClientInit"
 		],
 		"server": [
-			"com.rimo.sfcr.loaders.fabric.EntryPoint"
+			"com.rimo.sfcr.loaders.fabric.Platform\u0024ServerInit"
 		],
 		"modmenu": [
 			"com.rimo.sfcr.loaders.fabric.ModMenuEntryPoint"

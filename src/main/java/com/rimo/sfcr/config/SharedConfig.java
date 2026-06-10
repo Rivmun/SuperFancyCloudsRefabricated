@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Common;
-import com.rimo.sfcr.PlatformUtil;
+import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biomes;
@@ -179,7 +179,7 @@ public class SharedConfig {
 	/**
 	 * It must be {@code .minecraft/config/sfcr/sfcr.json} in normally.
 	 */
-	private static final Path DEFAULT_PATH = PlatformUtil.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
+	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
 	public static final String OVERWORLD = "minecraft:overworld";
 
 	/**

@@ -76,7 +76,7 @@ public class Plugin implements IMixinConfigPlugin {
 			StringBuilder str = new StringBuilder();
 			for (String s : MIXINS)
 				str.append("  ").append(s).append("\n");
-			Common.LOGGER.error("{} was failed to apply mixin(s):\n{}Some function may no work.", Common.MOD_ID, str);
+			Common.LOGGER.warn("{} was failed to apply mixin(s):\n{}Some function may no work.", Common.MOD_ID, str);
 		}
 		MIXINS = null;
 	}

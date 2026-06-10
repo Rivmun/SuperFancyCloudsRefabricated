@@ -4,6 +4,7 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.config.SharedConfig;
+import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
@@ -55,6 +56,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setEnableServer(context.getArgument("e", Boolean.class));
+									CONFIG.save();
 									VersionUtil.sendSystemMessage(context, "[SFCRe] service status changed!");
 									return 1;
 								})
@@ -65,6 +67,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setCloudRainLogically(context.getArgument("e", Boolean.class));
+									CONFIG.save();
 									VersionUtil.sendSystemMessage(context, "[SFCRe] NoCloudNoRain for logical side status changed!");
 									return 1;
 								})
@@ -75,6 +78,7 @@ public class DedicatedServer {
 						.then(argument("e", BoolArgumentType.bool())
 								.executes(context -> {
 									CONFIG.setEnableDebug(context.getArgument("e", Boolean.class));
+									CONFIG.save();
 									VersionUtil.sendSystemMessage(context, "[SFCRe] Debug status changed!");
 									return 1;
 								})
@@ -89,10 +93,10 @@ public class DedicatedServer {
 								return 1;
 							}
 							if (! playerWithSfcr.contains(player)) {
-								VersionUtil.sendSystemMessage(context, "$4[SFCRe] You may install SFCR first!");
+								VersionUtil.sendSystemMessage(context, "§4[SFCRe] You may install SFCR first!");
 								return 1;
 							}
-							PlatformUtil.sendToPlayer(player, new UploadRequestPayload());
+							Platform.sendToPlayer(player, new UploadRequestPayload());
 							return 1;
 						})
 				)

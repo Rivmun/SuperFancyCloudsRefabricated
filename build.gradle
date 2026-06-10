@@ -37,7 +37,7 @@ dependencies {
 //	}
 
 	//YACL
-	compileOnly("dev.isxander:yet-another-config-lib:${project.yacl_version}")
+	implementation("dev.isxander:yet-another-config-lib:${project.yacl_version}")
 
 	//Mod Menu
 	implementation "com.terraformersmc:modmenu:${project.mod_menu_version}"

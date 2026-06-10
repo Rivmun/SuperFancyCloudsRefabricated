@@ -3,9 +3,12 @@ package com.rimo.sfcr;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.core.*;
+import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
@@ -45,7 +48,9 @@ public class Client {
 			DATA.updateBiomeDensity(client.player);
 	}
 
-	public static void onQuit() {
+	public static void onQuit(@Nullable LocalPlayer player) {
+		if (player == null)
+			return;
 		hasServer = false;
 		isCustomDimensionConfig = false;
 		isConfigHasBeenOverride = false;
@@ -96,7 +101,7 @@ public class Client {
 			return;
 		String name = level.dimension().identifier().toString();
 		String configJson = CONFIG.toString();
-		PlatformUtil.sendToServer(new DimensionPayload(
+		Platform.sendToServer(new DimensionPayload(
 				name,
 				configJson,
 				0L

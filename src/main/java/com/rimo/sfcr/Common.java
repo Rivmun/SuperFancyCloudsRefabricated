@@ -5,7 +5,9 @@ import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.SharedConfig;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
+import com.rimo.sfcr.loaders.fabric.Platform;
 import com.rimo.sfcr.mixin.Plugin;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -80,10 +82,27 @@ public class Common {
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
-	public static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
+	static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
 	public static String debugString = "";
+
+	public static void onPlayerJoin(ServerPlayer player) {
+		if (Platform.canReceive(player, WeatherPayload.TYPE)) {
+			playerWithSfcr.add(player);
+		} else {
+			return;
+		}
+		sendDimensionPacket(player, player.level().dimension());
+	}
+
+	public static void onPlayerChangedDimension(ServerPlayer player, ResourceKey<Level> destination) {
+		sendDimensionPacket(player, destination);
+	}
+
+	public static void onPlayerQuit(ServerPlayer player) {
+		playerWithSfcr.remove(player);
+	}
 
 	public static void onTick(MinecraftServer server) {
 		if (server.getTickCount() % 20 != 0)
@@ -94,7 +113,7 @@ public class Common {
 		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
 			playerWithSfcr.forEach(player ->
-					PlatformUtil.sendToPlayer(player, new WeatherPayload(nextWeather))
+					Platform.sendToPlayer(player, new WeatherPayload(nextWeather))
 			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
@@ -115,14 +134,14 @@ public class Common {
 	}
 
 	// Dimension Packet Sender
-	public static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
 		MinecraftServer server = player.level().getServer();
 		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
 		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player)))
 			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());
-		PlatformUtil.sendToPlayer(player, new DimensionPayload(
+		Platform.sendToPlayer(player, new DimensionPayload(
 				name,
 				data.configJson,
 				data.seed
@@ -155,6 +174,9 @@ public class Common {
 		});
 	}
 
+	/**
+	 * @see #loadDimensionData(ServerLevel)
+	 */
 	public static void addDimensionData(ServerLevel level) {
 		loadDimensionData(level);
 	}

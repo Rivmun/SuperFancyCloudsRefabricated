@@ -5,7 +5,7 @@ plugins {
 val minecraft = property("deps.minecraft") as String
 
 loom {
-    accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
+    //accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }
 
 sourceSets.main {
@@ -21,7 +21,7 @@ tasks.named<ProcessResources>("processResources") {
     val props = HashMap<String, String>().apply {
         this["mod_group"] =     prop("mod.group")
         this["mod_id"] =        prop("mod.id")
-        this["mod_name"] =      prop("mod.name") + "reneoforged"
+        this["mod_name"] =      prop("mod.name") + "Reneoforged"
         this["mod_version"] =   prop("mod.version")
         this["mod_description"]=prop("mod.description")
         this["mod_author"] =    prop("mod.author")
@@ -32,7 +32,7 @@ tasks.named<ProcessResources>("processResources") {
         this["mod_modrinth"] =  prop("mod.modrinth")
         this["mod_mcmod"] =     prop("mod.mcmod")
         this["mod_license"] =   prop("mod.license")
-        this["mod_icon"] =      prop("mod.icon") + "fabric"
+        this["mod_icon"] =      prop("mod.icon") + "neoforge"
 
         this["version_range"] = prop("version_range")
         this["neoforge_min_version"] = prop("neoforge_min_version")
@@ -81,7 +81,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/icon-fabric.png", "**/${project.property("mod.id")}.accesswidener")
+        exclude("**/fabric.mod.json", "**/icon-fabric.png", "**/*.accesswidener")
     }
 
     jar {

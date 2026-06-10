@@ -5,7 +5,7 @@ plugins {
 val minecraft = property("deps.minecraft") as String;
 
 loom {
-    accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
+    //accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }
 
 tasks.named<ProcessResources>("processResources") {
@@ -14,7 +14,7 @@ tasks.named<ProcessResources>("processResources") {
     val props = HashMap<String, String>().apply {
         this["mod_group"] =     prop("mod.group")
         this["mod_id"] =        prop("mod.id")
-        this["mod_name"] =      prop("mod.name") + "refabricated"
+        this["mod_name"] =      prop("mod.name") + "Refabricated"
         this["mod_version"] =   prop("mod.version")
         this["mod_description"]=prop("mod.description")
         this["mod_author"] =    prop("mod.author")
@@ -32,7 +32,7 @@ tasks.named<ProcessResources>("processResources") {
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["particlerain_min_version"] = prop("particlerain_min_version")
 
-        this["access_widener"] = "${prop("mod.id")}.unobf.accesswidener"
+        //this["access_widener"] = "${prop("mod.id")}.unobf.accesswidener"
 
         // insert version-specific mixins
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
@@ -82,7 +82,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/icon-neoforge.png", "**/${project.property("mod.id")}.accesswidener")
+        exclude("**/neoforge.mods.toml", "**/icon-neoforge.png", "**/*.accesswidener")
     }
 }
 

@@ -6,7 +6,7 @@ val minecraft = property("deps.minecraft") as String
 
 loom {
     silentMojangMappingsLicense()
-    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
+    //accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
 }
 
 sourceSets.main {
@@ -22,7 +22,7 @@ tasks.named<ProcessResources>("processResources") {
     val props = HashMap<String, String>().apply {
         this["mod_group"] =     prop("mod.group")
         this["mod_id"] =        prop("mod.id")
-        this["mod_name"] =      prop("mod.name") + "reneoforged"
+        this["mod_name"] =      prop("mod.name") + "Reneoforged"
         this["mod_version"] =   prop("mod.version")
         this["mod_description"]=prop("mod.description")
         this["mod_author"] =    prop("mod.author")
@@ -84,7 +84,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/fabric.mod.json", "**/icon-fabric.png", "**/${project.property("mod.id")}.unobf.accesswidener")
+        exclude("**/fabric.mod.json", "**/icon-fabric.png", "**/*.accesswidener")
     }
 
     register<Copy>("buildAndCollect") {

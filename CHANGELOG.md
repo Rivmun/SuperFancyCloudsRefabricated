@@ -1,7 +1,16 @@
-# 2.9.2.1
-- Remove `BiomeDetectUseLoadedChunk` option from configScreen cuz its function already removed.
-- Update icon.
-- Fix dedicated server command doesn't trigger config to save.
+# 2.9.3
+Critical fixes about network.
+- Fix network issue between client-dedicatedServer which is installed SFCR both.
+  - Fix dimension payload register that causing client cannot log in.
+  - Fix dedicated server crash when boot on fabric.
+- Fix custom dimension feature no functioning when changed dimension on fabric.
+- Fix server command will override by client command when connect to a server on fabric.
+  - client command `/sfcr` now rename to `/sfcrconfig` to prevent that issue.
+- Fix config will meaningless reload when open createNewWorld screen & connectingServer screen.
+- Fix server config forgot to save after server command callback.
+- Remove biomeDetectUseLoadedChunk option cuz it code already remove.
+- Slightly improved threshold calculation.
+- Mod icon update & other small fix.
 
 # 2.9.2
 Dozens of fixes & optimizations here.
@@ -15,7 +24,7 @@ Dozens of fixes & optimizations here.
 - Remove arch-api dependencies cuz' it no update, still...
 ### Function
 - Fix terrainDodge calculating out a wrong position.
-- Fix biomeDetectUseLoadedChunk calculating out a wrong position.
+- Fix biomeDetectUseChunk calculating out a wrong position.
 ### Improves & Bugfixes
 - Improved usability of custom dimension, now you can create/delete custom dimension config file in game.
     - Optimize config IO.

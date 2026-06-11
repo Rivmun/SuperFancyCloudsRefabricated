@@ -67,7 +67,7 @@ public class Sampler {
 	}
 
 	private float thresholdFormula(float threshold, float reduction, float weather, float biome) {
-		return threshold - reduction * weather * biome;
+		return threshold - reduction * weather * (1 + (biome - 1) * CONFIG.getBiomeAffectPercent() / 100F);
 	}
 
 	private int oldX, oldZ;

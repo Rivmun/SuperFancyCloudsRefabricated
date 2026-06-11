@@ -61,6 +61,8 @@
 	"text.sfcr.option.densityChangingSpeed.@Tooltip": "Higher speed will make the density\nchange incoherently.",
 	"text.sfcr.option.isBiomeDensityByChunk": "Biome Detect From Chunk",
 	"text.sfcr.option.isBiomeDensityByChunk.@Tooltip": "Biome detect use chunks' biome instead of player's current biome.\nCan improve accuracy and rationality of cloud gen.\nSupported by chunk view distance.",
+	"text.sfcr.option.biomeDensityMultiplier": "Biome Affect Percent",
+	"text.sfcr.option.biomeDensityMultiplier.@Tooltip": "Control what percent of biome downfall will affect cloud density.\nSet leftmost will disabled biome affect, rightmost will let desert-like biomes not have clouds.",
 	"text.sfcr.option.biomeFilter": "Biome Affect Filter",
 	"text.sfcr.option.biomeFilter.@Tooltip": "Biome in this list will not affect cloud density.\nFormat: §omodid:biomeid§r or §o#modid:biometag§r",
 

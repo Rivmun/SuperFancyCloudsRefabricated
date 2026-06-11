@@ -61,6 +61,8 @@
 	"text.sfcr.option.densityChangingSpeed.@Tooltip": "较高的速度会使密度改变得不连贯。",
 	"text.sfcr.option.isBiomeDensityByChunk": "基于区块的群系检测",
 	"text.sfcr.option.isBiomeDensityByChunk.@Tooltip": "检测下方区块的群系而非使用玩家当前所处的群系。\n可提升云层生成的准确性和合理性。\n需要游戏视距支持。",
+	"text.sfcr.option.biomeDensityMultiplier": "群系影响百分比",
+	"text.sfcr.option.biomeDensityMultiplier.@Tooltip": "控制多少百分比的群系降水量会影响云层密度。\n拉到最左端以禁用群系影响，拉到最右端则会使沙漠等群系上方不产生云。",
 	"text.sfcr.option.biomeFilter": "群系影响过滤",
 	"text.sfcr.option.biomeFilter.@Tooltip": "列表中的群系将不会影响云层密度。\n格式为 §omodid:biomeid§r 或 §o#modid:biometag§r",
 

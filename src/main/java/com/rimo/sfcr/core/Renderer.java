@@ -255,7 +255,7 @@ public class Renderer {
 
 			faceBuffer.rotate();
 			//? if < 26.2 {
-			/*try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
+			/*try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
 			*///? } else {
 			try (GpuBufferSlice.MappedView view = faceBuffer.currentBuffer().map(false, true)) {
 			//? }

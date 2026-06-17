@@ -68,6 +68,7 @@ public class RendererDHCompat extends Renderer {
 		if (!DhApi.Delayed.configs.graphics().renderingEnabled().getValue())
 			return;  //save battery if DH render was disabled.
 		this.cloudHeight = cloudHeight;
+		renderRange *= CONFIG.getDhRenderRangeMultiplier();
 		super.render(cloudColor, cloudHeight, camPos, partialTick, infoBuffer, faceBuffer, renderRange, level);
 	}
 

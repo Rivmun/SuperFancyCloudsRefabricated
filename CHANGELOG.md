@@ -1,6 +1,7 @@
 # 2.9.3.1
 - Support mc26.2.
 - Fix an issue that rebuild interval becomes shorter when fps is extremely high (thanks to Vulkan :P).
+- Fix DhRenderRangeMulti not functioning.
 
 # 2.9.3
 Critical fixes about network.

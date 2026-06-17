@@ -2,7 +2,7 @@ plugins {
     id("dev.architectury.loom-no-remap") version "1.14-SNAPSHOT"
 }
 
-val minecraft = property("deps.minecraft") as String;
+val minecraft = property("deps.minecraft") as String
 
 loom {
     //accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
@@ -37,6 +37,7 @@ tasks.named<ProcessResources>("processResources") {
         // insert version-specific mixins
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
         this["ServerLevelAccessor"] = ""
+        this["clientlevel_mixin"] = if (sc.current.parsed < "26.2") "" else "\"extra.ClientLevelMixin\","
 
         // insert deps
         this["particlerain_deps"] = "\"particlerain\": \">=${prop("particlerain_min_version")}\","

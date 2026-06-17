@@ -15,6 +15,7 @@
     "OptionsMixin",
     "RenderPipelinesMixin",
     "ValueProbeMixin",
+    ${clientlevel_mixin}
     "extra.LeavesBlockMixin",
     "extra.WeatherEffectRendererMixin",
     ${particlerain_mixin}

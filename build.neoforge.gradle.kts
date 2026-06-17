@@ -44,6 +44,7 @@ tasks.named<ProcessResources>("processResources") {
         // insert version-specific mixins
         this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
         this["particlerain_mixin"] = ""
+        this["clientlevel_mixin"] = ""
     }
 
     filesMatching(listOf("META-INF/neoforge.mods.toml", "${prop("mod.id")}.mixins.json")) {

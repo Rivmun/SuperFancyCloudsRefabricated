@@ -37,6 +37,7 @@ tasks.named<ProcessResources>("processResources") {
         // insert version-specific mixins
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
         this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
+        this["clientlevel_mixin"] = ""
 
         // insert deps
         this["particlerain_deps"] = "\"particlerain\": \">=${prop("particlerain_min_version")}\","

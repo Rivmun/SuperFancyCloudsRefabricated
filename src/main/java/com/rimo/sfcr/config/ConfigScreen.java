@@ -89,7 +89,8 @@ public class ConfigScreen {
 				.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
 				.build();
 		// (i love it...
-		return builder.setParentScreen(Minecraft.getInstance().screen)
+		//~ if < 26.2 '.gui.screen()' -> '.screen'
+		return builder.setParentScreen(Minecraft.getInstance().gui.screen())
 				.setTransparentBackground(true)
 				.setTitle(isCustomDimension ?
 						Component.translatable("text.sfcr.title.customDimensionMode", dimensionName) :

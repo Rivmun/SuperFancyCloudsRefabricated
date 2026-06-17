@@ -4,13 +4,21 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.pipeline.*;
-import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.TextureFormat;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+//? if < 26.2 {
+/*import com.mojang.blaze3d.textures.TextureFormat;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+*///? } else {
+import com.mojang.blaze3d.PrimitiveTopology;
+import net.minecraft.client.renderer.BindGroupLayouts;
+//? }
 import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -22,14 +30,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+//~ if < 26.2 '.Optional' -> '.OptionalInt'
+import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
 import static com.rimo.sfcr.Common.*;
 
@@ -77,9 +83,14 @@ public class Renderer {
 						*///? } else {
 						.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 						//? }
-						.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
+						//? if < 26.2 {
+						/*.withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
 						.withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
 						.withUniform("CloudFaces",UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
+						*///? } else {
+						.withPrimitiveTopology(PrimitiveTopology.QUADS)
+						.withBindGroupLayout(BindGroupLayouts.CLOUD_INFO)
+						//? }
 						//? if > 1.21.11
 						.withDepthStencilState(DepthStencilState.DEFAULT)
 						.buildSnippet()
@@ -92,7 +103,8 @@ public class Renderer {
 		CloudGrid cloudGrid = this.cloudGrid;
 		if (cloudGrid == null)
 			return false;
-		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+		//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
+		Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
 		Vec3 camPos = camera.position();
 		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.33F) * cloudBlockWidth);  //trans to cloud relative...
 		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.33F) * cloudBlockWidth);
@@ -240,41 +252,58 @@ public class Renderer {
 			this.gridZ = gridZ;
 
 			faceBuffer.rotate();
-			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
-				buildMesh(mappedView.data(), cloudGrid, renderRange);
-				quadCount = mappedView.data().position() / (renderPipeline == SUPER_FANCY_CLOUDS ? 5 : 4);
+			//? if < 26.2 {
+			/*try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(faceBuffer.currentBuffer(), false, true)) {
+			*///? } else {
+			try (GpuBufferSlice.MappedView view = faceBuffer.currentBuffer().map(false, true)) {
+			//? }
+				buildMesh(view.data(), cloudGrid, renderRange);
+				quadCount = view.data().position() / (renderPipeline == SUPER_FANCY_CLOUDS ? 5 : 4);
 			}
 		}
 
 		// render
 		if (quadCount != 0) {
-			try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(infoBuffer.currentBuffer(), false, true)) {
-				Std140Builder.intoBuffer(mappedView.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
+			//? if < 26.2 {
+			/*try (GpuBuffer.MappedView view = RenderSystem.getDevice().createCommandEncoder().mapBuffer(infoBuffer.currentBuffer(), false, true)) {
+				Std140Builder.intoBuffer(view.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
 			}
 
-			GpuBufferSlice gpuBufferSlice = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
-			RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-			RenderTarget renderTarget2 = Minecraft.getInstance().levelRenderer.getCloudsTarget();
-			RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-			GpuBuffer gpuBuffer = autoStorageIndexBuffer.getBuffer(6 * quadCount);
-			GpuTextureView gpuTextureView;
-			GpuTextureView gpuTextureView2;
-			if (renderTarget2 != null) {
-				gpuTextureView = renderTarget2.getColorTextureView();
-				gpuTextureView2 = renderTarget2.getDepthTextureView();
+			GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
+			RenderTarget mainRenderTarget = Minecraft.getInstance().getMainRenderTarget();
+			RenderTarget cloudTarget = Minecraft.getInstance().levelRenderer.getCloudsTarget();
+			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+			*///? } else {
+			try (GpuBufferSlice.MappedView view = infoBuffer.currentBuffer().map(false, true)) {
+				Std140Builder.intoBuffer(view.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
+			}
+
+			GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
+			RenderTarget mainRenderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+			RenderTarget cloudTarget = Minecraft.getInstance().levelRenderer.cloudsTarget();
+			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+			//? }
+			GpuBuffer gpuBuffer = indices.getBuffer(6 * quadCount);
+			GpuTextureView colorTexture;
+			GpuTextureView depthTexture;
+			if (cloudTarget != null) {
+				colorTexture = cloudTarget.getColorTextureView();
+				depthTexture = cloudTarget.getDepthTextureView();
 			} else {
-				gpuTextureView = renderTarget.getColorTextureView();
-				gpuTextureView2 = renderTarget.getDepthTextureView();
+				colorTexture = mainRenderTarget.getColorTextureView();
+				depthTexture = mainRenderTarget.getDepthTextureView();
 			}
 
-			try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Clouds", gpuTextureView, OptionalInt.empty(), gpuTextureView2, OptionalDouble.empty())) {
+			//~ if < 26.2 'Optional.' -> 'OptionalInt.'
+			try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Clouds", colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
 				renderPass.setPipeline(renderPipeline);
 				RenderSystem.bindDefaultUniforms(renderPass);
-				renderPass.setUniform("DynamicTransforms", gpuBufferSlice);
-				renderPass.setIndexBuffer(gpuBuffer, autoStorageIndexBuffer.type());
+				renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+				renderPass.setIndexBuffer(gpuBuffer, indices.type());
 				renderPass.setUniform("CloudInfo", infoBuffer.currentBuffer());
 				renderPass.setUniform("CloudFaces", faceBuffer.currentBuffer());
-				renderPass.drawIndexed(0, 0, 6 * quadCount, 1);
+				//~ if < 26.2 '6 * this.quadCount, 1, 0, 0, 0' -> '0, 0, 6 * quadCount, 1'
+				renderPass.drawIndexed(6 * this.quadCount, 1, 0, 0, 0);
 			}
 		}
 	}
@@ -290,7 +319,8 @@ public class Renderer {
 		double tanHalfFov = 0, tanHalfFovHorizontal = 0;
 		if (CONFIG.getEnableViewCulling()) {
 			Minecraft client = Minecraft.getInstance();
-			Camera cam = client.gameRenderer.getMainCamera();
+			//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
+			Camera cam = client.gameRenderer.mainCamera();
 			look = new Vec3(cam.forwardVector());
 			up =   new Vec3(cam.upVector());
 			left = new Vec3(cam.leftVector());

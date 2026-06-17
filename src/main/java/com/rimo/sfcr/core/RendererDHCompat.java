@@ -252,7 +252,8 @@ public class RendererDHCompat extends Renderer {
 		// We replace whole meshGroup in frequent anyway so why not set color in meshBuilding?
 		//@see getGroup()
 
-		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+		//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
+		Vec3 cameraPos = Minecraft.getInstance().gameRenderer.mainCamera().position();
 		//simply 'cameraPos - offset'...
 		group.setOriginBlockPos(new DhApiVec3d(cameraPos.x() - xOffset, cloudHeight, cameraPos.z() - zOffset));
 	}

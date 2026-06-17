@@ -68,7 +68,8 @@ public class Platform implements ModInitializer {
 				//~ if = 1.21.11 'ClientCommands' -> 'ClientCommandManager'
 				dispatcher.register(ClientCommands.literal(Common.MOD_ID + "config").executes(context1 -> {
 					Minecraft client = Minecraft.getInstance();
-					client.execute(() -> client.setScreen(new ConfigScreen().build()));
+					//~ if < 26.2 '.gui.setScreen' -> '.setScreen'
+					client.execute(() -> client.gui.setScreen(new ConfigScreen().build()));
 					return 1;
 				}));
 			});

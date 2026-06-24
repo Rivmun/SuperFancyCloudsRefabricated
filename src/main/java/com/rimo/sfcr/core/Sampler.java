@@ -93,16 +93,21 @@ public class Sampler {
 			timeOffset = 0.0;
 			f = threshold;
 
-			if (! isBiomeByChunk) {
-				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
-			} else {  // biome detect by chunk
-				int bx = x * cloudBlockSize - xOffsetNoDelta;
-				int bz = z * cloudBlockSize;
-				int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
-				BlockPos pos = new BlockPos(bx, topY, bz);
-				Holder<Biome> biome = level.getBiome(pos);
-				if (! CONFIG.isFilterListHasBiome(biome))
-					f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().climateSettings.downfall);
+			if (isEnableDynamic) {
+				densityMultiplier = getDensityMultiplier(time);
+				timeOffset = time / 20.0;
+
+				if (! isBiomeByChunk) {
+					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
+				} else {  // biome detect by chunk
+					int bx = x * cloudBlockSize - xOffsetNoDelta;
+					int bz = z * cloudBlockSize;
+					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
+					BlockPos pos = new BlockPos(bx, topY, bz);
+					Holder<Biome> biome = level.getBiome(pos);
+					if (! CONFIG.isFilterListHasBiome(biome))
+						f = thresholdFormula(threshold, reduction, densityByWeather, biome.value().climateSettings.downfall);
+				}
 			}
 		}
 

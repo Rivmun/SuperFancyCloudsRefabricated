@@ -42,6 +42,7 @@ public class Renderer {
 	protected float cloudBlockHeight = 4F;
 	protected int gridX, gridY, gridZ;  //camera position in cloudGrid
 	protected float xOffset, zOffset;
+	private long prevSysTime;
 
 	protected int debugBuiltCounter = 0;
 	protected int debugCullCounter = 0;
@@ -193,7 +194,8 @@ public class Renderer {
 		this.zOffset = offsetZ;
 
 		// resampling check
-		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
+		resamplingTimer += (System.nanoTime() - prevSysTime) / 1e9;
+		prevSysTime = System.nanoTime();
 		if (! Minecraft.getInstance().isPaused() &&
 				(gridX != this.gridX || gridZ != this.gridZ || isTimeToResampling())) {
 			if (cloudGrid == null) {

@@ -75,7 +75,9 @@ public class Sampler {
 		return threshold - reduction * weather * biome;
 	}
 
-	private int oldX, oldZ;
+	private int oldBlockX;
+	private int oldBlockZ;
+	private boolean isChunkLoaded;
 	private float densityMultiplier = 1F;
 	private double timeOffset = 0.0;
 	private float f = 0.5F;
@@ -89,10 +91,13 @@ public class Sampler {
 			return false;
 		long time = level.getGameTime();
 		int xOffsetNoDelta = (int) (time * 0.03F);  //remember the input x is grid pos that contains time offset, we must remove it when turns it to world pos.
+		int blockX = x * cloudBlockSize - xOffsetNoDelta;
+		int blockZ = z * cloudBlockSize;
 
-		if (oldX != x || oldZ != z) {
-			oldX = x;
-			oldZ = z;
+		if (oldBlockX != blockX || oldBlockZ != blockZ) {
+			oldBlockX = blockX;
+			oldBlockZ = blockZ;
+			isChunkLoaded = level.hasChunk(blockX / 16, blockZ / 16);
 
 			densityMultiplier = 1F;
 			timeOffset = 0.0;
@@ -105,10 +110,8 @@ public class Sampler {
 				if (! isBiomeByChunk) {
 					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
 				} else {  // biome detect by chunk
-					int bx = x * cloudBlockSize - xOffsetNoDelta;
-					int bz = z * cloudBlockSize;
-					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
-					BlockPos pos = new BlockPos(bx, topY, bz);
+					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
+					BlockPos pos = new BlockPos(blockX, topY, blockZ);
 					Holder<Biome> biome = level.getBiome(pos);
 					if (! CONFIG.isFilterListHasBiome(biome))
 						f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel())));
@@ -116,14 +119,14 @@ public class Sampler {
 			}
 		}
 
-		return getCloudSampleProxy(timeOffset, steps, x, y, z) * densityMultiplier > f && (
-				// terrain dodge (detect light level)
-				! isEnableTerrainDodge || level.isEmptyBlock(new BlockPos(
-						(int) ((x + 0.5F) * cloudBlockSize - xOffsetNoDelta),
-						(int) (cloudHeight + (y + 0.5F) * cloudBlockSize / 2F),
-						(int) ((z + 0.5F) * cloudBlockSize)
-				))
-		);
+		if (isEnableTerrainDodge && isChunkLoaded && ! level.isEmptyBlock(new BlockPos(
+				(int) (blockX + cloudBlockSize / 2F),
+				(int) (cloudHeight + (y + 0.5F) * cloudBlockSize / 2F),
+				(int) (blockZ + cloudBlockSize / 2F)
+		)))
+			return false;
+
+		return getCloudSampleProxy(timeOffset, steps, x, y, z) * densityMultiplier > f;
 	}
 
 	private float getDensityMultiplier(long worldTime) {

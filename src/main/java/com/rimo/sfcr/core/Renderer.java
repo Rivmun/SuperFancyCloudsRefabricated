@@ -100,25 +100,48 @@ public class Renderer {
 				.build();
 	}
 
+	// return cloudGrid index that the pos pointing at, NOTE that they maybe outOfBound...
+	private int[] transformToGridPos(CloudGrid cloudGrid, double x, double y, double z) {
+		//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
+		Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
+		Vec3 camPos = camera.position();
+		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.5F) * cloudBlockWidth);  // trans to cloud relative...
+		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.5F) * cloudBlockWidth);
+		return new int[]{  // measure in cloudBlockSize...
+				(int) (cloudGrid.grids.length / 2F - x / cloudBlockWidth),  // offset by grid zero point...
+				(int) (cloudGrid.grids.length / 2F - z / cloudBlockWidth),
+				(int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight)
+		};
+	}
+
 	public boolean isCloudCovered(double x, double y, double z) {
 		CloudGrid cloudGrid = this.cloudGrid;
 		if (cloudGrid == null)
 			return false;
-		//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
-		Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
-		Vec3 camPos = camera.position();
-		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.33F) * cloudBlockWidth);  //trans to cloud relative...
-		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.33F) * cloudBlockWidth);
-		int gx = (int) (cloudGrid.grids.length / 2F - x / cloudBlockWidth);
-		int gy = (int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight);
-		int gz = (int) (cloudGrid.grids.length / 2F - z / cloudBlockWidth);
-		if (gx >= 0 && gx < cloudGrid.grids.length && gz >= 0 && gz < cloudGrid.grids.length) {
-			for (int i = 0; i < cloudGrid.grids[0][0].length; i++) {
-				if (cloudGrid.grids[gx][gz][i])
-					return gy <= i;
-			}
+
+		int[] pos = transformToGridPos(cloudGrid, x, y, z);
+		if (pos[0] < 0 || pos[0] >= cloudGrid.grids.length || pos[1] < 0 || pos[1] >= cloudGrid.grids.length ||
+				pos[2] > CONFIG.getCloudLayerThickness())
+			return false;
+
+		for (int i = 0; i < cloudGrid.grids[0][0].length; i++) {
+			if (cloudGrid.grids[pos[0]][pos[1]][i])
+				return pos[2] <= i;
 		}
 		return false;
+	}
+
+	public boolean isCloud(double x, double y, double z) {
+		CloudGrid cloudGrid = this.cloudGrid;
+		if (cloudGrid == null)
+			return false;
+
+		int[] pos = transformToGridPos(cloudGrid, x, y, z);
+		if (pos[0] < 0 || pos[0] >= cloudGrid.grids.length || pos[1] < 0 || pos[1] >= cloudGrid.grids.length ||
+				pos[2] < 0 || pos[2] >= CONFIG.getCloudLayerThickness())
+			return false;
+
+		return cloudGrid.grids[pos[0]][pos[1]][pos[2]];
 	}
 
 	protected @Nullable CloudGrid getCloudGrid(int x, int z, int renderRange) {

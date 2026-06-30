@@ -146,4 +146,14 @@ public class Client {
 			return false;
 		return ! RENDERER.isCloudCovered(x, y, z);
 	}
+
+	/**
+	 * @see #isNoCloudCovered(double, double, double)
+	 * @return {@code true} if this point has cloudBlock.
+	 */
+	public static boolean isCloud(double x, double y, double z) {
+		if (! CONFIG.isEnableRender() || RENDERER == null)
+			return false;
+		return RENDERER.isCloud(x, y, z);
+	}
 }

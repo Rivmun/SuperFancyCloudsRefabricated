@@ -1,10 +1,13 @@
 package com.rimo.sfcr.mixin;
 
+import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.VersionUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import net.minecraft.client.gui.components.debug.DebugScreenEntry;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,10 +28,18 @@ public class DebugScreenEntriesMixin {
 	@Inject(method = "<clinit>()V", at = @At("RETURN"))
 	private static void sfcr$registerDebugEntry(CallbackInfo ci) {
 		register(sfcr$ID, (displayer, level, levelChunk, levelChunk2) -> {
+			boolean debugIsCloud = false, debugIsCloudClient = false;
+			if (level != null) {
+				//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
+				Vec3 pos = Minecraft.getInstance().gameRenderer.mainCamera().position();
+				debugIsCloud = Common.isCloud(level, pos.x, pos.y, pos.z);
+				debugIsCloudClient = Client.isCloud(pos.x, pos.y, pos.z);
+			}
 			displayer.addToGroup(sfcr$ID, List.of(
 					RENDERER.getDebugString(),
 					DATA.getDebugString(),
-					Common.debugString
+					Common.debugString,
+					"[SFCR] isCloud:" + debugIsCloud + ", isCloudClient:" + debugIsCloudClient
 			));
 		});
 	}

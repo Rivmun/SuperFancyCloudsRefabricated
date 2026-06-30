@@ -262,6 +262,29 @@ public class Common {
 		return ! data.sampler.isCloudCovered(x, y, z);
 	}
 
+	/**
+	 * @see #isNoCloudCovered(Level, double, double, double)
+	 * @return {@code true} if this point has cloudBlock.
+	 */
+	public static boolean isCloud(Level level, double x, double y, double z) {
+		long time = System.nanoTime();
+		boolean result = _isCloud(level, x, y, z);
+		apiDebugTime.add(System.nanoTime() - time);
+		return result;
+	}
+	private static boolean _isCloud(Level level, double x, double y, double z) {
+		String name = level.dimension().identifier().toString();
+		DimensionData data = DIMENSION_CACHE.get(name);
+		if (data == null) {
+			if (level instanceof ServerLevel) {
+				data = loadDimensionData((ServerLevel) level);
+			} else {
+				return false;
+			}
+		}
+		return data.sampler.isCloud(x, y, z);
+	}
+
 	//Debug
 	public static void exceptionCatcher(Exception e) {
 		StringBuilder text = new StringBuilder(MOD_ID + " got an error:\n" + e.toString());

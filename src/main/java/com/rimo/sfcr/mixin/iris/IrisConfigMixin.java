@@ -1,11 +1,7 @@
 package com.rimo.sfcr.mixin.iris;
 
 import com.rimo.sfcr.Client;
-import com.rimo.sfcr.Common;
-import com.rimo.sfcr.VersionUtil;
 import net.irisshaders.iris.config.IrisConfig;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,12 +15,6 @@ public abstract class IrisConfigMixin {
 	@Inject(method = "setShadersEnabled", at = @At("HEAD"))
 	public void sfcr$shaderEnabledListener(boolean enabled, CallbackInfo ci) {
 		Client.isIrisLoadedShader = enabled;
-		if (enabled) {
-			Common.CONFIG.setEnableRender(false);
-			LocalPlayer player = Minecraft.getInstance().player;
-			if (player != null)
-				VersionUtil.sendMessage(player, "text.sfcr.shaderpackEnabled");
-		}
 	}
 
 	@Inject(method = "load", at = @At("TAIL"))

@@ -1,7 +1,6 @@
 {
 	"text.sfcr.title": "SuperFancyClouds: Re",
 	"text.sfcr.title.customDimensionMode": "SuperFancyCloud @%s",
-	"text.sfcr.shaderpackEnabled": "SFCR is disable automatically during shader enable.",
 
 	"text.sfcr.category.general": "General",
 	"text.sfcr.option.enableMod": "Enable Cloud",

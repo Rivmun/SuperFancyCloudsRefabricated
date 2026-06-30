@@ -57,6 +57,7 @@ repositories {
     maven("https://api.modrinth.com/maven")
     maven("https://maven.terraformersmc.com/")
     maven("https://maven.shedaniel.me/")
+    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -72,7 +73,7 @@ dependencies {
     }
     //distant horizons
     api("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    runtimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
     //particle rain
     compileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
     //serene seasons

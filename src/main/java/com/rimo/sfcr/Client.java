@@ -118,11 +118,16 @@ public class Client {
 			LOGGER.info("{} send current config to server", MOD_ID);
 	}
 
-	public static void applyConfigChange(boolean oldEnableDHCompat) {
+	public static void applyConfigChange(boolean oldEnableDHCompat, boolean oldEnableBottomDim) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat()) {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
 		} else if (! CONFIG.isEnableRender()) {
 			RENDERER.stop();
+		}
+		if (isIrisLoadedShader && (!CONFIG.isEnableRender() || oldEnableBottomDim != CONFIG.isEnableBottomDim())) {
+			try {  // reload shader if pipeline was changed
+				Class.forName("net.irisshaders.iris.Iris").getDeclaredMethod("reload").invoke(null);
+			} catch (Exception ignore) {}
 		}
 		Renderer.sampler.setConfig(CONFIG);
 	}

@@ -19,7 +19,9 @@
     "extra.LeavesBlockMixin",
     "extra.WeatherEffectRendererMixin",
     ${particlerain_mixin}
-    "iris.IrisConfigMixin"
+    "iris.IrisConfigMixin",
+    "iris.IrisPipelinesMixin",
+    "iris.VanillaTransformerMixin"
   ],
   "server": [],
   "injectors": {

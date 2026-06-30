@@ -22,6 +22,7 @@ public class ConfigScreen {
 	final ConfigBuilder builder = ConfigBuilder.create();
 	final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 	final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
+	final boolean oldEnableBottomDim = CONFIG.isEnableBottomDim();
 	final String dimensionName;
 	final boolean isCustomDimension;
 
@@ -109,7 +110,7 @@ public class ConfigScreen {
 							Client.isCustomDimensionConfig = true;
 					}
 					DATA.setConfig(CONFIG);
-					Client.applyConfigChange(oldEnableDHCompat);
+					Client.applyConfigChange(oldEnableDHCompat, oldEnableBottomDim);
 				})
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.general"))
 						// Custom Dimension Warning

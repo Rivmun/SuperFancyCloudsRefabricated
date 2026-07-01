@@ -49,6 +49,7 @@ public class Renderer {
 	protected int rebuildTimer = 0;  //measure in ticks
 	protected int cullStateSkipped, cullStateShown;  //debug counter
 	protected double debugRebuildTime, debugUploadTime, debugSamplingTime;
+	private long prevSysTime;
 
 	public Renderer() {}
 	public Renderer(Renderer renderer) {
@@ -130,7 +131,8 @@ public class Renderer {
 		int cameraGridY = (int) Math.floor((cameraY - cloudHeight) / cloudBlockHeight);
 
 		//refresh check
-		resamplingTimer += VersionUtil.getLastFrameDuration() * 0.25 * 0.25;
+		resamplingTimer += (System.nanoTime() - prevSysTime) / 1e9;
+		prevSysTime = System.nanoTime();
 		if (! Minecraft.getInstance().isPaused() && ! isResampling) {
 			if (resamplingTimer > DATA.getResamplingInterval() || oldGridX != GridX || oldGridZ != GridZ || oldColor.distanceToSqr(cloudColor) > 2.0E-4) {
 				isResampling = true;

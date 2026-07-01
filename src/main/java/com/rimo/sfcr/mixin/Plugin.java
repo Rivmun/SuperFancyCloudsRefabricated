@@ -63,6 +63,8 @@ public class Plugin implements IMixinConfigPlugin {
 
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+		if (MIXINS == null)
+			return;
 		MIXINS.remove(mixinClassName);
 	}
 

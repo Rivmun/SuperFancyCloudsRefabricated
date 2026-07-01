@@ -1,3 +1,11 @@
+# 2.9.4
+- Fix compatibility for Iris. Now 2.0 can work with shaderpacks.
+  - Remember switch cloudType to 'Vanilla' in IrisConfig -> ShaderPackSettings -> Sky/Atmosphere -> Clouds.
+  - Note that specific display effect based on specific shaderpacks.
+- Fix NCNRLogically function potentially stuck server tick.
+- Fix a potentially NPE in mixinPlugin.
+- Add isCloud api function.
+
 # 2.9.3.1
 - Support mc26.2.
 - Fix an issue that rebuild interval becomes shorter when fps is extremely high (thanks to Vulkan :P).

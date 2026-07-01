@@ -70,17 +70,35 @@ public class Sampler {
 		this.densityBySeason = percent / 100F;
 	}
 
-	public boolean isCloudCovered(double x, double y, double z) {
+	private int[] transformToGridPos(double x, double y, double z) {
 		if (level == null)
+			return null;
+		return new int[]{
+				(int) Math.floor((x + level.getGameTime() * 0.03F) / cloudBlockSize),
+				(int) ((y - cloudHeight) / cloudBlockSize * 2),
+				(int) Math.floor(z / cloudBlockSize + 0.33F)
+		};
+	}
+
+	public boolean isCloudCovered(double x, double y, double z) {
+		int[] pos = transformToGridPos(x, y, z);
+		if (pos == null)
 			return false;
-		int gx = (int) Math.floor((x + level.getGameTime() * 0.03F) / cloudBlockSize);
-		int gz = (int) Math.floor(z / cloudBlockSize + 0.33F);
 		for (int i = cloudThick - 1; i >= 0; i --) {
-			if (isGridHasCloud(gx, i, gz, Common.DATA.densityByWeather, 0.5F)) {
-				return (y - cloudHeight) / cloudBlockSize * 2 <= i;
+			if (isGridHasCloud(pos[0], i, pos[2], Common.DATA.densityByWeather, 0.5F)) {
+				return pos[1] <= i;
 			}
 		}
 		return false;
+	}
+
+	public boolean isCloud(double x, double y, double z) {
+		int[] pos = transformToGridPos(x, y, z);
+		if (pos == null)
+			return false;
+		if (pos[1] <= 0 || pos[1] > cloudThick)
+			return false;
+		return isGridHasCloud(pos[0], pos[1], pos[2] - 1, DATA.densityByWeather, 0.5F);
 	}
 
 	private float thresholdFormula(float threshold, float reduction, float weather, float biome) {

@@ -54,20 +54,35 @@ public class CloudData {
 	Type getDataType() {return dataType;}
 	float getLifeTime() {return lifeTime;}
 
-	boolean isCloudCovered(double x, double y, double z) {
+	// return cloudGrid index that the pos pointing at, NOTE that they maybe outOfBound...
+	private int[] transformToGridPos(double x, double y, double z) {
 		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		int cbSize = CONFIG.getCloudBlockSize();
-		int gx = (int) (width / 2F - (camPos.x() - x) / cbSize);
-		int gy = (int) (y / cbSize * 2);
-		int gz = (int) (width / 2F - (camPos.z() - z) / cbSize);
-		if (gx < 0 || gx >= width || gz < 0 || gz >= width)
+		return new int[]{
+				(int) (width / 2F - (camPos.x() - x) / cbSize - 0.166667F),
+				(int) ((y - Client.RENDERER.getCloudHeight()) / cbSize * 2),
+				(int) (width / 2F - (camPos.z() - z) / cbSize - 0.166667F)
+		};
+	}
+
+	boolean isCloudCovered(double x, double y, double z) {
+		int[] pos = transformToGridPos(x, y, z);
+		if (pos[0] < 0 || pos[0] >= width || pos[2] < 0 || pos[2] >= width ||
+				pos[1] > CONFIG.getCloudLayerThickness())
 			return false;
 		for (int i = height - 1; i >= 0; i --) {
-			if (_cloudData[gx][i][gz]) {
-				return gy - (int) (Client.RENDERER.getCloudHeight() / cbSize * 2) <= i;
-			}
+			if (_cloudData[pos[0]][i][pos[2]])
+				return pos[1] <= i;
 		}
 		return false;
+	}
+
+	boolean isCloud(double x, double y, double z) {
+		int[] pos = transformToGridPos(x, y, z);
+		if (pos[0] < 0 || pos[0] >= width || pos[2] < 0 || pos[2] >= width ||
+				pos[1] < 0 || pos[1] >= CONFIG.getCloudLayerThickness())
+			return false;
+		return _cloudData[pos[0]][pos[1]][pos[2]];
 	}
 
 	private void collectCloudData(int x, int z, float densityByWeather, float densityByBiome) {

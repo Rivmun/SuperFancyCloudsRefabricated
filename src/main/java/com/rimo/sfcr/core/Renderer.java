@@ -549,6 +549,14 @@ public class Renderer {
 		return false;
 	}
 
+	public boolean isCloud(double x, double y, double z) {
+		for(CloudData data : cloudDataGroup) {
+			if (data != null && data.isCloud(x + xOffset, y, z + zOffset))
+				return true;
+		}
+		return false;
+	}
+
 	public String getDebugString() {
 		return String.format(
 				"[SFCR] build %s/%s faces in %.3fms, upload in %.3fms, last sampling in %.3fs",

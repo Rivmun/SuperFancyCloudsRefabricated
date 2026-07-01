@@ -113,7 +113,7 @@ public class Sampler {
 			if (isEnableDynamic) {
 				densityMultiplier = getDensityMultiplier(time);
 				timeOffset = time / 20.0;
-				if (isBiomeByChunk) {
+				if (! isBiomeByChunk) {
 					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
 				} else {  // biome detect by chunk
 					int bx = x * cloudBlockSize - xOffsetNoDelta;

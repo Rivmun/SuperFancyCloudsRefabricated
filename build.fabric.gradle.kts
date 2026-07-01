@@ -90,7 +90,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
 
     //particle rain
     if (sc.current.parsed > "1.20") {
@@ -99,13 +99,13 @@ dependencies {
         modCompileOnly("curse.maven:particle-rain-421897:${property("deps.particlerain")}")
     }
     //serene seasons
-    if (sc.current.parsed > "1.20") {
-        modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
-    }
+//    if (sc.current.parsed > "1.20") {
+//        modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    }
     //fabric seasons
-    if (stonecutter.current.parsed <= "1.21.1") {
-        modCompileOnly("maven.modrinth:fabric-seasons:${property("deps.fabric_seasons")}")
-    }
+//    if (stonecutter.current.parsed <= "1.21.1") {
+//        modCompileOnly("maven.modrinth:fabric-seasons:${property("deps.fabric_seasons")}")
+//    }
 }
 
 tasks {

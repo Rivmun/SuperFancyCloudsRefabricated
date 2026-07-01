@@ -78,7 +78,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}${minecraft}")
 
     //particle rain
     if (sc.current.parsed eq "1.21.1") {
@@ -86,7 +86,7 @@ dependencies {
     }
 
     //serene seasons
-    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
 }
 
 tasks {

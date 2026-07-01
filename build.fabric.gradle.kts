@@ -54,7 +54,6 @@ base.archivesName = property("mod.id") as String
 
 repositories {
     mavenLocal()
-    maven("https://maven.architectury.dev/")
     maven("https://maven.shedaniel.me/")
     maven("https://api.modrinth.com/maven")
     maven("https://maven.terraformersmc.com/")
@@ -75,12 +74,12 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //particle rain
     modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
     //serene seasons
-    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
     modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
 }

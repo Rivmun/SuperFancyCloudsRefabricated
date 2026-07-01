@@ -75,10 +75,10 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
 
     //serene seasons
-    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
     modCompileOnly("maven.modrinth:iris:${property("deps.iris")}")
 }

@@ -57,7 +57,6 @@ repositories {
     maven("https://api.modrinth.com/maven")
     maven("https://maven.terraformersmc.com/")
     maven("https://maven.shedaniel.me/")
-    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -77,7 +76,7 @@ dependencies {
     //particle rain
     compileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
     //serene seasons
-    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+//    compileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
     //Iris
     compileOnly("maven.modrinth:iris:${property("deps.iris")}-fabric")
 }

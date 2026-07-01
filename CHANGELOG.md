@@ -1,3 +1,10 @@
+# 1.9.4
+- Fix rebuild interval will get shorter when fps is extremely high.
+- Fix NCNRLogically potentially stuck the server tick.
+- Fix a potentially NPE in mixinPlugin.
+- Fix biomeDetectByChunk condition is reversed.
+- Add isCloud api.
+
 # 1.9.3
 Bug fixes, mainly fix the server connect issue on mc 1.21.1.
 - Fix dimension payload register issue that causing client cannot connect to server which both installed SFCR on mc1.21.1 (affected both on fabric & neoforge).
@@ -76,3 +83,48 @@ On Forge side, we embedded Llamalad7 's MixinExtras that makes mod jar *slightly
 - Fix leaves block still gen dripping water particle when NCNR enable. 
 - Fix DH Compat cloud no applying blush correctly.
 - fix pre-detect sometimes return fake thunder when weather is clear, that causes cloud density to increase abnormally then suddenly return to normal.
+
+# 1.8.1.1
+- Fix start up crash causing by mixin conflict with other mod.
+- Update Particle Rain compat to v4.0.0-beta.6
+
+# 1.8.1
+A minor patch for previous version. Full 1.8 changelog see v1.8 for 1.20.1.
+- Rework View Culling.
+- Fix NCNR func still enable when renderer is disabled.
+- Link NCNR enable with Particle Rain compat, if has.
+- Port to 1.21.1
+- Port to NeoForge (with Fabric)
+  - This is first time we support to Neoforge. If you encounter any issue please report.
+
+# 1.8.0
+## Grand Introduction of SFCR 1.8
+We're excited to bring you this major update, which includes several new features, a handful of fixes, and numerous optimizations. We highly recommend upgrading.
+### Core changes
+- Fully rewritten from v2.0 (major internal rework).
+- Ported 1.21.6+ vanilla mesh build (integrated normal/circular culling).
+### Features
+- Added custom dimension support.
+- Added cloud bottom dim.
+- Added night density slider.
+- Added "No Cloud, No Rain" feature.
+- Added Distant Horizons compatibility (manual enable required).
+- Added Particle Rain compatibility (manual enable required).
+### Fixes
+- Fixed infinite loop when performing a long-distance teleport.
+- Fixed dawn/dusk blush color flicker.
+- Fixed excessive thread creation causing severe lag.
+- Fixed occasional weather detection failure leading to density flicker.
+### Optimizations
+- Increased cloud top density during rainfall.
+- Adjusted network and event hooks.
+- Simplified server-side commands and behavior.
+- Reworked the config, config screen, and config I/O system.
+- Reworked server synchronization.
+- General performance and stability improvements.
+### Known Issues
+- Position culling works incorrectly when close to clouds.
+- Mesh rebuilds when the Y-coordinate changes have a slight delay due to concurrent updates, and cloud height is not sufficiently accurate.
+### Note
+- Particle Rain compatibility requires Particle Rain version v4.0.0-beta.5.
+  As this mod is in beta and frequently rework (as our, well...). This compatibility may expire soon. New update will come accordingly at that time.

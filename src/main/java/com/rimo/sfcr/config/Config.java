@@ -78,8 +78,9 @@ public class Config extends SharedConfig {
 		if (isEnableDebug()) {
 			StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 			StringBuilder str = new StringBuilder();
-			for(StackTraceElement e : Arrays.stream(stack).skip(2).limit(5).toList())
-				str.append("\n    ").append(e);
+			Arrays.stream(stack).skip(2).limit(5).forEach(e ->
+					str.append("\n    ").append(e)
+			);
 			Common.LOGGER.info("{} load config file: {}, call from {}", MOD_ID, path.getFileName(), str);
 		}
 	}

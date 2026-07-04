@@ -431,13 +431,6 @@ public class Renderer {
 					}
 					cullStateShown++;
 
-					if (isDebug && ! Common.isNoCloudCovered(  //NCNR logical debug
-							Minecraft.getInstance().level,
-							(vertexList[0][0] + offset - 1) * cloudBlockSize + camera.getPosition().x(),
-							63,
-							(vertexList[0][2] - 1) * cloudBlockSize + camera.getPosition().z()
-					)) cloudColor = cloudColor.multiply(0, 1, 0);
-
 					CloudData.Facing facing = face.getFacing();
 					Vec3 faceColor = cloudColor.multiply(facing.color[0], facing.color[1], facing.color[2]);
 					if (enableBottomDim) {

@@ -22,14 +22,8 @@ public abstract class DebugScreenOverlayMixin {
 		if (Common.CONFIG.isEnableRender()) {
 			list.add(Client.RENDERER.getDebugString());
 			list.add(Common.DATA.getDebugString());
-			list.add(Common.debugString);
-			Level level = Minecraft.getInstance().level;
-			if (level != null) {
-				Vec3 pos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-				boolean debugIsCloud = Common.isCloud(level, pos.x, pos.y, pos.z);
-				boolean debugIsCloudClient = Client.isCloud(pos.x, pos.y, pos.z);
-				list.add("[SFCR] isCloud:" + debugIsCloud + ", isCloudClient:" + debugIsCloudClient);
-			}
+			list.add(Common.getDebugString());
+			list.add(Client.getDebugString());
 		}
 		callback.setReturnValue(list);
 	}

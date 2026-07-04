@@ -16,6 +16,7 @@ import dev.architectury.platform.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 //~ if < 1.19 'Component' -> 'TranslatableComponent'
 import net.minecraft.network.chat.Component;
 //? if neoforge
@@ -36,6 +37,7 @@ public class Client {
 	public static boolean isConfigHasBeenOverride = false;
 	public static boolean isCustomDimensionConfig = false;
 	public static Renderer RENDERER;
+	private static String debugString = "";
 
 	public static void init() {
 		// Game boot
@@ -75,6 +77,7 @@ public class Client {
 				DATA.updateBiomeDensity(client.player);
 			if (seasonHandler != null && level.getGameTime() % 24000 == 0)
 				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
+			updateDebugString();
 		});
 
 		// Quit reset
@@ -231,5 +234,23 @@ public class Client {
 		if (! CONFIG.isEnableRender() || RENDERER == null)
 			return false;
 		return RENDERER.isCloud(x, y, z);
+	}
+
+	private static void updateDebugString() {
+		if (! Minecraft.getInstance().isLocalServer()) {
+			debugString = "[SFCR] pos debug not available in remote game.";
+			return;
+		}
+		Level level = Minecraft.getInstance().level;
+		if (level == null)
+			return;
+		Vec3 pos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+		boolean debugIsCloud = Common.isCloud(level, pos.x, pos.y, pos.z);
+		boolean debugIsCloudClient = Client.isCloud(pos.x, pos.y, pos.z);
+		debugString = "[SFCR] isCloud:" + debugIsCloud + ", isCloudClient:" + debugIsCloudClient;
+	}
+
+	public static String getDebugString() {
+		return debugString;
 	}
 }

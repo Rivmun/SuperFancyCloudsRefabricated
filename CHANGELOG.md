@@ -1,3 +1,15 @@
+# 1.9.4.1
+- Fix NoSuchMethodError crash when enableDebug then exit/enter/launch game on Java 8 (mc1.16.5).
+- Fix no fog on 1.16.5.
+- Fix wrong simulated vanilla cloudHeight on server 1.16.5.
+- Re-add isBiomeUseLoadedChunk option.
+- Now clouds can be fully opaque.
+  - Default cloudColor now is 0xB2FFFFFF (as same as vanilla).
+- Improved (but no fully fix) NCNRLogically performance, again...
+- Improved debug performance.
+- Internal mixin refactor.
+- Internal biomeDetect improved.
+
 # 1.9.4
 - Fix rebuild interval will get shorter when fps is extremely high.
 - Fix NCNRLogically potentially stuck the server tick.

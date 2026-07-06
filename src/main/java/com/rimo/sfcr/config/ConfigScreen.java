@@ -132,6 +132,13 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setEnableDHCompat)
 				.setRequirement(Requirement.isTrue(() -> Client.isDistantHorizonsLoaded))
 				.build();
+		BooleanListEntry isBiomeChunk = entryBuilder
+				.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityByChunk")
+						, CONFIG.isBiomeDensityByChunk())
+				.setDefaultValue(false)
+				.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
+				.setSaveConsumer(CONFIG::setBiomeDensityByChunk)
+				.build();
 		// (i love it...
 		return builder.setParentScreen(Minecraft.getInstance().screen)
 				.setTransparentBackground(true)
@@ -470,12 +477,15 @@ public class ConfigScreen {
 												.build(),
 										//? }
 										//biome density affect by chunk
+										isBiomeChunk,
+										//biome density detect loaded chunk
 										entryBuilder
-												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityByChunk")
-														, CONFIG.isBiomeDensityByChunk())
+												.startBooleanToggle(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk")
+														, CONFIG.isBiomeUseLoadedChunk())
 												.setDefaultValue(false)
-												.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityByChunk.@Tooltip"))
-												.setSaveConsumer(CONFIG::setBiomeDensityByChunk)
+												.setTooltip(Component.translatable("text.sfcr.option.isBiomeDensityUseLoadedChunk.@Tooltip"))
+												.setSaveConsumer(CONFIG::setBiomeUseLoadedChunk)
+												.setDisplayRequirement(Requirement.isTrue(isBiomeChunk))
 												.build(),
 										//biome filter
 										entryBuilder

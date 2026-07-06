@@ -13,7 +13,7 @@ import static com.rimo.sfcr.Client.RENDERER;
 import static com.rimo.sfcr.Common.*;
 
 public class CloudData {
-	public static Sampler sampler = new Sampler();
+	public static Sampler sampler = new Sampler.Client();
 	private final Type dataType;
 	private float lifeTime;
 	ArrayList<CompressedFace> meshData = new ArrayList<>();

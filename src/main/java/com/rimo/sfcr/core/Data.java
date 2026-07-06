@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import static com.rimo.sfcr.Common.CONFIG;
 
 public class Data {
+	public static final float DEFAULT_BIOME_DENSITY = 0.5F;
 	protected Weather currentWeather = Weather.CLEAR;
 	protected Weather nextWeather = Weather.CLEAR;
 	protected float densityByWeather = 0f;
@@ -111,7 +112,7 @@ public class Data {
 			if (! isBiomeByChunk) {
 				densityByBiome = isBiomeChange ? stepDensity(targetDownFall, densityByBiome, densityChangingSpeed) : targetDownFall;
 			} else {
-				densityByBiome = 0.5f;		//Output common value if use chunk.
+				densityByBiome = DEFAULT_BIOME_DENSITY;		//Output common value if useChunk.
 			}
 		} else {
 			densityByBiome = 0f;

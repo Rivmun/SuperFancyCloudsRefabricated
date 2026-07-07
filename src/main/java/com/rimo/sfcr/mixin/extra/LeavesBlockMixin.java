@@ -18,7 +18,7 @@ import net.minecraft.util.RandomSource;
 public abstract class LeavesBlockMixin {
 	@WrapOperation(method = "animateTick", at = @At(
 			value = "INVOKE",
-	//? if > 1.20 {
+//? if > 1.20 {
 			target = "Lnet/minecraft/util/ParticleUtils;spawnParticleBelow(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/particles/ParticleOptions;)V"
 	))
 	private void sfcr$disableDrippingWater(Level level, BlockPos pos, RandomSource random, ParticleOptions particle, Operation<Void> original) {

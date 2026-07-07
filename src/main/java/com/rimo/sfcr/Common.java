@@ -258,6 +258,8 @@ public class Common {
 		String name = Level.dimension().location().toString();
 		SharedConfig config = new SharedConfig();
 		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
+		if (CONFIG.isEnableDebug())
+			LOGGER.info("load dimensionData {} into cache...", name);
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(Level);
@@ -268,6 +270,16 @@ public class Common {
 				return new DimensionData(existing.seed(), configJson, existing.sampler());
 			}
 		});
+	}
+
+	private static @Nullable DimensionData getDimensionData(Level level, String name) {
+		DimensionData data = DIMENSION_CACHE.get(name);
+		if (data == null) {
+			if (level instanceof ServerLevel) {
+				data = loadDimensionData((ServerLevel) level);
+			}
+		}
+		return data;
 	}
 
 	/**
@@ -320,14 +332,9 @@ public class Common {
 	}
 	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
 		String name = level.dimension().location().toString();
-		DimensionData data = DIMENSION_CACHE.get(name);
-		if (data == null) {
-			if (level instanceof ServerLevel) {
-				data = loadDimensionData((ServerLevel) level);
-			} else {
-				return false;
-			}
-		}
+		DimensionData data = getDimensionData(level, name);
+		if (data == null)
+			return false;
 		return ! data.sampler.isCloudCovered(x, y, z);
 	}
 
@@ -343,14 +350,9 @@ public class Common {
 	}
 	private static boolean _isCloud(Level level, double x, double y, double z) {
 		String name = level.dimension().location().toString();
-		DimensionData data = DIMENSION_CACHE.get(name);
-		if (data == null) {
-			if (level instanceof ServerLevel) {
-				data = loadDimensionData((ServerLevel) level);
-			} else {
-				return false;
-			}
-		}
+		DimensionData data = getDimensionData(level, name);
+		if (data == null)
+			return false;
 		return data.sampler.isCloud(x, y, z);
 	}
 

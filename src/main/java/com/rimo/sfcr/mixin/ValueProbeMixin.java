@@ -24,9 +24,10 @@ public abstract class ValueProbeMixin {
 		if (EnvironmentAttributes.CLOUD_COLOR.equals(environmentAttribute)) {
 			//~ if = 1.21.11 'getDefaultClockTime' -> 'getDayTime'
 			long t = level.getDefaultClockTime() % 24000L;
-			int r = (CONFIG.getCloudColor() & 0xFF0000) >> 16;
-			int g = (CONFIG.getCloudColor() & 0x00FF00) >> 8;
-			int b = (CONFIG.getCloudColor() & 0x0000FF);
+			int customColor = CONFIG.getCloudColor();
+			int r = (customColor & 0xFF0000) >> 16;
+			int g = (customColor & 0xFF00) >> 8;
+			int b = (customColor & 0xFF);
 
 			if (CONFIG.isEnableDuskBlush()) {
 				// Color changed by time...
@@ -42,7 +43,9 @@ public abstract class ValueProbeMixin {
 					b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
 				}
 			}
-			cir.setReturnValue(ARGB.multiply((Integer) cir.getReturnValue(), ARGB.color(r, g, b)));
+			int blendWithoutAlpha = ARGB.multiply((Integer) cir.getReturnValue(), ARGB.color(r, g, b));
+			int alpha = customColor >> 24;
+			cir.setReturnValue(ARGB.color(alpha, blendWithoutAlpha));
 		}
 
 		// inject custom cloud height

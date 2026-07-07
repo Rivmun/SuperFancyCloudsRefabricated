@@ -235,7 +235,7 @@ public class RendererDHCompat extends Renderer {
 						y2 * cloudBlockHeight,
 						z2 * cloudBlockWidth
 				),
-				new Color((float) color.x, (float) color.y, (float) color.z, alpha * 0.7F),
+				new Color((float) color.x, (float) color.y, (float) color.z, alpha),
 				EDhApiBlockMaterial.UNKNOWN
 		));
 	}

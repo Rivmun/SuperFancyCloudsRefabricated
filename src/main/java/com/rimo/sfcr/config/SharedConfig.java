@@ -39,7 +39,7 @@ public class SharedConfig {
 	private int cloudLayerThickness = 9;
 	private boolean enableTerrainDodge = true;
 	private int sampleSteps = 2;
-	private int cloudColor = 0xFFFFFFFF;
+	private int cloudColor = 0xB2FFFFFF;
 	private boolean enableBottomDim = true;
 	private boolean enableDuskBlush = true;
 	private float densityThreshold = 1.3f;

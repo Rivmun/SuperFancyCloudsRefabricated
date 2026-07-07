@@ -35,6 +35,22 @@ public abstract class VanillaTransformerMixin {
 			return original;
 		int len = original.length;
 		String[] newArray = Arrays.copyOf(original, len + 1);
+		newArray[3] = """
+						const vec4[] iris_faceColors = vec4[](
+						    // Bottom face
+						    vec4(0.7, 0.7, 0.7, 1.0),
+						    // Top face
+						    vec4(1.0, 1.0, 1.0, 1.0),
+						    // North face
+						    vec4(0.8, 0.8, 0.8, 1.0),
+						    // South face
+						    vec4(0.8, 0.8, 0.8, 1.0),
+						    // West face
+						    vec4(0.9, 0.9, 0.9, 1.0),
+						    // East face
+						    vec4(0.9, 0.9, 0.9, 1.0)
+						);
+						""";
 		newArray[len - 1] = "const int FLAG_EXTRA_H = 1 << 3;";  //add height mask bit
 		if (Common.CONFIG.isEnableBottomDim()) {
 			newArray[len] = """

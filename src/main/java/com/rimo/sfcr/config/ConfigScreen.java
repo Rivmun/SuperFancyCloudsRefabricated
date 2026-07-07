@@ -249,7 +249,7 @@ public class ConfigScreen {
 						.addEntry(entryBuilder
 								.startAlphaColorField(Component.translatable("text.sfcr.option.cloudColor")
 										, CONFIG.getCloudColor())
-								.setDefaultValue(0xFFFFFFFF)
+								.setDefaultValue(0xB2FFFFFF)
 								.setSaveConsumer(CONFIG::setCloudColor)
 								.build())
 						//dusk blush

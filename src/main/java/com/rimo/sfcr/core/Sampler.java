@@ -59,6 +59,7 @@ public class Sampler {
 	public Sampler setConfig(@NotNull SharedConfig config) {
 		cloudThick = config.getCloudLayerThickness();
 		cloudBlockSize = config.getCloudBlockSize();
+		//~ if = 1.16.5 '192' -> '128'
 		cloudHeight = config.getCloudHeight() < 0 ? 192 : config.getCloudHeight();
 		isEnableDynamic = config.isEnableDynamic();
 		isBiomeByChunk = config.isBiomeDensityByChunk();

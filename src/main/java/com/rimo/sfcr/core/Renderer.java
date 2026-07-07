@@ -43,7 +43,7 @@ public class Renderer {
 	public static final RenderPipeline SUPER_FANCY_CLOUDS = createCustomRenderPipeline(true);
 	public static final RenderPipeline SUPER_FANCY_CLOUDS_NOTHICKNESS = createCustomRenderPipeline(false);
 
-	public static Sampler sampler = new Sampler();
+	public static Sampler sampler = new Sampler.Client();
 	protected volatile CloudGrid cloudGrid;  //replace vanilla CloudRenderer.cells
 	private Thread resamplingThread;
 	private volatile boolean isResampling = false;

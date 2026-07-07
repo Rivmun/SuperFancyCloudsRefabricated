@@ -2,13 +2,18 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.config.SharedConfig;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 import net.minecraft.core.Holder;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -74,7 +79,7 @@ public class Sampler {
 		if (pos == null)
 			return false;
 		for (int i = cloudThick - 1; i >= 0; i --) {
-			if (isGridHasCloud(pos[0], i, pos[2], Common.DATA.densityByWeather, 0.5F))
+			if (isGridHasCloud(pos[0], i, pos[2], Common.DATA.densityByWeather, Data.DEFAULT_BIOME_DENSITY))
 				return pos[1] <= i;
 		}
 		return false;
@@ -86,7 +91,7 @@ public class Sampler {
 			return false;
 		if (pos[1] <= 0 || pos[1] > cloudThick)
 			return false;
-		return isGridHasCloud(pos[0], pos[1], pos[2] - 1, DATA.densityByWeather, 0.5F);
+		return isGridHasCloud(pos[0], pos[1], pos[2] - 1, DATA.densityByWeather, Data.DEFAULT_BIOME_DENSITY);
 	}
 
 	private float thresholdFormula(float threshold, float reduction, float weather, float biome) {
@@ -117,23 +122,20 @@ public class Sampler {
 			oldBlockZ = blockZ;
 			isChunkLoaded = level.hasChunk(blockX / 16, blockZ / 16);
 
-			densityMultiplier = 1F;
-			timeOffset = 0.0;
-			f = threshold;
-
 			if (isEnableDynamic) {
 				densityMultiplier = getDensityMultiplier(time);
 				timeOffset = time / 20.0;
 
-				if (! isBiomeByChunk) {
-					f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
-				} else {  // biome detect by chunk
-					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
-					BlockPos pos = new BlockPos(blockX, topY, blockZ);
-					Holder<Biome> biome = level.getBiome(pos);
-					if (! CONFIG.isFilterListHasBiome(biome))
-						f = thresholdFormula(threshold, reduction, densityByWeather, CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel())));
+				if (isBiomeByChunk && (isChunkLoaded ||  // biome detect by chunk
+						(! (level instanceof ServerLevel) && CONFIG.isBiomeUseLoadedChunk()))) {  // if chunk unloaded, run only client and useLoadedChunk.
+					BlockPos pos = findSuitableBlockPos(isChunkLoaded, blockX, blockZ);
+					densityByBiome = getBiomeDensityOrDefault(pos, densityByBiome);
 				}
+				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
+			} else {
+				densityMultiplier = 1F;
+				timeOffset = 0.0;
+				f = threshold;
 			}
 		}
 
@@ -145,6 +147,41 @@ public class Sampler {
 			return false;
 
 		return getCloudSampleProxy(timeOffset, steps, x, y, z) * densityMultiplier > f;
+	}
+
+	private float getBiomeDensityOrDefault(BlockPos pos, float defaultDensityByBiome) {
+		if (pos == null)
+			return defaultDensityByBiome;
+		Holder<Biome> biome = level.getBiome(pos);
+		if (CONFIG.isFilterListHasBiome(biome))
+			return defaultDensityByBiome;
+		return CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel()));
+	}
+
+	private @Nullable BlockPos findSuitableBlockPos(boolean isChunkLoaded, int blockX, int blockZ) {
+		if (isChunkLoaded) {
+			int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
+			return new BlockPos(blockX, topY, blockZ);
+		}
+
+		Vec3 playerPos = getPlayerPos();
+		if (playerPos == null)
+			return null;
+
+		Vec2 cloudRelativeVec = new Vec2((float) (blockX - playerPos.x), (float) (blockZ - playerPos.z));
+		Vec2 unit = cloudRelativeVec.normalized().scale(- 16);  // step length measure in chunk
+		Vec2 cloudVec = new Vec2(blockX, blockZ);
+		while (! level.hasChunk((int) (cloudVec.x / 16), (int) (cloudVec.y / 16)) &&
+				cloudRelativeVec.dot(unit) < 0) {  // end at reversed
+			cloudVec = cloudVec.add(unit.negated());  // stepping near towards player
+			cloudRelativeVec = cloudRelativeVec.add(unit.negated());
+		}
+		if (level.hasChunk((int) (cloudVec.x / 16), (int) (cloudVec.y / 16))) {
+			int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) cloudVec.x, (int) cloudVec.y);
+			return new BlockPos((int) cloudVec.x, topY, (int) cloudVec.y);
+		}
+
+		return null;
 	}
 
 	private float getDensityMultiplier(long worldTime) {
@@ -168,6 +205,18 @@ public class Sampler {
 			sample += Math.pow(cy / cyMax, 2) * Math.max((1 - clearDensity / Math.max(clearDensity, currentDensity)) * MAX_ADD, 0);
 		}
 		return sample;
+	}
+
+	protected @Nullable Vec3 getPlayerPos() {return null;}
+
+	public static class Client extends Sampler {
+		@Override
+		protected @Nullable Vec3 getPlayerPos() {
+			LocalPlayer player = Minecraft.getInstance().player;
+			if (player != null)
+				return player.position();
+			return null;
+		}
 	}
 
 	/* - - - - - Sampler Core - - - - - */

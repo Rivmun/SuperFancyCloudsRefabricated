@@ -22,6 +22,7 @@ public class Config extends SharedConfig {
 	private boolean isThreadifyDHRemesh = false;
 	private boolean isEnableParticleRainCompat = false;
 	private boolean isCloudRainLogically = false;
+	private boolean isBiomeUseLoadedChunk = false;
 
 	/**
 	 * Do you want to call {@link #load()} to read a local config?
@@ -40,6 +41,7 @@ public class Config extends SharedConfig {
 		this.isThreadifyDHRemesh        = config.isThreadifyDHRemesh;
 		this.isEnableParticleRainCompat = config.isEnableParticleRainCompat;
 		this.isCloudRainLogically       = config.isCloudRainLogically;
+		this.isBiomeUseLoadedChunk      = config.isBiomeUseLoadedChunk;
 		super.set(config);
 	}
 
@@ -54,6 +56,7 @@ public class Config extends SharedConfig {
 	public boolean isThreadifyDHRemesh() {return isThreadifyDHRemesh;}
 	public boolean isEnableParticleRainCompat() {return isEnableParticleRainCompat && isEnableRender();}
 	public boolean isCloudRainLogically() {return isCloudRainLogically && isEnableCloudRain && enableServer;}
+	public boolean isBiomeUseLoadedChunk() {return isBiomeUseLoadedChunk && isBiomeDensityByChunk();}
 
 	public void setEnableDebug(boolean isEnable) {enableDebug = isEnable;}
 	public void setEnableServer(boolean isEnable) {enableServer = isEnable;}
@@ -66,6 +69,7 @@ public class Config extends SharedConfig {
 	public void setThreadifyDHRemesh(boolean enable) {isThreadifyDHRemesh = enable;}
 	public void setEnableParticleRainCompat(boolean enable) {isEnableParticleRainCompat = enable && isEnableCloudRain;}
 	public void setCloudRainLogically(boolean enable) {this.isCloudRainLogically = enable && isEnableCloudRain && enableServer;}
+	public void setBiomeUseLoadedChunk(boolean enable) {this.isBiomeUseLoadedChunk = enable && isBiomeDensityByChunk();}
 
 	/**
 	 * Load {@link #DEFAULT_PATH} file into this instance, or write this instance into {@link #DEFAULT_PATH} file if the file isn't exist.

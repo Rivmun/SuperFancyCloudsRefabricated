@@ -245,8 +245,8 @@ public class Renderer {
 		RenderSystem.setShaderTexture(0, whiteTexture);
 		*///? }
 		if (CONFIG.isEnableFog()) {
-			FogRenderer.levelFogColor();
 			//? if ! 1.16.5 {
+			FogRenderer.levelFogColor();
 			if (!CONFIG.isFogAutoDistance()) {
 				RenderSystem.setShaderFogStart(RenderSystem.getShaderFogStart() * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
@@ -255,7 +255,8 @@ public class Renderer {
 				RenderSystem.setShaderFogEnd(RenderSystem.getShaderFogEnd() * CONFIG.getAutoFogMaxDistance());
 			}
 			//? } else {
-			/*float viewDistance = Minecraft.getInstance().gameRenderer.getRenderDistance();
+			/*RenderSystem.enableFog();
+			float viewDistance = Minecraft.getInstance().gameRenderer.getRenderDistance();
 			if (!CONFIG.isFogAutoDistance()) {
 				RenderSystem.fogStart(viewDistance * CONFIG.getFogMinDistance() * CONFIG.getCloudBlockSize() / 16);
 				RenderSystem.fogEnd(viewDistance * CONFIG.getFogMaxDistance() * CONFIG.getCloudBlockSize() / 16);
@@ -264,8 +265,10 @@ public class Renderer {
 				RenderSystem.fogEnd(viewDistance * CONFIG.getAutoFogMaxDistance());
 			}
 			*///? }
+		//? if ! 1.16.5 {
 		} else {
 			FogRenderer.setupNoFog();
+		//? }
 		}
 		//? if = 1.16.5
 		//RenderSystem.depthMask(true);

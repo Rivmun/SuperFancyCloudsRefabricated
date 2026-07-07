@@ -283,7 +283,7 @@ public class ConfigScreen {
 						.addEntry(entryBuilder
 								.startAlphaColorField(Component.translatable("text.sfcr.option.cloudColor")
 										, CONFIG.getCloudColor())
-								.setDefaultValue(0xFFFFFFFF)
+								.setDefaultValue(0xB2FFFFFF)
 								.setErrorSupplier(value -> {
 									if (value >>> 24 <= 0x20)
 										return Optional.of(Component.translatable("text.sfcr.colorAlphaTooLow"));

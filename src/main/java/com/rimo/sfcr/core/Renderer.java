@@ -443,13 +443,13 @@ public class Renderer {
 						//? if < 1.21 {
 						/*builder.vertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 								.uv(0.5f, 0.5f)
-								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
+								.color((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, cloudAlphaByType)
 								.normal(facing.normal[0], facing.normal[1], facing.normal[2])
 								.endVertex();
 						*///? } else {
 						builder.addVertex(vertexList[k][0], vertexList[k][1], vertexList[k][2])
 								.setUv(0.5f, 0.5f)
-								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, 0.7F * cloudAlphaByType)
+								.setColor((float) faceColor.x, (float) faceColor.y, (float) faceColor.z, cloudAlphaByType)
 								.setNormal(facing.normal[0], facing.normal[1], facing.normal[2]);
 						//? }
 				}

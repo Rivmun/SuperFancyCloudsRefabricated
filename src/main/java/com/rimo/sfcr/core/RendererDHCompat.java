@@ -183,7 +183,7 @@ public class RendererDHCompat extends Renderer {
 							vertex[2][1] * cloudBlockHeight,
 							(vertex[2][2] - 0.33F) * cloudBlockWidth
 					),
-					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha * 0.7F),
+					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha),
 					EDhApiBlockMaterial.UNKNOWN
 			));
 		}

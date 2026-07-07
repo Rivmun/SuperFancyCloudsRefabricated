@@ -127,9 +127,10 @@ public class Common {
 		DATA.updateWeatherDensity(level);
 
 		//debug
-		updateDebugString();
-		if (CONFIG.isEnableDebug())
+		if (CONFIG.isEnableDebug()) {
+			updateDebugString();
 			Plugin.checkMixinApplied();
+		}
 	}
 
 	public static void onLevelTick(ServerLevel level) {
@@ -173,6 +174,8 @@ public class Common {
 		String name = level.dimension().identifier().toString();
 		SharedConfig config = new SharedConfig();
 		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
+		if (CONFIG.isEnableDebug())
+			LOGGER.info("load dimensionData {} into cache...", name);
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(level);
@@ -183,6 +186,16 @@ public class Common {
 				return new DimensionData(existing.seed(), configJson, existing.sampler());
 			}
 		});
+	}
+
+	private static @Nullable DimensionData getDimensionData(Level level, String name) {
+		DimensionData data = DIMENSION_CACHE.get(name);
+		if (data == null) {
+			if (level instanceof ServerLevel) {
+				data = loadDimensionData((ServerLevel) level);
+			}
+		}
+		return data;
 	}
 
 	/**
@@ -241,21 +254,12 @@ public class Common {
 		if (! CONFIG.isCloudRainLogically())
 			return false;
 		long time = System.nanoTime();
-		boolean result = _isNoCloudCovered(level, x, y, z);
-		recordApiTime(System.nanoTime() - time);
-		return result;
-	}
-	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
 		String name = level.dimension().identifier().toString();
-		DimensionData data = DIMENSION_CACHE.get(name);
-		if (data == null) {
-			if (level instanceof ServerLevel) {
-				data = loadDimensionData((ServerLevel) level);
-			} else {
-				return false;
-			}
-		}
-		return ! data.sampler.isCloudCovered(x, y, z);
+		DimensionData data = getDimensionData(level, name);
+		boolean result = data != null && ! data.sampler.isCloudCovered(x, y, z);
+		if (CONFIG.isEnableDebug())
+			recordApiTime(System.nanoTime() - time);
+		return result;
 	}
 
 	/**
@@ -264,21 +268,12 @@ public class Common {
 	 */
 	public static boolean isCloud(Level level, double x, double y, double z) {
 		long time = System.nanoTime();
-		boolean result = _isCloud(level, x, y, z);
-		recordApiTime(System.nanoTime() - time);
-		return result;
-	}
-	private static boolean _isCloud(Level level, double x, double y, double z) {
 		String name = level.dimension().identifier().toString();
-		DimensionData data = DIMENSION_CACHE.get(name);
-		if (data == null) {
-			if (level instanceof ServerLevel) {
-				data = loadDimensionData((ServerLevel) level);
-			} else {
-				return false;
-			}
-		}
-		return data.sampler.isCloud(x, y, z);
+		DimensionData data = getDimensionData(level, name);
+		boolean result = data != null && data.sampler.isCloud(x, y, z);
+		if (CONFIG.isEnableDebug())
+			recordApiTime(System.nanoTime() - time);
+		return result;
 	}
 
 	//Debug

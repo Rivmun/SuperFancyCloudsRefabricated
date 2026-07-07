@@ -5,15 +5,12 @@ import com.rimo.sfcr.config.SharedConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.synth.SimplexNoise;
 import net.minecraft.core.Holder;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.phys.Vec2;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -24,13 +21,13 @@ import static com.rimo.sfcr.Common.DATA;
  * @since 1.9 / 2.2
  */
 public class Sampler {
-	private Level level;
+	protected Level level;
 	private SimplexNoise cloudNoise;
 	private int cloudThick;
 	private int cloudBlockSize;
 	private float cloudHeight;
 	private boolean isEnableDynamic;
-	private boolean isBiomeByChunk;
+	protected boolean isBiomeByChunk;
 	private boolean isEnableTerrainDodge;
 	private int steps;
 	private float threshold;
@@ -100,7 +97,7 @@ public class Sampler {
 
 	private int oldBlockX;
 	private int oldBlockZ;
-	private boolean isChunkLoaded;
+	protected boolean isChunkLoaded;
 	private float densityMultiplier = 1F;
 	private double timeOffset = 0.0;
 	private float f = 0.5F;
@@ -126,9 +123,8 @@ public class Sampler {
 				densityMultiplier = getDensityMultiplier(time);
 				timeOffset = time / 20.0;
 
-				if (isBiomeByChunk && (isChunkLoaded ||  // biome detect by chunk
-						(! (level instanceof ServerLevel) && CONFIG.isBiomeUseLoadedChunk()))) {  // if chunk unloaded, run only client and useLoadedChunk.
-					BlockPos pos = findSuitableBlockPos(isChunkLoaded, blockX, blockZ);
+				if (isBiomeDetectByChunk()) {  // client/server side are different on biome detect.
+					BlockPos pos = findSuitableBlockPos(blockX, blockZ);
 					densityByBiome = getBiomeDensityOrDefault(pos, densityByBiome);
 				}
 				f = thresholdFormula(threshold, reduction, densityByWeather, densityByBiome);
@@ -149,6 +145,15 @@ public class Sampler {
 		return getCloudSampleProxy(timeOffset, steps, x, y, z) * densityMultiplier > f;
 	}
 
+	protected boolean isBiomeDetectByChunk() {
+		return isBiomeByChunk && isChunkLoaded;
+	}
+
+	protected BlockPos findSuitableBlockPos(int blockX, int blockZ) {
+		int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
+		return new BlockPos(blockX, topY, blockZ);
+	}
+
 	private float getBiomeDensityOrDefault(BlockPos pos, float defaultDensityByBiome) {
 		if (pos == null)
 			return defaultDensityByBiome;
@@ -156,32 +161,6 @@ public class Sampler {
 		if (CONFIG.isFilterListHasBiome(biome))
 			return defaultDensityByBiome;
 		return CONFIG.getDownfall(biome.value().getPrecipitationAt(pos, level.getSeaLevel()));
-	}
-
-	private @Nullable BlockPos findSuitableBlockPos(boolean isChunkLoaded, int blockX, int blockZ) {
-		if (isChunkLoaded) {
-			int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
-			return new BlockPos(blockX, topY, blockZ);
-		}
-
-		Vec3 playerPos = getPlayerPos();
-		if (playerPos == null)
-			return null;
-
-		Vec2 cloudRelativeVec = new Vec2((float) (blockX - playerPos.x), (float) (blockZ - playerPos.z));
-		Vec2 unit = cloudRelativeVec.normalized().scale(- 16);  // step length measure in chunk
-		Vec2 cloudVec = new Vec2(blockX, blockZ);
-		while (! level.hasChunk((int) (cloudVec.x / 16), (int) (cloudVec.y / 16)) &&
-				cloudRelativeVec.dot(unit) < 0) {  // end at reversed
-			cloudVec = cloudVec.add(unit.negated());  // stepping near towards player
-			cloudRelativeVec = cloudRelativeVec.add(unit.negated());
-		}
-		if (level.hasChunk((int) (cloudVec.x / 16), (int) (cloudVec.y / 16))) {
-			int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) cloudVec.x, (int) cloudVec.y);
-			return new BlockPos((int) cloudVec.x, topY, (int) cloudVec.y);
-		}
-
-		return null;
 	}
 
 	private float getDensityMultiplier(long worldTime) {
@@ -207,14 +186,45 @@ public class Sampler {
 		return sample;
 	}
 
-	protected @Nullable Vec3 getPlayerPos() {return null;}
-
 	public static class Client extends Sampler {
 		@Override
-		protected @Nullable Vec3 getPlayerPos() {
+		protected boolean isBiomeDetectByChunk() {  // if chunk unloaded, run only client and useLoadedChunk.
+			return isBiomeByChunk && (isChunkLoaded || CONFIG.isBiomeUseLoadedChunk());
+		}
+
+		@Override
+		protected @Nullable BlockPos findSuitableBlockPos(int blockX, int blockZ) {
+			if (isChunkLoaded) {
+				int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, blockX, blockZ);
+				return new BlockPos(blockX, topY, blockZ);
+			}
+
 			LocalPlayer player = Minecraft.getInstance().player;
-			if (player != null)
-				return player.position();
+			if (player == null)
+				return null;
+
+			double cloudPosX = blockX;
+			double cloudPosZ = blockZ;
+			double cloudRelPosX = cloudPosX - player.position().x;
+			double cloudRelPosZ = cloudPosZ - player.position().z;
+			double length = Math.sqrt(cloudRelPosX * cloudRelPosX + cloudRelPosZ * cloudRelPosZ);
+			if (length < 1e-8)
+				return player.blockPosition();
+			double unitX = (cloudRelPosX / length) * -16;
+			double unitZ = (cloudRelPosZ / length) * -16;
+
+			int maxSteps = CONFIG.getCloudRenderDistance();
+			while (maxSteps-- > 0 && cloudRelPosX * unitX + cloudRelPosZ * unitZ < 0) {
+				if (level.hasChunk((int) (cloudPosX / 16), (int) (cloudPosZ / 16))) {
+					int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) cloudPosX, (int) cloudPosZ);
+					return new BlockPos((int) cloudPosX, topY, (int) cloudPosZ);
+				}
+				cloudPosX -= unitX;
+				cloudPosZ -= unitZ;
+				cloudRelPosX -= unitX;
+				cloudRelPosZ -= unitZ;
+			}
+
 			return null;
 		}
 	}

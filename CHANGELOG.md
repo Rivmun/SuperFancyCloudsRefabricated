@@ -1,3 +1,14 @@
+# 2.9.4.1
+- Re-add isBiomeUseLoadedChunk option.
+- Now clouds can be set to fully(?) opaque.
+  - Default cloudColor now set to 0xB2FFFFFF (as same as vanilla).
+  - ?: vanilla always have a little transparency in 2.0 that IDK why...
+- Improved (but not fully fix) NCNRLogically performance, again...
+- Improved debug performance.
+  - Add '/sfcr debug api' command for dedicated server to debug NCNRLogically performance remotely.
+- Internal biomeDetect improved.
+- Internal mixin improved.
+
 # 2.9.4
 - Fix compatibility for Iris. Now 2.0 can work with shaderpacks.
   - Remember switch cloudType to 'Vanilla' in IrisConfig -> ShaderPackSettings -> Sky/Atmosphere -> Clouds.

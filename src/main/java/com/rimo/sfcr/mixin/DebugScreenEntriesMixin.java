@@ -28,18 +28,11 @@ public class DebugScreenEntriesMixin {
 	@Inject(method = "<clinit>()V", at = @At("RETURN"))
 	private static void sfcr$registerDebugEntry(CallbackInfo ci) {
 		register(sfcr$ID, (displayer, level, levelChunk, levelChunk2) -> {
-			boolean debugIsCloud = false, debugIsCloudClient = false;
-			if (level != null) {
-				//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
-				Vec3 pos = Minecraft.getInstance().gameRenderer.mainCamera().position();
-				debugIsCloud = Common.isCloud(level, pos.x, pos.y, pos.z);
-				debugIsCloudClient = Client.isCloud(pos.x, pos.y, pos.z);
-			}
 			displayer.addToGroup(sfcr$ID, List.of(
 					RENDERER.getDebugString(),
 					DATA.getDebugString(),
-					Common.debugString,
-					"[SFCR] isCloud:" + debugIsCloud + ", isCloudClient:" + debugIsCloudClient
+					Common.getDebugString(),
+					Client.getDebugString()
 			));
 		});
 	}

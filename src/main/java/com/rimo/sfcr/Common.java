@@ -86,8 +86,10 @@ public class Common {
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
 	static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
-	private static final Set<Long> apiDebugTime = ConcurrentHashMap.newKeySet();
-	public static String debugString = "";
+	private static final Object debugLock = new Object();
+	private static long apiDebugTime = 0L;
+	private static int apiCallCounter = 0;
+	private static String debugString = "";
 
 	public static void onPlayerJoin(ServerPlayer player) {
 		if (Platform.canReceive(player, WeatherPayload.TYPE)) {
@@ -125,13 +127,7 @@ public class Common {
 		DATA.updateWeatherDensity(level);
 
 		//debug
-		if (! apiDebugTime.isEmpty()) {
-			double time = apiDebugTime.stream().mapToLong(t -> t).sum() / 1000000F;
-			int size = apiDebugTime.size();
-			debugString = "[SFCR] Api was " + size + " call/s, avg " + String.format("%.1f", size / 20F) +
-					"call/t, cost " + String.format("%.4f", time / 20) + "ms/t, " + String.format("%.4f", time / size) + "ms/call.";
-			apiDebugTime.clear();
-		}
+		updateDebugString();
 		if (CONFIG.isEnableDebug())
 			Plugin.checkMixinApplied();
 	}
@@ -242,14 +238,14 @@ public class Common {
 	 * @return Always {@code false} if this point above cloud, or cache of this level not found, or 'NCNR logical' function disabled.
 	 */
 	public static boolean isNoCloudCovered(Level level, double x, double y, double z) {
+		if (! CONFIG.isCloudRainLogically())
+			return false;
 		long time = System.nanoTime();
 		boolean result = _isNoCloudCovered(level, x, y, z);
-		apiDebugTime.add(System.nanoTime() - time);
+		recordApiTime(System.nanoTime() - time);
 		return result;
 	}
 	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
-		if (! CONFIG.isCloudRainLogically())
-			return false;
 		String name = level.dimension().identifier().toString();
 		DimensionData data = DIMENSION_CACHE.get(name);
 		if (data == null) {
@@ -269,7 +265,7 @@ public class Common {
 	public static boolean isCloud(Level level, double x, double y, double z) {
 		long time = System.nanoTime();
 		boolean result = _isCloud(level, x, y, z);
-		apiDebugTime.add(System.nanoTime() - time);
+		recordApiTime(System.nanoTime() - time);
 		return result;
 	}
 	private static boolean _isCloud(Level level, double x, double y, double z) {
@@ -294,4 +290,31 @@ public class Common {
 		LOGGER.error(text.toString());
 	}
 
+	private static void recordApiTime(long duration) {
+		synchronized (debugLock) {
+			apiDebugTime += duration;
+			apiCallCounter ++;
+		}
+	}
+
+	private static void updateDebugString() {
+		float time;
+		int counter;
+		synchronized (debugLock) {
+			time = (float) (apiDebugTime / 1e6);
+			counter = apiCallCounter;
+			apiDebugTime = 0L;
+			apiCallCounter = 0;
+		}
+		if (counter == 0) {
+			debugString = "[SFCR] Api hasn't called yet in last 20 ticks.";
+			return;
+		}
+		debugString = String.format("[SFCR] Api was %scall/s, avg %.1fcall/t, cost %.4fms/t, %.4fms/call",
+				counter, counter / 20F, time / 20F, time / counter);
+	}
+
+	public static String getDebugString() {
+		return debugString;
+	}
 }

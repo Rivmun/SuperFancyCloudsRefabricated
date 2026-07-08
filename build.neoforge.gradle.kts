@@ -75,7 +75,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}-${minecraft}")
 
     //serene seasons
 //    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")

@@ -74,7 +74,7 @@ dependencies {
 
     //distant horizons
     modApi("maven.modrinth:DistantHorizonsApi:${property("deps.distanthorizons-api")}")
-//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}")
+//    modRuntimeOnly("maven.modrinth:DistantHorizons:${property("deps.distanthorizons")}-${minecraft}")
 
     //particle rain
     modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")

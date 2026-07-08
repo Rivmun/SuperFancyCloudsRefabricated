@@ -3,82 +3,46 @@ package com.rimo.sfcr.mixin.particlerain;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.rimo.sfcr.Client;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import pigcart.particlerain.ParticleSpawner;
 import pigcart.particlerain.config.ParticleData;
 
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.rimo.sfcr.Common.CONFIG;
 
 @Mixin(ParticleSpawner.class)
 public abstract class ParticleSpawnerMixin {
-	@Unique private static double sfcr$x, sfcr$y, sfcr$z;
-	@Unique private static boolean sfcr$shouldCancel;
-	@Final @Shadow private static BlockPos.MutableBlockPos heightmapPos;
+	@Final @Shadow private static BlockPos.MutableBlockPos pos;
 
-	// rain
-	@Inject(method = "tickSkyFX", at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/core/BlockPos$MutableBlockPos;set(DDD)Lnet/minecraft/core/BlockPos$MutableBlockPos;",
-			shift = At.Shift.AFTER
-	))
-	private static void sfcr$catchRenderPos(CallbackInfo ci) {
-		sfcr$x = heightmapPos.getX();
-		sfcr$y = heightmapPos.getY();
-		sfcr$z = heightmapPos.getZ();
-	}
-	@WrapOperation(method = "tickSkyFX", at = @At(
-			value = "INVOKE",
-			target = "Ljava/util/Iterator;next()Ljava/lang/Object;"  //inject into for(Object o : ArrayList<o> list)
-	))
-	private static Object sfcr$catchSkyFXParticleData(Iterator<ParticleData> instance, Operation<Object> original) {
-		ParticleData data = (ParticleData) original.call(instance);
-		sfcr$shouldCancel = data.weather == ParticleData.Weather.DURING_WEATHER && ! data.precipitation.contains(Biome.Precipitation.NONE);
-		return data;
-	}
-	@WrapOperation(method = "tickSkyFX", at = @At(
-			value = "INVOKE",
-			target = "Lpigcart/particlerain/config/ParticleData$SpawnPos;equals(Ljava/lang/Object;)Z"
-	))
-	private static boolean sfcr$shouldCancelSkyFX(ParticleData.SpawnPos instance, Object o, Operation<Boolean> original) {
-		if (sfcr$shouldCancel && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return false;
-		return original.call(instance, o);
+	// Rain
+	@WrapOperation(method = "tickSkyFX", at = @At(value = "INVOKE", target = "Ljava/util/Map;values()Ljava/util/Collection;"))
+	private static Collection<ParticleData> sfcr$filterSkyFXParticles(Map<String, ParticleData> instance, Operation<Collection<ParticleData>> original) {
+		if (CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+			return instance.values().stream().filter(data ->
+					data.weather != ParticleData.Weather.DURING_WEATHER || data.precipitation.contains(Biome.Precipitation.NONE)
+			).collect(Collectors.toList());
+		return original.call(instance);
 	}
 
 	// still splash? do it again!
-	@Inject(method = "tickBlockFX", at = @At("HEAD"))
-	private static void sfcr$catchBlockPos(BlockPos.MutableBlockPos sourcePos, BlockState state, RandomSource random, CallbackInfo ci) {
-		sfcr$x = sourcePos.getX();
-		sfcr$y = sourcePos.getY();
-		sfcr$z = sourcePos.getZ();
-	}
-	@WrapOperation(method = "tickBlockFX", at = @At(
-			value = "INVOKE",
-			target = "Ljava/util/Iterator;next()Ljava/lang/Object;"
-	))
-	private static Object sfcr$catchBlockFXParticleData(Iterator<ParticleData> instance, Operation<Object> original) {
-		ParticleData data = (ParticleData) original.call(instance);
-		sfcr$shouldCancel = data.weather == ParticleData.Weather.DURING_WEATHER && ! data.precipitation.contains(Biome.Precipitation.NONE);
-		return data;
-	}
-	@ModifyVariable(method = "tickBlockFX", at = @At("STORE"), name = "direction")
-	private static Direction sfcr$shouldCancelBlockFX(Direction d) {
-		if (sfcr$shouldCancel && CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return null;
-		return d;
+	@WrapOperation(method = "tickBlockFX", at = @At(value = "INVOKE", target = "Ljava/util/Map;values()Ljava/util/Collection;"))
+	private static Collection<ParticleData> sfcr$filterBlockFXParticles(Map<String, ParticleData> instance, Operation<Collection<ParticleData>> original,
+	                                                                    @Local(argsOnly = true) BlockPos.MutableBlockPos sourcePos) {
+		if (CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sourcePos.getX(), sourcePos.getY(), sourcePos.getZ()))
+			return instance.values().stream().filter(data ->
+					data.weather != ParticleData.Weather.DURING_WEATHER || data.precipitation.contains(Biome.Precipitation.NONE)
+			).collect(Collectors.toList());
+		return original.call(instance);
 	}
 }
 //? }

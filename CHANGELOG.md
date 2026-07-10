@@ -1,7 +1,10 @@
 # 1.9.4.1
-- Fix NoSuchMethodError crash when enableDebug then exit/enter/launch game on Java 8 (mc1.16.5).
-- Fix no fog on 1.16.5.
-- Fix wrong simulated vanilla cloudHeight on server 1.16.5.
+### For mc1.16.5 only
+- Fix cloud has culled by frustum.
+- Fix fog cannot apply.
+- Fix NoSuchMethodError crash when enableDebug then exit/enter/launch game on Java 8.
+- Fix wrong simulated vanilla cloudHeight on server.
+### For all version
 - Re-add isBiomeUseLoadedChunk option.
 - Now clouds can be set to fully opaque.
   - Default cloudColor now is 0xB2FFFFFF (as same as vanilla).

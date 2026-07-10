@@ -84,6 +84,24 @@ public class DedicatedServer {
 									return 1;
 								})
 						)
+						.then(literal("api")
+								.executes(context -> {
+									new Thread(() -> {
+										boolean oldDebug = CONFIG.isEnableDebug();
+										CONFIG.setEnableDebug(true);
+										try {
+											Thread.sleep(1500);
+										} catch (InterruptedException e) {
+											Thread.currentThread().interrupt();
+										}
+										context.getSource().getServer().execute(() ->
+												VersionUtil.sendSystemMessage(context, Common.getDebugString())
+										);
+										CONFIG.setEnableDebug(oldDebug);
+									}).start();
+									return 1;
+								})
+						)
 				)
 				.then(literal("upload")
 						.requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_OWNER))

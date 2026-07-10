@@ -14,11 +14,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 //? } else {
-/^import net.minecraft.core.BlockPos;
-import net.minecraft.data.BuiltinRegistries;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import net.minecraft.world.level.biome.Biomes;
+/^import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.core.BlockPos;
 ^///? }
 
 import static com.rimo.sfcr.Common.CONFIG;
@@ -40,21 +39,14 @@ public abstract class WeatherParticleSpawnerMixin {
 			cir.setReturnValue(null);
 	}
 	//? } else {
-	/^@Unique	private double sfcr$x, sfcr$y, sfcr$z;
-
-	@ModifyVariable(method = "update", at = @At("STORE"), ordinal = 0)
-	private BlockPos sfcr$getBlockPos(BlockPos value) {
-		sfcr$x = value.getX();
-		sfcr$y = value.getY();
-		sfcr$z = value.getZ();
-		return value;
-	}
-
-	@ModifyVariable(method = "update", at = @At("STORE"))
-	private Biome sfcr$modifyBiome(Biome biome) {
-		if (CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(sfcr$x, sfcr$y, sfcr$z))
-			return BuiltinRegistries.BIOME.get(Biomes.SAVANNA);
-		return biome;
+	/^@WrapOperation(method = "update", at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitation()Lnet/minecraft/world/level/biome/Biome$Precipitation;"
+	))
+	private static Biome.Precipitation sfcr$disableRain(Biome instance, Operation<Biome.Precipitation> original, @Local(ordinal = 0) BlockPos pos) {
+		if (CONFIG.isEnableParticleRainCompat() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+			return Biome.Precipitation.NONE;
+		return original.call(instance);
 	}
 	^///? }
 }

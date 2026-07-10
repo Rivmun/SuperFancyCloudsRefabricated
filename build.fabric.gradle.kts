@@ -37,7 +37,6 @@ tasks.named<ProcessResources>("processResources") {
 //        this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
-        this["GameRendererMixin"] = if (sc.current.parsed.eq("1.16.5")) "" else "\"GameRendererMixin\","
         this["particlerain_mixin"] = when {
              sc.current.parsed > "1.20" -> "\"particlerain.ParticleSpawnerMixin\","
              sc.current.parsed > "1.19" -> "\"particlerain.RainDropParticleMixin\",\n    \"particlerain.WeatherParticleSpawnerMixin\","

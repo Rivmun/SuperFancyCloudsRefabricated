@@ -44,7 +44,6 @@ tasks.named<ProcessResources>("processResources") {
         this["sereneseasons"] = prop("deps.sereneseasons")
 
         // insert version-specific mixins
-        this["GameRendererMixin"] = "\"GameRendererMixin\","
         this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
     }
 

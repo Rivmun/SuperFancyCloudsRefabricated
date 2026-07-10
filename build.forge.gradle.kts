@@ -56,7 +56,6 @@ tasks.named<ProcessResources>("processResources") {
         this["sereneseasons"] = if (sc.current.parsed > "1.18") prop("deps.sereneseasons") else "1.16.5-${prop("deps.sereneseasons")}"
 
         // insert version-specific mixins
-        this["GameRendererMixin"] = if (sc.current.parsed.eq("1.16.5")) "" else "\"GameRendererMixin\","
         this["particlerain_mixin"] = if (sc.current.parsed > "1.20") "\"particlerain.ParticleSpawnerMixin\"," else ""
 
         // insert deps

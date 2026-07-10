@@ -3,10 +3,11 @@
 - Fix no fog on 1.16.5.
 - Fix wrong simulated vanilla cloudHeight on server 1.16.5.
 - Re-add isBiomeUseLoadedChunk option.
-- Now clouds can be fully opaque.
+- Now clouds can be set to fully opaque.
   - Default cloudColor now is 0xB2FFFFFF (as same as vanilla).
 - Improved (but no fully fix) NCNRLogically performance, again...
 - Improved debug performance.
+  - Add '/sfcr debug api' command for dedicated server to debug NCNRLogically performance remotely.
 - Internal mixin refactor.
 - Internal biomeDetect improved.
 

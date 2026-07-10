@@ -145,7 +145,7 @@ public class Common {
 	private static final Object debugLock = new Object();
 	private static long apiDebugTime = 0L;
 	private static int apiCallCounter = 0;
-	public static String debugString = "";
+	private static String debugString = "";
 
 	public static void init() {
 		// dimension cache system
@@ -204,9 +204,10 @@ public class Common {
 			DATA.updateWeatherDensity(level);
 
 			//debug
-			updateDebugString();
-			if (CONFIG.isEnableDebug())
+			if (CONFIG.isEnableDebug()) {
+				updateDebugString();
 				Plugin.checkMixinApplied();
+			}
 		});
 
 		if (seasonHandler == null)
@@ -326,16 +327,12 @@ public class Common {
 		if (! CONFIG.isCloudRainLogically())
 			return false;
 		long time = System.nanoTime();
-		boolean result = _isNoCloudCovered(level, x, y, z);
-		recordApiTime(System.nanoTime() - time);
-		return result;
-	}
-	private static boolean _isNoCloudCovered(Level level, double x, double y, double z) {
 		String name = level.dimension().location().toString();
 		DimensionData data = getDimensionData(level, name);
-		if (data == null)
-			return false;
-		return ! data.sampler.isCloudCovered(x, y, z);
+		boolean result = data != null && ! data.sampler.isCloudCovered(x, y, z);
+		if (CONFIG.isEnableDebug())
+			recordApiTime(System.nanoTime() - time);
+		return result;
 	}
 
 	/**
@@ -344,16 +341,12 @@ public class Common {
 	 */
 	public static boolean isCloud(Level level, double x, double y, double z) {
 		long time = System.nanoTime();
-		boolean result = _isCloud(level, x, y, z);
-		recordApiTime(System.nanoTime() - time);
-		return result;
-	}
-	private static boolean _isCloud(Level level, double x, double y, double z) {
 		String name = level.dimension().location().toString();
 		DimensionData data = getDimensionData(level, name);
-		if (data == null)
-			return false;
-		return data.sampler.isCloud(x, y, z);
+		boolean result = data != null && data.sampler.isCloud(x, y, z);
+		if (CONFIG.isEnableDebug())
+			recordApiTime(System.nanoTime() - time);
+		return result;
 	}
 
 	//Debug

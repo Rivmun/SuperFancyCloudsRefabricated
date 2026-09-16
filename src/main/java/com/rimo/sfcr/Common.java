@@ -38,8 +38,8 @@ public class Common {
 	public record WeatherPayload(Data.Weather weather) implements CustomPacketPayload {
 		public static final Type<WeatherPayload> TYPE = new CustomPacketPayload.Type<>(VersionUtil.getId("weather_s2c"));
 		public static final StreamCodec<FriendlyByteBuf, WeatherPayload> CODEC = StreamCodec.of(
-				(buf, value) -> buf.writeEnum(value.weather),
-				buf -> new WeatherPayload(buf.readEnum(Data.Weather.class))
+				(buf, value) -> buf.writeInt(value.weather.ordinal()),
+				buf -> new WeatherPayload(Data.Weather.values()[buf.readInt()])
 		);
 		@Override
 		public @NotNull Type<? extends CustomPacketPayload> type() {

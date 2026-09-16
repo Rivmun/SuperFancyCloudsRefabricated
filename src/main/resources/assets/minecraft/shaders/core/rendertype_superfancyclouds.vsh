@@ -1,8 +1,17 @@
-#version 150
+//? if < 26.3 {
+//#version 150
+//
+//#moj_import <minecraft:fog.glsl>
+//#moj_import <minecraft:dynamictransforms.glsl>
+//#moj_import <minecraft:projection.glsl>
+//? } else {
+#version 330
+#extension GL_ARB_separate_shader_objects : require
 
-#moj_import <minecraft:fog.glsl>
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:projection.glsl>
+#include <minecraft:fog.glsl>
+#include <minecraft:dynamictransforms.glsl>
+#include <minecraft:projection.glsl>
+//? }
 
 const int FLAG_MASK_DIR = 7;  //0b00000111
 const int FLAG_EXTRA_H = 1 << 3;  //add height mask bit
@@ -19,8 +28,13 @@ layout(std140) uniform CloudInfo {
 
 uniform isamplerBuffer CloudFaces;
 
-out float vertexDistance;
-out vec4 vertexColor;
+//? if < 26.3 {
+//out float vertexDistance;
+//out vec4 vertexColor;
+//? } else {
+layout(location = 0) out float vertexDistance;
+layout(location = 1) out vec4 vertexColor;
+//? }
 
 const vec3[] vertices = vec3[](
 // Bottom face
@@ -71,9 +85,10 @@ vec4(0.9, 0.9, 0.9, 1.0)
 );
 
 void main() {
-    int quadVertex = gl_VertexID % 4;
-    //int index = (gl_VertexID / 4) * 3;
-    int index = (gl_VertexID / 4) * 5;  //each face we putted byte amount
+    //~ if > 26.2 'gl_VertexID' -> 'gl_VertexIndex' {
+    int quadVertex = gl_VertexIndex % 4;
+    int index = (gl_VertexIndex / 4) * 5;  //each face we putted byte amount
+    //~ }
 
     //extract data
     int cellX = texelFetch(CloudFaces, index).r;

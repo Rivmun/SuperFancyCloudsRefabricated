@@ -245,21 +245,22 @@ public class Sampler {
 		// ((sin((((1-(x+1)/32)*180+302)*1.15)/3.1415926)^0.28)+(1-(x+1)/32)-0.5)*2, 32=height
 	}
 
+	//~ if > 26.2 '.getValue' -> '.get' {
 	private double getCloudSample(double timeOffset, int steps, double cx, double cy, double cz) {
-		double cloudVal = cloudNoise.getValue(
+		double cloudVal = cloudNoise.get(
 				(cx + (timeOffset * baseTimeFactor)) * baseFreq,
 				(cy - (timeOffset * baseTimeFactor * 2)) * baseFreq,
 				cz * baseFreq
 		);
 		if (steps > 1) {
-			double cloudVal1 = cloudNoise.getValue(
+			double cloudVal1 = cloudNoise.get(
 					(cx + (timeOffset * l1TimeFactor)) * l1Freq,
 					(cy - (timeOffset * l1TimeFactor)) * l1Freq,
 					cz * l1Freq
 			);
 			double cloudVal2 = 1;
 			if (steps > 2) {
-				cloudVal2 = cloudNoise.getValue(
+				cloudVal2 = cloudNoise.get(
 						(cx + (timeOffset * l2TimeFactor)) * l2Freq,
 						0,
 						cz * l2Freq
@@ -272,4 +273,5 @@ public class Sampler {
 		}
 		return cloudVal * remappedValue(1 - (cy + 1) / cloudThick);		//cloudVal ~ [-1, 2]
 	}
+	//~ }
 }

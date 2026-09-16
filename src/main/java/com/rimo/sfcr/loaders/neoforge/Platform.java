@@ -100,7 +100,7 @@ public class Platform {
 			event.getDispatcher().register(Commands.literal(Common.MOD_ID + "config").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
 				//~ if < 26.2 '.gui.setScreen' -> '.setScreen'
-				client.execute(() -> client.setScreen(new ConfigScreen().build()));
+				client.execute(() -> client.gui.setScreen(new ConfigScreen().build()));
 				return 1;
 			}));
 		}

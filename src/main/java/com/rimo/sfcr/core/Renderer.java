@@ -1,12 +1,18 @@
 package com.rimo.sfcr.core;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
-import com.mojang.blaze3d.pipeline.*;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+//~ if > 26.2 '.blaze3d' -> '.renderpearl.api'
+import com.mojang.renderpearl.api.pipeline.*;
+//? if < 26.3 {
+/*import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.textures.GpuTextureView;
+*///? } else {
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import net.minecraft.client.renderer.oit.OitPipelineSet;
+//? }
 //? if < 26.2 {
 /*import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.shaders.UniformType;
@@ -16,7 +22,8 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 *///? } else {
-import com.mojang.blaze3d.PrimitiveTopology;
+//? if = 26.2
+//import com.mojang.blaze3d.PrimitiveTopology;
 import net.minecraft.client.renderer.BindGroupLayouts;
 //? }
 import com.rimo.sfcr.VersionUtil;
@@ -33,9 +40,11 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-//~ if < 26.2 '.Optional' -> '.OptionalInt'
+//? if < 26.3 {
+/*//~ if < 26.2 '.Optional' -> '.OptionalInt'
 import java.util.Optional;
 import java.util.OptionalDouble;
+*///? }
 
 import static com.rimo.sfcr.Common.*;
 
@@ -72,13 +81,11 @@ public class Renderer {
 
 	@SuppressWarnings("RedundantArrayCreation")
 	private static RenderPipeline createCustomRenderPipeline(boolean hasThick) {
-		String vshPath = hasThick ?
-				"core/rendertype_superfancyclouds" :
-				"core/rendertype_superfancyclouds_nth";
 		return RenderPipeline.builder(new RenderPipeline.Snippet[]{RenderPipeline
 						.builder(new RenderPipeline.Snippet[]{RenderPipelines.MATRICES_FOG_SNIPPET})
-						.withVertexShader(vshPath)  //use our own .vsh
-						.withFragmentShader("core/rendertype_clouds")
+						.withVertexShader(getVshPath(hasThick))  //use our own .vsh
+						//~ if > 26.2 'rendertype_clouds' -> 'clouds'
+						.withFragmentShader("core/clouds")
 						//? if = 1.21.11 {
 						/*.withBlend(BlendFunction.TRANSLUCENT)
 						*///? } else {
@@ -99,6 +106,35 @@ public class Renderer {
 				.withLocation("pipeline/clouds")
 				.build();
 	}
+
+	private static String getVshPath(boolean hasThick) {
+		return hasThick ?
+				"core/rendertype_superfancyclouds" :
+				"core/rendertype_superfancyclouds_nth";
+	}
+
+	//? if > 26.2 {
+	public static final OitPipelineSet OIT_CLOUDS = createCustomOITRenderPipeline(true);
+	public static final OitPipelineSet OIT_CLOUD_NOTHICKNESS = createCustomOITRenderPipeline(false);
+	@SuppressWarnings("RedundantArrayCreation")
+	private static OitPipelineSet createCustomOITRenderPipeline(boolean hasThick) {
+		return OitPipelineSet.builder(
+						"clouds",
+						RenderPipeline.builder(new RenderPipeline.Snippet[]{
+								RenderPipeline.builder(new RenderPipeline.Snippet[0])
+										.withVertexShader(getVshPath(hasThick))
+										.withFragmentShader("core/clouds")
+										.withPrimitiveTopology(PrimitiveTopology.QUADS)
+										.withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+										.withBindGroupLayout(BindGroupLayouts.FOG)
+										.withBindGroupLayout(BindGroupLayouts.CLOUD_INFO)
+										.buildSnippet()
+						})
+				)
+				.withDepthBoundsModifier((depthBounds) -> depthBounds.withDepthStencilState(DepthStencilState.DEFAULT))
+				.build();
+	}
+	//? }
 
 	// return cloudGrid index that the pos pointing at, NOTE that they maybe outOfBound...
 	private int[] transformToGridPos(CloudGrid cloudGrid, double x, double y, double z) {
@@ -229,6 +265,7 @@ public class Renderer {
 	 */
 
 	int quadCount = 0;
+	public int getQuadCount() {return quadCount;}
 
 	public void render(int cloudColor, float cloudHeight, Vec3 camPos, float partialTick, MappableRingBuffer infoBuffer, MappableRingBuffer faceBuffer, int renderRange, Level level) {
 		cloudBlockWidth = CONFIG.getCloudBlockSize();
@@ -303,12 +340,19 @@ public class Renderer {
 				Std140Builder.intoBuffer(view.data()).putVec4(ARGB.vector4fFromARGB32(cloudColor)).putVec3(-offsetX, offsetY, -offsetZ).putVec3(cloudBlockWidth, cloudBlockHeight, cloudBlockWidth);
 			}
 
-			GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
+			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+			//? if < 26.3 {
+			/*GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy());
 			RenderTarget mainRenderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
 			RenderTarget cloudTarget = Minecraft.getInstance().levelRenderer.cloudsTarget();
-			RenderSystem.AutoStorageIndexBuffer indices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+			*///? } else {
+			indices.requestIndexCount(6 * quadCount);
 			//? }
-			GpuBuffer gpuBuffer = indices.getBuffer(6 * quadCount);
+			//? }
+
+			// redirect draw block by mixin in 26.3, see CloudRendererMixin.class
+			//? if < 26.3 {
+			/*GpuBuffer gpuBuffer = indices.getBuffer(6 * quadCount);
 			GpuTextureView colorTexture;
 			GpuTextureView depthTexture;
 			if (cloudTarget != null) {
@@ -330,6 +374,7 @@ public class Renderer {
 				//~ if < 26.2 '6 * this.quadCount, 1, 0, 0, 0' -> '0, 0, 6 * quadCount, 1'
 				renderPass.drawIndexed(6 * this.quadCount, 1, 0, 0, 0);
 			}
+			*///? }
 		}
 	}
 

@@ -2,13 +2,18 @@ package com.rimo.sfcr.mixin;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.attribute.EnvironmentAttribute;
-import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+//? if < 26.3 {
+/*import net.minecraft.util.ARGB;
+*///? } else {
+import org.joml.Vector4f;
+import org.joml.Vector4fc;
+//? }
 
 import static com.rimo.sfcr.Common.CONFIG;
 
@@ -43,9 +48,16 @@ public abstract class ValueProbeMixin {
 					b = (int) (b * (1 - (Math.cos((t - 1000) / 2000d * Math.PI) / 1.2 - Math.sin(t / 1000d * Math.PI) / 3) / 1.6));
 				}
 			}
-			int blendWithoutAlpha = ARGB.multiply((Integer) cir.getReturnValue(), ARGB.color(r, g, b));
 			int alpha = customColor >> 24;
+			//? if < 26.3 {
+			/*int blendWithoutAlpha = ARGB.multiply((Integer) cir.getReturnValue(), ARGB.color(r, g, b));
 			cir.setReturnValue(ARGB.color(alpha, blendWithoutAlpha));
+			*///? } else {
+			Vector4f color = new Vector4f((Vector4fc) cir.getReturnValue())
+					.mul(r, g, b, 1F).div(255F)  //blend color, see net.minecraft.util.ARGB.multiply(int, int)
+					.setComponent(3, alpha / 255F);  //replace alpha component(w), see ~.ARGB.colorFromVector4f at net.minecraft.client.renderer.extract.LevelExtractor:213
+			cir.setReturnValue(color);
+			//? }
 		}
 
 		// inject custom cloud height

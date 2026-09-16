@@ -1,6 +1,7 @@
 package com.rimo.sfcr.mixin.iris;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+//~ if > 26.2 '.blaze3d' -> '.renderpearl.api'
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.rimo.sfcr.core.Renderer;
 import it.unimi.dsi.fastutil.Function;
 import net.irisshaders.iris.pipeline.IrisPipelines;

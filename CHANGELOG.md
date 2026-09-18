@@ -1,3 +1,6 @@
+# 2.9.4.2
+- Fix cloud will stop to refresh when fly through the top of cloudLayer with DHCompat is enabled.
+
 # 2.9.4.1
 - Re-add isBiomeUseLoadedChunk option.
 - Now clouds can be set to fully(?) opaque.

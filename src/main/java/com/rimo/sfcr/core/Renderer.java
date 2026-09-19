@@ -393,32 +393,47 @@ public class Renderer {
 		debugCullCounter = 0;
 		debugBuiltTime = System.nanoTime();
 
-		Vec3 look = null, up = null, left = null;
-		double tanHalfFov = 0, tanHalfFovHorizontal = 0;
-		if (CONFIG.getEnableViewCulling()) {
-			Minecraft client = Minecraft.getInstance();
-			//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
-			Camera cam = client.gameRenderer.mainCamera();
-			look = new Vec3(cam.forwardVector());
-			up =   new Vec3(cam.upVector());
-			left = new Vec3(cam.leftVector());
-			float multiplier = CONFIG.getCullRadianMultiplier();
-			if (client.player != null)
-				multiplier *= client.player.getFieldOfViewModifier(true, VersionUtil.getLastFrameDuration());
-			tanHalfFov = Math.tan(Math.toRadians(client.options.fov().get() * multiplier) / 2F);
-			tanHalfFovHorizontal = tanHalfFov * client.getWindow().getWidth() / client.getWindow().getHeight();
-		}
+		if (isInCloudLayer(gridY) && cloudGrid.grids()[renderRange][renderRange][gridY]) {  //inner face check
+			int thickness = 0;
+			for(int h = cloudGrid.grids()[0][0].length - 1; h > gridY; h--) {
+				if (cloudGrid.grids()[renderRange][renderRange][h]) {
+					thickness++;
+				} else {
+					if (thickness > 0)
+						thickness--;
+				}
+			}
+			for(Direction direction : Direction.values()) {
+				encodeFace(byteBuffer, 0, gridY, 0, direction, 16, thickness);
+			}
+		} else {
+			Vec3 look = null, up = null, left = null;
+			double tanHalfFov = 0, tanHalfFovHorizontal = 0;
+			if (CONFIG.getEnableViewCulling()) {
+				Minecraft client = Minecraft.getInstance();
+				//~ if <26.2 '.mainCamera()' -> '.getMainCamera()'
+				Camera cam = client.gameRenderer.mainCamera();
+				look = new Vec3(cam.forwardVector());
+				up = new Vec3(cam.upVector());
+				left = new Vec3(cam.leftVector());
+				float multiplier = CONFIG.getCullRadianMultiplier();
+				if (client.player != null)
+					multiplier *= client.player.getFieldOfViewModifier(true, VersionUtil.getLastFrameDuration());
+				tanHalfFov = Math.tan(Math.toRadians(client.options.fov().get() * multiplier) / 2F);
+				tanHalfFovHorizontal = tanHalfFov * client.getWindow().getWidth() / client.getWindow().getHeight();
+			}
 
-		for(int l = 0; l <= 2 * renderRange; ++l) {
-			for(int xOffset = -l; xOffset <= l; ++xOffset) {
-				int zOffset = l - Math.abs(xOffset);
-				if (zOffset >= 0 && zOffset <= renderRange && xOffset * xOffset + zOffset * zOffset <= renderRange * renderRange) {
-					if (zOffset != 0) {
-						tryBuildCellProxy(byteBuffer, xOffset, -zOffset, renderRange, cloudGrid,
+			for (int l = 0; l <= 2 * renderRange; ++ l) {
+				for (int xOffset = - l; xOffset <= l; ++ xOffset) {
+					int zOffset = l - Math.abs(xOffset);
+					if (zOffset >= 0 && zOffset <= renderRange && xOffset * xOffset + zOffset * zOffset <= renderRange * renderRange) {
+						if (zOffset != 0) {
+							tryBuildCellProxy(byteBuffer, xOffset, - zOffset, renderRange, cloudGrid,
+									look, up, left, tanHalfFov, tanHalfFovHorizontal);
+						}
+						tryBuildCellProxy(byteBuffer, xOffset, zOffset, renderRange, cloudGrid,
 								look, up, left, tanHalfFov, tanHalfFovHorizontal);
 					}
-					tryBuildCellProxy(byteBuffer, xOffset, zOffset, renderRange, cloudGrid,
-							look, up, left, tanHalfFov, tanHalfFovHorizontal);
 				}
 			}
 		}
@@ -517,12 +532,6 @@ public class Renderer {
 			encodeFace(byteBuffer, x, h, z, Direction.WEST, 0, thickness);
 		if (hasBorderEast(cellState) && x < 0)
 			encodeFace(byteBuffer, x, h, z, Direction.EAST, 0, thickness);
-		if (Math.abs(x) <= 1 && Math.abs(z) <= 1 && h == gridY) {  //inner faces
-			Direction[] directions = Direction.values();
-			for (Direction direction : directions) {
-				encodeFace(byteBuffer, x, h, z, direction, 16, thickness);
-			}
-		}
 	}
 
 	protected static boolean hasBorderTop(int packed) {return (packed >> 5 & 1) != 0;}

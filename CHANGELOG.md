@@ -1,6 +1,7 @@
 # 2.9.4.2
 - Fix cloud will stop to refresh when fly through the top of cloudLayer with DHCompat is enabled.
-- Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up and down.
+- Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.
+  - Now we can only draw 6 inner faces when player inside cloudCell in vanilla.
 - Fix vanilla draw call may be invoked useless when DHCompat is enabled.
 
 # 2.9.4.1

@@ -110,8 +110,7 @@ public class RendererDHCompat extends Renderer {
 		long debugTime = System.nanoTime();
 		//transform grid to boxes
 		List<DhApiRenderableBox> boxList = new ArrayList<>();
-		if (gridY >= 0 && gridY < cloudGrid.grids()[0][0].length &&
-				cloudGrid.grids()[renderRange][renderRange][gridY]) {  //inner faces check
+		if (isInCloudLayer(gridY) && cloudGrid.grids()[renderRange][renderRange][gridY]) {  //inner faces check
 			for (Direction direction : Direction.values()) {
 				addBox(boxList, 0, gridY, 0, direction, 16, color, alpha);
 			}

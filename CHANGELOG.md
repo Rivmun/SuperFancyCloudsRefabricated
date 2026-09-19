@@ -1,5 +1,7 @@
 # 2.9.4.2
 - Fix cloud will stop to refresh when fly through the top of cloudLayer with DHCompat is enabled.
+- Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up and down.
+- Fix vanilla draw call may be invoked useless when DHCompat is enabled.
 
 # 2.9.4.1
 - Re-add isBiomeUseLoadedChunk option.

@@ -150,14 +150,22 @@ public class Renderer {
 		};
 	}
 
+	// whether the given cloud-grid layer index lies inside the actual cloud thickness [0, layerThickness)
+	protected static boolean isInCloudLayer(int layerGridY) {
+		return layerGridY >= 0 && layerGridY < CONFIG.getCloudLayerThickness();
+	}
+
+	protected static boolean isInCloudGrid(int x, int z, int gridWidth) {
+		return x >= 0 && x < gridWidth && z >= 0 && z < gridWidth;
+	}
+
 	public boolean isCloudCovered(double x, double y, double z) {
 		CloudGrid cloudGrid = this.cloudGrid;
 		if (cloudGrid == null)
 			return false;
 
 		int[] pos = transformToGridPos(cloudGrid, x, y, z);
-		if (pos[0] < 0 || pos[0] >= cloudGrid.grids.length || pos[1] < 0 || pos[1] >= cloudGrid.grids.length ||
-				pos[2] > CONFIG.getCloudLayerThickness())
+		if (! isInCloudGrid(pos[0], pos[1], cloudGrid.grids.length) || pos[2] > CONFIG.getCloudLayerThickness())
 			return false;
 
 		for (int i = 0; i < cloudGrid.grids[0][0].length; i++) {
@@ -173,8 +181,7 @@ public class Renderer {
 			return false;
 
 		int[] pos = transformToGridPos(cloudGrid, x, y, z);
-		if (pos[0] < 0 || pos[0] >= cloudGrid.grids.length || pos[1] < 0 || pos[1] >= cloudGrid.grids.length ||
-				pos[2] < 0 || pos[2] >= CONFIG.getCloudLayerThickness())
+		if (! isInCloudGrid(pos[0], pos[1], cloudGrid.grids.length) || ! isInCloudLayer(pos[2]))
 			return false;
 
 		return cloudGrid.grids[pos[0]][pos[1]][pos[2]];
@@ -306,7 +313,8 @@ public class Renderer {
 		boolean enableCulling = CONFIG.getEnableViewCulling();
 		if (! Minecraft.getInstance().isPaused() && (
 				(enableCulling ? ++ rebuildTick > CONFIG.getRebuildInterval() : rebuildTick >= 999) ||
-				gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness())
+				gridX != this.gridX || gridZ != this.gridZ ||
+				(this.gridY != gridY && (isInCloudLayer(gridY) || isInCloudLayer(this.gridY)))
 		)) {
 			rebuildTick = 0;
 			this.gridX = gridX;

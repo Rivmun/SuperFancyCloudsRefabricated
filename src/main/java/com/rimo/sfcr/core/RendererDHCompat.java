@@ -76,7 +76,8 @@ public class RendererDHCompat extends Renderer {
 	protected void _render(int gridX, int gridY, int gridZ, MappableRingBuffer faceBuffer, MappableRingBuffer infoBuffer, int renderRange, int cloudColor, float offsetX, float offsetY, float offsetZ) {
 		if (! Minecraft.getInstance().isPaused() && ! isRemeshing && (
 				rebuildTick >= 999 ||
-				gridX != this.gridX || gridZ != this.gridZ || (this.gridY != gridY && this.gridY >= 0 && this.gridY < CONFIG.getCloudLayerThickness())
+				gridX != this.gridX || gridZ != this.gridZ ||
+				(this.gridY != gridY && (isInCloudLayer(gridY) || isInCloudLayer(this.gridY)))
 		)) {
 			isRemeshing = true;
 			rebuildTick = 0;
@@ -94,6 +95,7 @@ public class RendererDHCompat extends Renderer {
 				buildMesh(renderRange, cloudGrid, cloudColor);
 				isRemeshing = false;
 			}
+			quadCount = 0;
 		}
 	}
 

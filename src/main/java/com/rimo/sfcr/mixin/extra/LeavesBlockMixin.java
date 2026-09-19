@@ -3,6 +3,7 @@ package com.rimo.sfcr.mixin.extra;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +17,7 @@ public abstract class LeavesBlockMixin {
 			target = "Lnet/minecraft/world/level/Level;isRainingAt(Lnet/minecraft/core/BlockPos;)Z"
 	))
 	private static boolean sfcr$disableDrippingWater(Level instance, BlockPos pos, Operation<Boolean> original) {
-		if (Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(),  pos.getY(), pos.getZ()))
 			return false;
 		return original.call(instance, pos);
 	}

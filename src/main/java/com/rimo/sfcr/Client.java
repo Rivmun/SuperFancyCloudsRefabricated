@@ -19,6 +19,13 @@ import static com.rimo.sfcr.Common.*;
 public class Client {
 	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
 	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
+	/**
+	 * We cannot detect whether Iris is using vanilla clouds or not in accuracy, because our injected shader was lies beside
+	 * shaderpack's cloudpipeline in a same file after iris transformer. Our injector always inject when Iris.reload() invoked.
+	 * And the .getCloudSetting() just controlling vanilla renderer, specific cloudpipeline was defined by shaderpack.
+	 * Not a simple, stable way to detect our pipeline in use or not.
+	 * This flag just used to whether we need to reload Iris pipeline when our config changed (cuz' we injected it, we must recover).
+	 */
 	public static boolean isIrisLoadedShader = false;
 	private static boolean hasServer = false;
 	public static boolean isConfigHasBeenOverride = false;
@@ -121,13 +128,16 @@ public class Client {
 			LOGGER.info("{} send current config to server", MOD_ID);
 	}
 
-	public static void applyConfigChange(boolean oldEnableDHCompat, boolean oldEnableBottomDim) {
+	public static void applyConfigChange(boolean oldEnableDHCompat, boolean oldEnableBottomDim, boolean oldEnableRender) {
 		if (oldEnableDHCompat != CONFIG.isEnableDHCompat()) {
 			RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat(RENDERER) : new Renderer(RENDERER);
 		} else if (! CONFIG.isEnableRender()) {
 			RENDERER.stop();
 		}
-		if (isIrisLoadedShader && (!CONFIG.isEnableRender() || oldEnableBottomDim != CONFIG.isEnableBottomDim())) {
+		if (isIrisLoadedShader && (
+				oldEnableRender != CONFIG.isEnableRender() ||
+				CONFIG.isEnableRender() && oldEnableBottomDim != CONFIG.isEnableBottomDim()
+		)) {
 			try {  // reload shader if pipeline was changed
 				Class.forName("net.irisshaders.iris.Iris").getDeclaredMethod("reload").invoke(null);
 			} catch (Exception ignore) {}
@@ -145,7 +155,7 @@ public class Client {
 	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */
 	public static boolean isNoCloudCovered(double x, double y, double z) {
-		if (! CONFIG.isEnableCloudRain() || RENDERER == null )
+		if (RENDERER == null || ! CONFIG.isEnableRender())
 			return false;
 		return ! RENDERER.isCloudCovered(x, y, z);
 	}
@@ -155,7 +165,7 @@ public class Client {
 	 * @return {@code true} if this point has cloudBlock.
 	 */
 	public static boolean isCloud(double x, double y, double z) {
-		if (! CONFIG.isEnableRender() || RENDERER == null)
+		if (RENDERER == null || ! CONFIG.isEnableRender())
 			return false;
 		return RENDERER.isCloud(x, y, z);
 	}

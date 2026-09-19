@@ -21,6 +21,7 @@
     ${particlerain_mixin}
     "iris.IrisConfigMixin",
     "iris.IrisPipelinesMixin",
+    "iris.TransformPatcherMixin",
     "iris.VanillaTransformerMixin"
   ],
   "server": [],

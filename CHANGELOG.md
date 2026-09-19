@@ -3,6 +3,8 @@
 - Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.
   - Now we can only draw 6 inner faces when player inside cloudCell in vanilla.
 - Fix vanilla draw call may be invoked useless when DHCompat is enabled.
+- Fix dripping water cannot be controlled by NCNR.
+- Minor internal improved.
 
 # 2.9.4.1
 - Re-add isBiomeUseLoadedChunk option.

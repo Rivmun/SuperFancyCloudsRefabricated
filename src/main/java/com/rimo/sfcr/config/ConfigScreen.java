@@ -23,6 +23,7 @@ public class ConfigScreen {
 	final ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 	final boolean oldEnableDHCompat = CONFIG.isEnableDHCompat();
 	final boolean oldEnableBottomDim = CONFIG.isEnableBottomDim();
+	final boolean oldEnableRender = CONFIG.isEnableRender();
 	final String dimensionName;
 	final boolean isCustomDimension;
 
@@ -105,19 +106,19 @@ public class ConfigScreen {
 						Component.translatable("text.sfcr.title")
 				)
 				.setSavingRunnable(() -> {
-					if (deleteAfterQuit.getValue()) {
+					if (deleteAfterQuit.getValue()) {  // delete custom dimension config
 						Config.delete(dimensionName);
 						Common.setDimensionConfigJson(dimensionName, "");
 						CONFIG.load();
 						Client.isCustomDimensionConfig = false;
-					} else {
+					} else {  // saving normally
 						Common.setDimensionConfigJson(dimensionName, CONFIG.toString());
 						CONFIG.save(dimensionName);
 						if (isCustomDimension)
 							Client.isCustomDimensionConfig = true;
 					}
 					DATA.setConfig(CONFIG);
-					Client.applyConfigChange(oldEnableDHCompat, oldEnableBottomDim);
+					Client.applyConfigChange(oldEnableDHCompat, oldEnableBottomDim, oldEnableRender);
 				})
 				.setFallbackCategory(builder.getOrCreateCategory(Component.translatable("text.sfcr.category.general"))
 						// Custom Dimension Warning

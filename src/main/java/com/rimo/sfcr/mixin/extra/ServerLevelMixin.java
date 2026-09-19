@@ -18,7 +18,7 @@ public abstract class ServerLevelMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;shouldSnow(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;)Z"
 	))
 	private boolean sfcr$stopSnowLayerPileUp(Biome instance, LevelReader level, BlockPos pos, Operation<Boolean> original) {
-		if (Common.isNoCloudCovered((Level) level, pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isCloudRainLogically() && Common.isNoCloudCovered((Level) level, pos.getX(), pos.getY(), pos.getZ()))
 			return false;
 		return original.call(instance, level, pos);
 	}
@@ -28,7 +28,7 @@ public abstract class ServerLevelMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;I)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$stopCauldronPileUp(Biome instance, BlockPos pos, int seaLevel, Operation<Biome.Precipitation> original) {
-		if (Common.isNoCloudCovered((Level) (Object) this, pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isCloudRainLogically() && Common.isNoCloudCovered((Level) (Object) this, pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos, seaLevel);
 	}

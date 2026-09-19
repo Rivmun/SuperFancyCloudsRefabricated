@@ -11,6 +11,12 @@ import java.util.Arrays;
 
 @Mixin(VanillaTransformer.class)
 public abstract class VanillaTransformerMixin {
+	/*
+	 * Apply our modified pipeline fragment. Routes:
+	 *   Iris.createPipeline() -> new IrisRenderingPipeline.createShader()
+	 *   -> ShaderCreator.create() -> TransformPatcher.patchVanilla()
+	 *   -> TransformPatcher.transformInternal() -> TransformPatcher.transformer.transform()
+	 */
 	@ModifyArg(
 			method = "transform",
 			slice = @Slice(

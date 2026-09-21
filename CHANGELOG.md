@@ -1,3 +1,8 @@
+# 1.9.4.2
+- Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.
+- Fix dripping water cannot be controlled by NCNR.
+- Minor internal improved.
+
 # 1.9.4.1
 ### For mc1.16.5 only
 - Fix cloud has culled by frustum.

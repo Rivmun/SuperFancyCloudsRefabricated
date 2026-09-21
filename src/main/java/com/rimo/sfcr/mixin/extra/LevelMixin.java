@@ -24,7 +24,7 @@ public abstract class LevelMixin {
 	*///? } else {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"))
 	private Biome.Precipitation sfcr$hasRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
-		if (Common.isNoCloudCovered((Level) (Object) this, pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isCloudRainLogically() && Common.isNoCloudCovered((Level) (Object) this, pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	//? }

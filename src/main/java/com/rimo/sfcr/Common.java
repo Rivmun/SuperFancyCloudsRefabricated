@@ -324,8 +324,6 @@ public class Common {
 	 * @return Always {@code false} if this point above cloud, or cache of this level not found, or 'NCNR logical' function disabled.
 	 */
 	public static boolean isNoCloudCovered(Level level, double x, double y, double z) {
-		if (! CONFIG.isCloudRainLogically())
-			return false;
 		long time = System.nanoTime();
 		String name = level.dimension().location().toString();
 		DimensionData data = getDimensionData(level, name);

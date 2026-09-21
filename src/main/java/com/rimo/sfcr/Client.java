@@ -221,7 +221,7 @@ public class Client {
 	 * Note that if this point is above cloud, or NCNR function is disabled, it always {@code false}.
 	 */
 	public static boolean isNoCloudCovered(double x, double y, double z) {
-		if (! CONFIG.isEnableRender() || RENDERER == null )
+		if (RENDERER == null || ! CONFIG.isEnableRender())
 			return false;
 		return ! RENDERER.isCloudCovered(x, y, z);
 	}
@@ -231,7 +231,7 @@ public class Client {
 	 * @return {@code true} if this point has cloudBlock.
 	 */
 	public static boolean isCloud(double x, double y, double z) {
-		if (! CONFIG.isEnableRender() || RENDERER == null)
+		if (RENDERER == null || ! CONFIG.isEnableRender())
 			return false;
 		return RENDERER.isCloud(x, y, z);
 	}

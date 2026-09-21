@@ -161,11 +161,7 @@ public class Renderer {
 			 * Normal culling already does in 1.21.6+ vanilla mesh building, we must remesh it to prevent top/bottom face disappear when Y changed.
 			 */
 			if (! isResampling) {
-				cloudDataGroup.forEach(cloudData -> {
-					int y = cloudData.gridYFromClouds;
-					if (y != cameraGridY && y >= 0 && y < CONFIG.getCloudLayerThickness())
-						cloudData.tryRebuildMesh(cameraGridY);
-				});
+				cloudDataGroup.forEach(cloudData -> cloudData.tryUpdateMesh(cameraGridY));
 			}
 		}
 

@@ -2,6 +2,7 @@
 - Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.
 - Fix dripping water cannot be controlled by NCNR.
 - Minor internal improved.
+- Fix bottom inner face at bottom of cloudLayer is missing.
 
 # 1.9.4.1
 ### For mc1.16.5 only

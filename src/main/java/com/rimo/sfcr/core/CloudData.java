@@ -197,6 +197,7 @@ public class CloudData {
 					data >> 8 & 255 :
 					(data >> 8 & 255) - 256;  // -256 equals to | 0xFFFFFF00;
 			int y = data >> 16 & 127;
+			if (y == 127) y -= 128;  //NOTE: it's a temporary fix for bottom inner face missing bug that push -1 as Y value.
 			int z = (data << 8 & Integer.MIN_VALUE) == 0 ?
 					data & 255 :
 					(data & 255) - 256;

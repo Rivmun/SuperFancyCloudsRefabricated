@@ -3,6 +3,7 @@ package com.rimo.sfcr.mixin.extra;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.rimo.sfcr.Client;
+import com.rimo.sfcr.Common;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.biome.Biome;
@@ -23,7 +24,7 @@ public abstract class LevelRendererMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationRain(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
-		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}
@@ -33,7 +34,7 @@ public abstract class LevelRendererMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitationAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$redirectGetPrecipitationSplash(Biome instance, BlockPos pos, Operation<Biome.Precipitation> original) {
-		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance, pos);
 	}
@@ -43,7 +44,7 @@ public abstract class LevelRendererMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitation()Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$disableRainPartices(Biome instance, Operation<Biome.Precipitation> original, @Local BlockPos.MutableBlockPos pos) {
-		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance);
 	}
@@ -53,7 +54,7 @@ public abstract class LevelRendererMixin {
 			target = "Lnet/minecraft/world/level/biome/Biome;getPrecipitation()Lnet/minecraft/world/level/biome/Biome$Precipitation;"
 	))
 	private Biome.Precipitation sfcr$disableRainSplash(Biome instance, Operation<Biome.Precipitation> original, @Local(ordinal = 2) BlockPos pos) {
-		if (Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
+		if (Common.CONFIG.isEnableCloudRain() && Client.isNoCloudCovered(pos.getX(), pos.getY(), pos.getZ()))
 			return Biome.Precipitation.NONE;
 		return original.call(instance);
 	}

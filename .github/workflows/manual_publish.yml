@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       mc_versions:
-        description: 'input subproject name'
+        description: 'input MC versions (mergeable: 26.1,26.2,26.3; 1.21.11 publishes per-loader)'
         required: true
         type: string
-        default: '1.21.11-fabric,1.21.11-neoforge'
+        default: '26.3'
 
 jobs:
   prepare-matrix:
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
+        mc: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
       fail-fast: false
     steps:
       - name: Checkout Repository
@@ -65,8 +65,17 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      - name: Build ${{ matrix.version }}
-        run: ./gradlew ${{ matrix.version }}:build --no-daemon
+      # 真实游戏版本号取自子工程 deps.minecraft（如 26.1 -> 26.1.2）
+      - name: Resolve real MC version
+        id: mc_version
+        run: |
+          REAL_MC=$(grep "^deps.minecraft=" versions/${{ matrix.mc }}-fabric/gradle.properties | cut -d'=' -f2)
+          if [ -z "$REAL_MC" ]; then
+            echo "deps.minecraft not found for ${{ matrix.mc }}"
+            exit 1
+          fi
+          echo "real_mc=$REAL_MC" >> $GITHUB_OUTPUT
+          echo "Real MC version: $REAL_MC"
 
       - name: Extract Current Version Changelog
         run: |
@@ -75,7 +84,13 @@ jobs:
           echo "prepared changelog："
           cat temp-changelog.md
 
-      - name: Publish to Modrinth & CurseForge
+      # ---------- 无混淆 26.x：Forgix 合并为单个跨 loader 产物 ----------
+      - name: Merge build ${{ matrix.mc }} (forgix)
+        if: matrix.mc != '1.21.11'
+        run: ./gradlew mergeJars -Pforgix.mc=${{ matrix.mc }} --no-daemon
+
+      - name: Publish merged ${{ matrix.mc }} to Modrinth & CurseForge
+        if: matrix.mc != '1.21.11'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: Hoop89kN
@@ -83,7 +98,46 @@ jobs:
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-enabled: false
-          files: versions/${{ matrix.version }}/build/libs/*.jar
-          name: ${{ steps.get_version.outputs.version }} for ${{ matrix.version }}
-          version: ${{ steps.get_version.outputs.version }}+${{ matrix.version }}
+          files: build/merged/*.jar
+          name: ${{ steps.get_version.outputs.version }} for ${{ matrix.mc }}
+          version: ${{ steps.get_version.outputs.version }}+${{ matrix.mc }}
+          loaders: fabric,neoforge
+          game-versions: ${{ steps.mc_version.outputs.real_mc }}
+          changelog-file: temp-changelog.md
+
+      # ---------- 1.21.11 仍混淆：每-loader 单独产物，不走 Forgix ----------
+      - name: Build 1.21.11 per-loader
+        if: matrix.mc == '1.21.11'
+        run: ./gradlew 1.21.11-fabric:build 1.21.11-neoforge:build --no-daemon
+
+      - name: Publish 1.21.11-fabric to Modrinth & CurseForge
+        if: matrix.mc == '1.21.11'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: Hoop89kN
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 820317
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-enabled: false
+          files: versions/1.21.11-fabric/build/libs/*.jar
+          name: ${{ steps.get_version.outputs.version }} for 1.21.11-fabric
+          version: ${{ steps.get_version.outputs.version }}+1.21.11-fabric
+          loaders: fabric
+          game-versions: 1.21.11
+          changelog-file: temp-changelog.md
+
+      - name: Publish 1.21.11-neoforge to Modrinth & CurseForge
+        if: matrix.mc == '1.21.11'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: Hoop89kN
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: 820317
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          github-enabled: false
+          files: versions/1.21.11-neoforge/build/libs/*.jar
+          name: ${{ steps.get_version.outputs.version }} for 1.21.11-neoforge
+          version: ${{ steps.get_version.outputs.version }}+1.21.11-neoforge
+          loaders: neoforge
+          game-versions: 1.21.11
           changelog-file: temp-changelog.md

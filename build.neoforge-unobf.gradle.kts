@@ -4,6 +4,16 @@ plugins {
 
 val minecraft = property("deps.minecraft") as String
 
+// 将编译 classpath 上的 net.fabricmc:sponge-mixin 对齐到配对 fabric 工程的版本。
+// javac 对数组型注解成员（@Inject.at / @ModifyArg.slice 等）的序列化形式（显式数组 vs 标量糖）
+// 受 classpath 上注解类版本影响；两侧版本不一致会让 mixin 类字节不同，破坏 Forgix 的字节相等去重。
+// 未声明 deps.mixin 时不做干预。
+(findProperty("deps.mixin") as String?)?.let { mixin ->
+    configurations.configureEach {
+        resolutionStrategy.force("net.fabricmc:sponge-mixin:$mixin")
+    }
+}
+
 loom {
     //accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }

@@ -3,6 +3,7 @@ package com.rimo.sfcr.loaders.fabric;
 
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
+import com.rimo.sfcr.PlatformUtil;
 import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.config.ConfigScreen;
 import net.fabricmc.api.*;
@@ -34,6 +35,33 @@ import java.nio.file.Path;
 public class Platform implements ModInitializer {
 	@Override
 	public void onInitialize() {
+		PlatformUtil.PLATFORM = new PlatformUtil.IPlatform() {
+			@Override
+			public boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+				return ServerPlayNetworking.canSend(player, type);
+			}
+			@Override
+			public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+				ServerPlayNetworking.send(player, payload);
+			}
+			@Environment(EnvType.CLIENT)
+			@Override
+			public void sendToServer(CustomPacketPayload payload) {
+				ClientPlayNetworking.send(payload);
+			}
+			@Override
+			public boolean isModLoaded(String id) {
+				return FabricLoader.getInstance().isModLoaded(id);
+			}
+			@Override
+			public Path getConfigFolder() {
+				return FabricLoader.getInstance().getConfigDir();
+			}
+			@Override
+			public boolean isFabric() {
+				return true;
+			}
+		};
 		//~ if = 1.21.11 'clientboundPlay()' -> 'playS2C()' {
 		PayloadTypeRegistry.clientboundPlay().register(Common.WeatherPayload.TYPE, Common.WeatherPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Common.DimensionPayload.TYPE, Common.DimensionPayload.CODEC);
@@ -101,27 +129,6 @@ public class Platform implements ModInitializer {
 					DedicatedServer.handleDimensionPayload(payload, context.player())
 			);
 		}
-	}
-
-	// - - - - - Platform specific function - - - - -
-	public static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
-		return ServerPlayNetworking.canSend(player, type);
-	}
-	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-		ServerPlayNetworking.send(player, payload);
-	}
-	@Environment(EnvType.CLIENT)
-	public static void sendToServer(CustomPacketPayload payload) {
-		ClientPlayNetworking.send(payload);
-	}
-	public static boolean isModLoaded(String id) {
-		return FabricLoader.getInstance().isModLoaded(id);
-	}
-	public static Path getConfigFolder() {
-		return FabricLoader.getInstance().getConfigDir();
-	}
-	public static boolean isFabric() {
-		return true;
 	}
 }
 //? }

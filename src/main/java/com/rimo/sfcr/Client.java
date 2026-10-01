@@ -3,8 +3,6 @@ package com.rimo.sfcr;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.core.*;
-//~ if neoforge 'fabric' -> 'neoforge'
-import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -15,10 +13,11 @@ import org.jspecify.annotations.Nullable;
 import java.util.Random;
 
 import static com.rimo.sfcr.Common.*;
+import static com.rimo.sfcr.PlatformUtil.PLATFORM;
 
 public class Client {
-	public static final boolean isDistantHorizonsLoaded = Platform.isModLoaded("distanthorizons");
-	public static final boolean isParticleRainLoaded = Platform.isModLoaded("particlerain");
+	public static final boolean isDistantHorizonsLoaded = PLATFORM.isModLoaded("distanthorizons");
+	public static final boolean isParticleRainLoaded = PLATFORM.isModLoaded("particlerain");
 	/**
 	 * We cannot detect whether Iris is using vanilla clouds or not in accuracy, because our injected shader was lies beside
 	 * shaderpack's cloudpipeline in a same file after iris transformer. Our injector always inject when Iris.reload() invoked.
@@ -119,7 +118,7 @@ public class Client {
 			return;
 		String name = level.dimension().identifier().toString();
 		String configJson = CONFIG.toString();
-		Platform.sendToServer(new DimensionPayload(
+		PLATFORM.sendToServer(new DimensionPayload(
 				name,
 				configJson,
 				0L

@@ -6,8 +6,6 @@ import com.rimo.sfcr.config.SharedConfig;
 import com.rimo.sfcr.core.AbstractSeasonCompat;
 import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
-//~ if neoforge 'fabric' -> 'neoforge'
-import com.rimo.sfcr.loaders.fabric.Platform;
 import com.rimo.sfcr.mixin.Plugin;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
@@ -25,6 +23,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.rimo.sfcr.PlatformUtil.PLATFORM;
 
 public class Common {
 	public static final String MOD_ID = "sfcr";
@@ -92,7 +92,7 @@ public class Common {
 	private static String debugString = "";
 
 	public static void onPlayerJoin(ServerPlayer player) {
-		if (Platform.canReceive(player, WeatherPayload.TYPE)) {
+		if (PLATFORM.canReceive(player, WeatherPayload.TYPE)) {
 			playerWithSfcr.add(player);
 		} else {
 			return;
@@ -118,7 +118,7 @@ public class Common {
 		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
 			playerWithSfcr.forEach(player ->
-					Platform.sendToPlayer(player, new WeatherPayload(nextWeather))
+					PLATFORM.sendToPlayer(player, new WeatherPayload(nextWeather))
 			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
@@ -153,7 +153,7 @@ public class Common {
 			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());
-		Platform.sendToPlayer(player, new DimensionPayload(
+		PLATFORM.sendToPlayer(player, new DimensionPayload(
 				name,
 				data.configJson,
 				data.seed

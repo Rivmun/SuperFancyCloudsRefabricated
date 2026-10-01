@@ -4,14 +4,13 @@ import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.rimo.sfcr.config.SharedConfig;
-//~ if neoforge 'fabric' -> 'neoforge'
-import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.player.Player;
 
 import static com.rimo.sfcr.Common.*;
+import static com.rimo.sfcr.PlatformUtil.PLATFORM;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -115,7 +114,7 @@ public class DedicatedServer {
 								VersionUtil.sendSystemMessage(context, "§4[SFCRe] You may install SFCR first!");
 								return 1;
 							}
-							Platform.sendToPlayer(player, new UploadRequestPayload());
+							PLATFORM.sendToPlayer(player, new UploadRequestPayload());
 							return 1;
 						})
 				)

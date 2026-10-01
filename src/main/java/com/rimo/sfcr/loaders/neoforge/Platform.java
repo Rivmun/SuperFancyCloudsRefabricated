@@ -4,6 +4,7 @@
 import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.DedicatedServer;
+import com.rimo.sfcr.PlatformUtil;
 import com.rimo.sfcr.config.ConfigScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
@@ -38,6 +39,35 @@ import java.nio.file.Path;
 @Mod(Common.MOD_ID)
 @EventBusSubscriber(modid = Common.MOD_ID)
 public class Platform {
+	Platform() {
+		PlatformUtil.PLATFORM = new PlatformUtil.IPlatform() {
+			@Override
+			public boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+				return player.connection.hasChannel(type);
+			}
+			@Override
+			public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+				PacketDistributor.sendToPlayer(player, payload);
+			}
+			@OnlyIn(Dist.CLIENT)
+			@Override
+			public void sendToServer(CustomPacketPayload payload) {
+				ClientPacketDistributor.sendToServer(payload);
+			}
+			@Override
+			public boolean isModLoaded(String id) {
+				return ModList.get().isLoaded(id);
+			}
+			@Override
+			public Path getConfigFolder() {
+				return FMLPaths.CONFIGDIR.get();
+			}
+			@Override
+			public boolean isFabric() {
+				return false;
+			}
+		};
+	}
 	@SubscribeEvent
 	public static void registerPayloadType(RegisterPayloadHandlersEvent event) {
 		final PayloadRegistrar registrar = event.registrar("1");
@@ -148,27 +178,6 @@ public class Platform {
 		public static void registerCommand(RegisterCommandsEvent event) {
 			DedicatedServer.registerCommand(event.getDispatcher());
 		}
-	}
-
-	// - - - - - Platform specific function - - - - -
-	public static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
-		return player.connection.hasChannel(type);
-	}
-	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-		PacketDistributor.sendToPlayer(player, payload);
-	}
-	@OnlyIn(Dist.CLIENT)
-	public static void sendToServer(CustomPacketPayload payload) {
-		ClientPacketDistributor.sendToServer(payload);
-	}
-	public static boolean isModLoaded(String id) {
-		return ModList.get().isLoaded(id);
-	}
-	public static Path getConfigFolder() {
-		return FMLPaths.CONFIGDIR.get();
-	}
-	public static boolean isFabric() {
-		return false;
 	}
 }
 *///? }

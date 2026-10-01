@@ -5,8 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.Common;
-//~ if neoforge 'fabric' -> 'neoforge'
-import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.core.Holder;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biomes;
@@ -21,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.rimo.sfcr.Common.MOD_ID;
+import static com.rimo.sfcr.PlatformUtil.PLATFORM;
 
 public class SharedConfig {
 	protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -210,7 +209,7 @@ public class SharedConfig {
 	/**
 	 * It must be {@code .minecraft/config/sfcr/sfcr.json} in normally.
 	 */
-	private static final Path DEFAULT_PATH = Platform.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
+	private static final Path DEFAULT_PATH = PLATFORM.getConfigFolder().resolve(MOD_ID).resolve(MOD_ID + ".json");
 	public static final String OVERWORLD = "minecraft:overworld";
 
 	/**

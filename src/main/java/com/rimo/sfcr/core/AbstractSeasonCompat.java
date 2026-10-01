@@ -2,16 +2,14 @@ package com.rimo.sfcr.core;
 
 import com.rimo.sfcr.config.Config;
 import com.rimo.sfcr.config.ConfigScreen;
-//~ if neoforge 'fabric' -> 'neoforge'
-import com.rimo.sfcr.loaders.fabric.Platform;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.TreeMap;
 
-import static com.rimo.sfcr.Common.LOGGER;
-import static com.rimo.sfcr.Common.MOD_ID;
+import static com.rimo.sfcr.Common.*;
+import static com.rimo.sfcr.PlatformUtil.PLATFORM;
 
 /**
  * An abstract class to handle current season mod listener and season density map.<br>
@@ -31,9 +29,9 @@ public abstract class AbstractSeasonCompat {
 	 */
 	public static @Nullable AbstractSeasonCompat getInstance(Config config) {
 		try {
-			if (Platform.isModLoaded("sereneseasons"))
+			if (PLATFORM.isModLoaded("sereneseasons"))
 				return new SereneSeasons(config);
-			if (Platform.isFabric() && Platform.isModLoaded("seasons"))
+			if (PLATFORM.isFabric() && PLATFORM.isModLoaded("seasons"))
 				return new FabricSeasons(config);
 		} catch (RuntimeException e) {
 			LOGGER.error("{} Failed to initialize season listener, is season mod api changed? Please report.", MOD_ID, e);

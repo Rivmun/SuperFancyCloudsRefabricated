@@ -4,7 +4,6 @@ package com.rimo.sfcr.core;
 //import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.rimo.sfcr.Common;
 import com.rimo.sfcr.VersionUtil;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;

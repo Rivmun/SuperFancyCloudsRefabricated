@@ -122,5 +122,7 @@
 	"text.sfcr.requiredCloth": "你需要先安装 Cloth Config。",
 	"text.sfcr.colorAlphaTooLow": "透明度过低，可能会使云层不可见",
 
+	"text.traceableprint.config.missing_dependency": "此配置屏幕需要 Cloth Config 才能显示，\n请安装后重试。",
+
 	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方多平台移植版，使原版的云朵更立体更动态。"
 }

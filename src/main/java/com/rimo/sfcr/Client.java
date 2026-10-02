@@ -99,15 +99,18 @@ public class Client {
 		ClientCommandRegistrationEvent.EVENT.register((dispatcher, dedicated) -> dispatcher
 				// Don't use only 'sfcr' that will override server command when connect to a server on fabric-1.21.1
 				.register(ClientCommandRegistrationEvent.literal(MOD_ID + "config").executes(context -> {
-					//~ if > 1.21 '.isForge()' -> '.isNeoForge()'
-					if (Platform.isFabric() && Platform.isModLoaded("cloth-config2") || Platform.isNeoForge() && Platform.isModLoaded("cloth_config")) {
-						Minecraft client = Minecraft.getInstance();
-						//~ if > 1.18 && < 1.20 || > 1.20 && fabric 'client.execute' -> 'client.tell'
-						client.tell(() -> client.setScreen(new ConfigScreen().build()));
-					} else {
-						//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'
-						context.getSource().arch$sendFailure(Component.translatable("text.sfcr.requiredCloth"));
+					Minecraft mc = Minecraft.getInstance();
+					//~ if ! fabric 'cloth-config2' -> 'cloth_config'
+					if (!Platform.isModLoaded("cloth-config2")) {
+						if (mc.player != null) {
+							VersionUtil.sendMessage(mc.player,
+									//~ if < 1.19 'Component.translatable' -> 'new TranslatableComponent'
+									Component.translatable("text.traceableprint.config.missing_dependency").getString());
+						}
+						return 1;
 					}
+					//~ if > 1.18 && < 1.20 || > 1.20 && fabric 'client.execute' -> 'client.tell'
+					mc.tell(() -> mc.setScreen(new ConfigScreen().build(mc.screen)));
 					return 1;
 				}))
 		);

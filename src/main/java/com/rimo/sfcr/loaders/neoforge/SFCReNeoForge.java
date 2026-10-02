@@ -5,6 +5,7 @@ import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.config.ConfigScreen;
+import com.rimo.sfcr.config.MissingConfigLibScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
@@ -35,13 +36,13 @@ public class SFCReNeoForge {
 			Client.init();
 
 			ModList modList = ModList.get();
-			if (modList.isLoaded("cloth_config")) {
-				modList.getModContainerById(Common.MOD_ID).ifPresent(container ->
-						container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, parentScreen) ->
-								new ConfigScreen().build()
-						)
-				);
-			}
+			modList.getModContainerById(Common.MOD_ID).ifPresent(container ->
+					container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, parentScreen) ->
+							modList.isLoaded("cloth_config") ?
+									new ConfigScreen().build(parentScreen) :
+									new MissingConfigLibScreen(parentScreen)
+					)
+			);
 		}
 		@SubscribeEvent
 		// arch-api cannot register same payload on both side in neoforge-1.21.1, so we can only register in here.

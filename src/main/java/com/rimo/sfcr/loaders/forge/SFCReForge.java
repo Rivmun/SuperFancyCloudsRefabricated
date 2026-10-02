@@ -5,6 +5,7 @@ import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.config.ConfigScreen;
+import com.rimo.sfcr.config.MissingConfigLibScreen;
 //~ if ! 1.16.5 'me.shedaniel.' -> 'dev.'
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.api.distmarker.Dist;
@@ -38,28 +39,24 @@ public class SFCReForge {
 		DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> DedicatedServer::init);
 
 	//? if ! 1.16.5 {
-		if (ModList.get().isLoaded("cloth_config")) {
-			ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
-			DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SFCReForge::registerModsPage);
-		}
+		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+		DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SFCReForge::registerModsPage);
 	}
 
 	public static void registerModsPage() {
 		//~ if < 1.19 'ConfigScreenHandler.ConfigScreenFactory' -> 'ConfigGuiHandler.ConfigGuiFactory'
 		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> {
-			return new ConfigScreen().build();
+			return ModList.get().isLoaded("cloth_config") ? new ConfigScreen().build(parent) : new MissingConfigLibScreen(parent);
 		}));
 	}
 	//? } else {
-		/^if (ModList.get().isLoaded("cloth-config")) {
-			ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST, () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (a, b) -> true));
-			DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SFCReForge::registerModsPage);
-		}
+		/^ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST, () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+		DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> SFCReForge::registerModsPage);
 	}
 
 	public static void registerModsPage() {
 		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (client, parent) -> {
-			return new ConfigScreen().build();
+			return ModList.get().isLoaded("cloth-config") ? new ConfigScreen().build(parent) : new MissingConfigLibScreen(parent);
 		});
 	}
 	^///? }

@@ -120,5 +120,7 @@
 	"text.sfcr.frame": "%s frame(s)",
 	"text.sfcr.disabled": "Disabled",
 	"text.sfcr.requiredCloth": "You need to install Cloth Config first.",
-	"text.sfcr.colorAlphaTooLow": "Color alpha is too low, that will makes cloud invisible."
+	"text.sfcr.colorAlphaTooLow": "Color alpha is too low, that will makes cloud invisible.",
+
+	"text.traceableprint.config.missing_dependency": "Cloth Config is required to open this config screen.\nInstall it and try again."
 }

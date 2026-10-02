@@ -39,7 +39,7 @@ public class ConfigScreen {
 		isCustomDimension = ! dimensionName.equals(Config.OVERWORLD);
 	}
 
-	public Screen build() {
+	public Screen build(Screen parent) {
 		//cull mode
 		BooleanListEntry cullMode = entryBuilder
 				.startBooleanToggle(Component.translatable("text.sfcr.option.cullMode"),
@@ -140,7 +140,7 @@ public class ConfigScreen {
 				.setSaveConsumer(CONFIG::setBiomeDensityByChunk)
 				.build();
 		// (i love it...
-		return builder.setParentScreen(Minecraft.getInstance().screen)
+		return builder.setParentScreen(parent)
 				.setTransparentBackground(true)
 				.setTitle(isCustomDimension ?
 						Component.translatable("text.sfcr.title.customDimensionMode", dimensionName) :

@@ -1,3 +1,13 @@
+# 1.9.5
+Critical fix about custom dimension config function. (Thanks to @rpfurlong)
+- Fix config cannot back to default when player leave custom dimension.
+  - That leads default config file will be overwritten or deleted if you 'Save Changes' or 'Delete Current File' in configScreen.
+  - And other strange issue that I cannot expect...
+- Fix logical side mem leaks that causing player cannot receive any SFCR packet after respawn.
+- Fix logical side doesn't send dimension packet when player is respawn ACROSS dimension.
+- Fix vanilla precipitation particles always controlled by SFCR clouds, even NCNR is disabled.
+- Add a simple screen to notify player install Cloth Config instead of red config button.
+
 # 1.9.4.2
 - Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.
 - Fix dripping water cannot be controlled by NCNR.

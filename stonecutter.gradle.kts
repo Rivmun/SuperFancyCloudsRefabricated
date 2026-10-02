@@ -12,8 +12,17 @@ stonecutter parameters {
 }
 
 // ===================== Forgix 合并配置 =====================
-val modId      = providers.gradleProperty("mod.id").get()
-val modVersion = providers.gradleProperty("mod.version").get()
+// Stonecutter 不会把 stonecutter.properties.toml 的顶层全局属性注入根工程（仅注入各子工程节点），
+// 因此根构建脚本无法用 providers.gradleProperty/findProperty 取到 mod.id、mod.version，
+// 这里直接解析 toml 的顶层（第一个 [section] 之前）全局属性。
+fun tomlGlobalProp(key: String): String {
+    val global = file("stonecutter.properties.toml").readLines()
+        .takeWhile { !it.trimStart().startsWith("[") }
+    return global.first { it.trim().startsWith("$key=") }
+        .substringAfter('=').trim().trim('"')
+}
+val modId      = tomlGlobalProp("mod.id")
+val modVersion = tomlGlobalProp("mod.version")
 
 // 用 -Pforgix.mc=26.3 指定要合并哪个 MC 版本；未指定则回落 Stonecutter active 前缀，再回落 26.3
 val targetMc: String = (findProperty("forgix.mc") as String?)

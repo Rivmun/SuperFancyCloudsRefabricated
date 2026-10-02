@@ -7,7 +7,6 @@ import com.rimo.sfcr.core.*;
 //~ if < 1.18 'dev.architectury' -> 'me.shedaniel.architectury' {
 //? if ! 1.16.5
 import dev.architectury.event.events.client.ClientCommandRegistrationEvent;
-import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientPlayerEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.networking.NetworkManager;
@@ -44,18 +43,19 @@ public class Client {
 		// arch api 's SETUP event is not reliable, RENDERER init we directly placed here
 		RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 
-		// World loaded
+		// World reloaded
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
 			if (! hasServer)
 				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
 		});
-		//~ if = 1.16.5 'CLIENT_LEVEL_LOAD' -> 'CLIENT_WORLD_LOAD'
-		ClientLifecycleEvent.CLIENT_LEVEL_LOAD.register(level -> {
-			Sampler sampler = CloudData.sampler.setLevel(level);
+		ClientPlayerEvent.CLIENT_PLAYER_RESPAWN.register((oldPlayer, newPlayer) -> {
+			Level level = newPlayer.level();
+			if (oldPlayer.level() == level)
+				return;
+			Sampler sampler = CloudData.sampler.setLevel(level);  //always refresh level reference.
 			String dimensionName = level.dimension().location().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
-				if (CONFIG.load(dimensionName))
-					isCustomDimensionConfig = true;
+				isCustomDimensionConfig = CONFIG.load(dimensionName);
 				isConfigHasBeenOverride = false;
 				sampler.setConfig(CONFIG);
 			}
@@ -185,16 +185,14 @@ public class Client {
 				CONFIG.fromString(configJson);
 				if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
 					isConfigHasBeenOverride = true;
-				if (! name.equals(Config.OVERWORLD))
-					isCustomDimensionConfig = true;
+				isCustomDimensionConfig = ! name.equals(Config.OVERWORLD);
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} receive sharedConfig of '{}'", MOD_ID, name);
 			} catch (JsonSyntaxException e) {
 				LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
 			}
 		} else {
-			if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
-				isCustomDimensionConfig = true;
+			isCustomDimensionConfig = CONFIG.load(name);  //Client trying to load dimension config if server not send...
 			isConfigHasBeenOverride = false;
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);

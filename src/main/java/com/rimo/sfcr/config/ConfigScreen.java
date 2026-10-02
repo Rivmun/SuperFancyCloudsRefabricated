@@ -100,7 +100,7 @@ public class ConfigScreen {
 						false)
 				.setDefaultValue(false)
 				.setSaveConsumer(value -> {})
-				.setDisplayRequirement(Requirement.isTrue(() -> Client.isCustomDimensionConfig))
+				.setDisplayRequirement(Requirement.isTrue(() -> isCustomDimension))
 				.build();
 		DropdownBoxEntry<Integer> cloudBlockSize = entryBuilder
 				.startDropdownMenu(Component.translatable("text.sfcr.option.cloudBlockSize")

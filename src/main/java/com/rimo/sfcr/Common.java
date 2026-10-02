@@ -40,7 +40,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //? }
 
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Common {
@@ -140,7 +142,7 @@ public class Common {
 	}
 	*///? }
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
-	static final Set<ServerPlayer> playersWithSfcr = ConcurrentHashMap.newKeySet();  //only send packet to these players (save traffic?)
+	static final Set<UUID> playersWithSfcr = ConcurrentHashMap.newKeySet();  //only send packet to these players (save traffic?)
 
 	private static final Object debugLock = new Object();
 	private static long apiDebugTime = 0L;
@@ -161,26 +163,23 @@ public class Common {
 		PlayerEvent.PLAYER_JOIN.register(player -> {
 			//~ if > 1.21 'PACKET_WEATHER' -> 'WeatherPayload.TYPE'
 			if (NetworkManager.canPlayerReceive(player, WeatherPayload.TYPE)) {
-				playersWithSfcr.add(player);
+				playersWithSfcr.add(player.getUUID());
 			} else {
 				return;
 			}
-			MinecraftServer server = player.getServer();
-			// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
-			boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
-			if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player)))
-				return;
 			//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
 			sendDimensionPacket(player, player.serverLevel().dimension());
 		});
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-			MinecraftServer server = player.getServer();
-			boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
-			if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player)))
-				return;
 			sendDimensionPacket(player, newLevel);
 		});
-		PlayerEvent.PLAYER_QUIT.register(playersWithSfcr::remove);
+		// respawn ACROSS dimension doesn't trigger CHANGE_DIMENSION event, here fix it.
+		PlayerEvent.PLAYER_CLONE.register(((oldPlayer, newPlayer, wonGame) -> {
+			if (oldPlayer.level() != newPlayer.level())
+				//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
+				sendDimensionPacket(newPlayer, newPlayer.serverLevel().dimension());
+		}));
+		PlayerEvent.PLAYER_QUIT.register(player -> playersWithSfcr.remove(player.getUUID()));
 
 		TickEvent.SERVER_POST.register(server -> {
 			if (server.getTickCount() % 20 != 0)
@@ -191,11 +190,16 @@ public class Common {
 			if (DATA.updateWeather(level) && CONFIG.isEnableServer()) {  // always update
 				Data.Weather nextWeather = DATA.getNextWeather();
 				//? if < 1.21 {
-				/*NetworkManager.sendToPlayers(playersWithSfcr, PACKET_WEATHER, new FriendlyByteBuf(Unpooled.buffer())
-						.writeEnum(nextWeather)
+				/*playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayers(
+						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),
+						PACKET_WEATHER,
+						new FriendlyByteBuf(Unpooled.buffer()).writeEnum(nextWeather)
 				);
 				*///? } else {
-				NetworkManager.sendToPlayers(playersWithSfcr, new WeatherPayload(nextWeather));
+				playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayer(
+						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),
+						new WeatherPayload(nextWeather)
+				));
 				//? }
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
@@ -226,6 +230,11 @@ public class Common {
 
 	// Dimension Packet Sender
 	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+		MinecraftServer server = player.getServer();
+		// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
+		boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
+		if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player.getUUID())))
+			return;
 		String name = key.location().toString();
 		//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
 		DimensionData data = loadDimensionData(player.serverLevel());

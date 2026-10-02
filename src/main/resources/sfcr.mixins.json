@@ -17,12 +17,7 @@
     "ValueProbeMixin",
     ${clientlevel_mixin}
     "extra.LeavesBlockMixin",
-    "extra.WeatherEffectRendererMixin",
-    ${particlerain_mixin}
-    "iris.IrisConfigMixin",
-    "iris.IrisPipelinesMixin",
-    "iris.TransformPatcherMixin",
-    "iris.VanillaTransformerMixin"
+    "extra.WeatherEffectRendererMixin"
   ],
   "server": [],
   "injectors": {

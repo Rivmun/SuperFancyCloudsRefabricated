@@ -43,7 +43,6 @@ tasks.named<ProcessResources>("processResources") {
 
         // insert version-specific mixins
         this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
-        this["particlerain_mixin"] = ""
         this["clientlevel_mixin"] = ""
     }
 

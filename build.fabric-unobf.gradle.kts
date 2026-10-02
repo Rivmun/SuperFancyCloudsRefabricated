@@ -35,7 +35,6 @@ tasks.named<ProcessResources>("processResources") {
         //this["access_widener"] = "${prop("mod.id")}.unobf.accesswidener"
 
         // insert version-specific mixins
-        this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
         this["ServerLevelAccessor"] = ""
         this["clientlevel_mixin"] = if (sc.current.parsed < "26.2") "" else "\"extra.ClientLevelMixin\","
 

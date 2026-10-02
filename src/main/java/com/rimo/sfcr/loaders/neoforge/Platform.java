@@ -39,7 +39,7 @@ import java.nio.file.Path;
 @Mod(Common.MOD_ID)
 @EventBusSubscriber(modid = Common.MOD_ID)
 public class Platform {
-	Platform() {
+	public Platform() {
 		PlatformUtil.PLATFORM = new PlatformUtil.IPlatform() {
 			@Override
 			public boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {

@@ -35,7 +35,6 @@ tasks.named<ProcessResources>("processResources") {
         //this["access_widener"] = "${prop("mod.id")}.accesswidener"
 
         // insert version-specific mixins
-        this["particlerain_mixin"] = "\"particlerain.ParticleSpawnerMixin\","
         this["ServerLevelAccessor"] = "\"ServerLevelAccessor\","
         this["clientlevel_mixin"] = ""
 

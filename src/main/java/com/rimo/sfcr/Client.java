@@ -37,13 +37,12 @@ public class Client {
 	}
 
 	public static void onLevelLoad(Level level) {
-		Sampler sampler = Renderer.sampler.setLevel(level).setSeed(new Random().nextLong());  //get a random seed before server send
+		Sampler sampler = Renderer.sampler.setLevel(level);   //always refresh level reference.
 		String dimensionName = level.dimension().identifier().toString();
 		if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
-			if (CONFIG.load(dimensionName))
-				isCustomDimensionConfig = true;
+			isCustomDimensionConfig = CONFIG.load(dimensionName);
 			isConfigHasBeenOverride = false;
-			sampler.setConfig(CONFIG);
+			sampler.setConfig(CONFIG).setSeed(new Random().nextLong());  //get a random seed if server doesn't exist.
 		}
 		if (seasonHandler != null)
 			Renderer.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
@@ -87,16 +86,14 @@ public class Client {
 				CONFIG.fromString(configJson);
 				if (! Minecraft.getInstance().isLocalServer())  //singleplayer override itself? ur joking...
 					isConfigHasBeenOverride = true;
-				if (! name.equals(Config.OVERWORLD))
-					isCustomDimensionConfig = true;
+				isCustomDimensionConfig = ! name.equals(Config.OVERWORLD);
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} receive sharedConfig of '{}'", MOD_ID, name);
 			} catch (JsonSyntaxException e) {
 				LOGGER.error("{} cannot read config for {} which is received from server, please check your mod version!", MOD_ID, name);
 			}
 		} else {
-			if (CONFIG.load(name))  //Client trying to load dimension config if server not send...
-				isCustomDimensionConfig = true;
+			isCustomDimensionConfig = CONFIG.load(name);  //Client trying to load dimension config if server not send...
 			isConfigHasBeenOverride = false;
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} receive dimension name '{}'", MOD_ID, name);

@@ -22,6 +22,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.rimo.sfcr.PlatformUtil.PLATFORM;
@@ -84,7 +85,7 @@ public class Common {
 
 	private record DimensionData(long seed, String configJson, Sampler sampler) {}
 	private static final ConcurrentHashMap<String, DimensionData> DIMENSION_CACHE = new ConcurrentHashMap<>();  // cache config to prevent high frequent IO. key is dimensionName.
-	static final Set<ServerPlayer> playerWithSfcr = ConcurrentHashMap.newKeySet();
+	static final Set<UUID> playerWithSfcr = ConcurrentHashMap.newKeySet();
 
 	private static final Object debugLock = new Object();
 	private static long apiDebugTime = 0L;
@@ -93,7 +94,7 @@ public class Common {
 
 	public static void onPlayerJoin(ServerPlayer player) {
 		if (PLATFORM.canReceive(player, WeatherPayload.TYPE)) {
-			playerWithSfcr.add(player);
+			playerWithSfcr.add(player.getUUID());
 		} else {
 			return;
 		}
@@ -105,7 +106,7 @@ public class Common {
 	}
 
 	public static void onPlayerQuit(ServerPlayer player) {
-		playerWithSfcr.remove(player);
+		playerWithSfcr.remove(player.getUUID());
 	}
 
 	public static void onTick(MinecraftServer server) {
@@ -117,8 +118,8 @@ public class Common {
 		//~ if = 1.21.11 'server' -> 'level'
 		if (DATA.updateWeather(server) && CONFIG.isEnableServer()) {  // always update
 			Data.Weather nextWeather = DATA.getNextWeather();
-			playerWithSfcr.forEach(player ->
-					PLATFORM.sendToPlayer(player, new WeatherPayload(nextWeather))
+			playerWithSfcr.forEach(uuid ->
+					PLATFORM.sendToPlayer(server.getPlayerList().getPlayer(uuid), new WeatherPayload(nextWeather))
 			);
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
@@ -149,7 +150,7 @@ public class Common {
 	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
 		MinecraftServer server = player.level().getServer();
 		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
-		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player)))
+		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player.getUUID())))
 			return;
 		String name = key.identifier().toString();
 		DimensionData data = loadDimensionData(player.level());

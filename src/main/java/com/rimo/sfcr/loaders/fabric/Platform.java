@@ -80,6 +80,7 @@ public class Platform implements ModInitializer {
 		ServerPlayerEvents.JOIN.register(Common::onPlayerJoin);
 		//~ if = 1.21.11 'ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL' -> 'ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD'
 		ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, oldLevel, newLevel) -> {
+			// NOTICE that this event will trigger when player respawn ACROSS dimension, but neoforge / forge does NOT.
 			Common.onPlayerChangedDimension(player, newLevel.dimension());
 		});
 		ServerPlayerEvents.LEAVE.register(Common::onPlayerQuit);

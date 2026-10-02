@@ -176,7 +176,7 @@ public class Common {
 		SharedConfig config = new SharedConfig();
 		String configJson = config.load(name) || name.equals(Config.OVERWORLD) ? config.toString() : "";
 		if (CONFIG.isEnableDebug())
-			LOGGER.info("load dimensionData {} into cache...", name);
+			LOGGER.info("{} load dimensionData {} into cache...", MOD_ID, name);
 		return DIMENSION_CACHE.compute(name, (key, existing) -> {
 			if (existing == null) {
 				long seed = getSeed(level);

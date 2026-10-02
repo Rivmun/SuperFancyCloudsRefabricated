@@ -1,3 +1,15 @@
+# 2.9.5
+Critical fix about custom dimension config function.
+- Fix config cannot back to default when player leave custom dimension.
+  - That leads default config file will be overwritten or deleted if you 'Save Changes' or 'Delete Current File' in configScreen.
+  - And other strange issue that I cannot expect...
+- Fix logical side mem leaks that causing player cannot receive any SFCR packet after respawn.
+- Fix cloud sample seed will re-random when play change dimension or respawn across dimension on Neoforge.
+- Fix client did nothing after player change dimension or respawn on NeoForge remote server.
+  - Cloud sampler keep sampling the old (unloaded) level, breaks biome/rain-based dynamic features.
+  - And per-dimension config self-load was also skipped when enableServer is disabled.
+- Impl Forgix again to mergeJar. Now fabric & neoforge was compressed into single file for 26.x version.
+
 # 2.9.4.2
 - Fix cloud will stop to refresh when fly through the top of cloudLayer with DHCompat is enabled.
 - Finally fix cloudMesh sometimes cannot trigger to rebuild when player only move up / down.

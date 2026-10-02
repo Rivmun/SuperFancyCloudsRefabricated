@@ -1,5 +1,5 @@
 # 2.9.5
-Critical fix about custom dimension config function.
+Critical fix about custom dimension config function. (Thanks to @rpfurlong)
 - Fix config cannot back to default when player leave custom dimension.
   - That leads default config file will be overwritten or deleted if you 'Save Changes' or 'Delete Current File' in configScreen.
   - And other strange issue that I cannot expect...
@@ -9,6 +9,9 @@ Critical fix about custom dimension config function.
   - Cloud sampler keep sampling the old (unloaded) level, breaks biome/rain-based dynamic features.
   - And per-dimension config self-load was also skipped when enableServer is disabled.
 - Impl Forgix again to mergeJar. Now fabric & neoforge was compressed into single file for 26.x version.
+  - Optimize code structure to get a high compression level.
+- Add a simple screen to notify player install Cloth Config instead of red config button.
+- Remove useless MixinTargetNotFound warning log out on game launch.
 
 # 2.9.4.2
 - Fix cloud will stop to refresh when fly through the top of cloudLayer with DHCompat is enabled.
@@ -28,6 +31,7 @@ Critical fix about custom dimension config function.
   - Add '/sfcr debug api' command for dedicated server to debug NCNRLogically performance remotely.
 - Internal biomeDetect improved.
 - Internal mixin improved.
+- Support mc26.3.
 
 # 2.9.4
 - Fix compatibility for Iris. Now 2.0 can work with shaderpacks.

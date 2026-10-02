@@ -6,6 +6,7 @@ import com.rimo.sfcr.Common;
 import com.rimo.sfcr.DedicatedServer;
 import com.rimo.sfcr.PlatformUtil;
 import com.rimo.sfcr.config.ConfigScreen;
+import com.rimo.sfcr.config.MissingConfigLibScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -66,6 +67,10 @@ public class Platform {
 			public boolean isFabric() {
 				return false;
 			}
+			@Override
+			public String getClothID() {
+				return "cloth_config";
+			}
 		};
 	}
 	@SubscribeEvent
@@ -121,22 +126,20 @@ public class Platform {
 			Client.init();
 
 			ModList modList = ModList.get();
-			if (modList.isLoaded("cloth_config")) {
-				modList.getModContainerById(Common.MOD_ID).ifPresent(container ->
-						container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, parentScreen) ->
-								new ConfigScreen().build()
-						)
-				);
-			}
+			modList.getModContainerById(Common.MOD_ID).ifPresent(container ->
+					container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, parentScreen) ->
+							modList.isLoaded("cloth_config") ?
+									new ConfigScreen().build(parentScreen) :
+									new MissingConfigLibScreen(parentScreen)
+					)
+			);
 		}
 		@SubscribeEvent
 		public static void registerCommand(RegisterClientCommandsEvent event) {
 			if (! ModList.get().isLoaded("cloth_config"))
 				return;
 			event.getDispatcher().register(Commands.literal(Common.MOD_ID + "config").executes(context -> {
-				Minecraft client = Minecraft.getInstance();
-				//~ if < 26.2 '.gui.setScreen' -> '.setScreen'
-				client.execute(() -> client.gui.setScreen(new ConfigScreen().build()));
+				Client.openConfigScreen();
 				return 1;
 			}));
 		}

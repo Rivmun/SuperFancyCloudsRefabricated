@@ -5,7 +5,6 @@ import com.rimo.sfcr.Client;
 import com.rimo.sfcr.Common;
 import com.rimo.sfcr.PlatformUtil;
 import com.rimo.sfcr.DedicatedServer;
-import com.rimo.sfcr.config.ConfigScreen;
 import net.fabricmc.api.*;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -24,7 +23,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
 //~ if = 1.21.11 'ClientCommands' -> 'ClientCommandManager'
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -61,6 +59,10 @@ public class Platform implements ModInitializer {
 			public boolean isFabric() {
 				return true;
 			}
+			@Override
+			public String getClothID() {
+				return "cloth-config2";
+			}
 		};
 		//~ if = 1.21.11 'clientboundPlay()' -> 'playS2C()' {
 		PayloadTypeRegistry.clientboundPlay().register(Common.WeatherPayload.TYPE, Common.WeatherPayload.CODEC);
@@ -92,13 +94,9 @@ public class Platform implements ModInitializer {
 		public void onInitializeClient() {
 			ClientLifecycleEvents.CLIENT_STARTED.register(client -> Client.init());
 			ClientCommandRegistrationCallback.EVENT.register((dispatcher, context) -> {
-				if (! FabricLoader.getInstance().isModLoaded("cloth-config2"))
-					return;
 				//~ if = 1.21.11 'ClientCommands' -> 'ClientCommandManager'
 				dispatcher.register(ClientCommands.literal(Common.MOD_ID + "config").executes(context1 -> {
-					Minecraft client = Minecraft.getInstance();
-					//~ if < 26.2 '.gui.setScreen' -> '.setScreen'
-					client.execute(() -> client.gui.setScreen(new ConfigScreen().build()));
+					Client.openConfigScreen();
 					return 1;
 				}));
 			});

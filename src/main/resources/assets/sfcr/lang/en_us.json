@@ -104,5 +104,7 @@
 
 	"text.sfcr.second": "%s sec(s)",
 	"text.sfcr.frame": "%s frame(s)",
-	"text.sfcr.disabled": "Disabled"
+	"text.sfcr.disabled": "Disabled",
+
+	"text.traceableprint.config.missing_dependency": "Cloth Config is required to open this config screen.\nInstall it and try again."
 }

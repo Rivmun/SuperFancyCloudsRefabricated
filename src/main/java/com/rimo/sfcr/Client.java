@@ -2,10 +2,12 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
+import com.rimo.sfcr.config.ConfigScreen;
 import com.rimo.sfcr.core.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -139,6 +141,22 @@ public class Client {
 			} catch (Exception ignore) {}
 		}
 		Renderer.sampler.setConfig(CONFIG);
+	}
+
+	public static void openConfigScreen() {
+		Minecraft mc = Minecraft.getInstance();
+		if (!PLATFORM.isModLoaded(PLATFORM.getClothID())) {
+			if (mc.player != null) {
+				VersionUtil.sendMessage(mc.player,
+						Component.translatable("text.traceableprint.config.missing_dependency").getString());
+			}
+			return;
+		}
+		//? if >=26.2 {
+		mc.gui.setScreen(new ConfigScreen().build(mc.gui.screen()));
+		//? } else {
+		/*mc.setScreen(new ConfigScreen().build(mc.screen));
+		*///? }
 	}
 
 	/**

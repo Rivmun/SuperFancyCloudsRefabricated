@@ -106,5 +106,7 @@
 	"text.sfcr.frame": "%s 帧",
 	"text.sfcr.disabled": "已禁用",
 
+	"text.traceableprint.config.missing_dependency": "此配置屏幕需要 Cloth Config 才能显示，\n请安装后重试。",
+
 	"modmenu.descriptionTranslation.sfcr": "SuperFancyClouds 的非官方多平台移植版，使原版的云朵更立体更动态。"
 }

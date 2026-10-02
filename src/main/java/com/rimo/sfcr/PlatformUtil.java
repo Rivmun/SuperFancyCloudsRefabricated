@@ -25,5 +25,6 @@ public final class PlatformUtil {
 		boolean isModLoaded(String id);
 		Path getConfigFolder();
 		boolean isFabric();
+		String getClothID();
 	}
 }

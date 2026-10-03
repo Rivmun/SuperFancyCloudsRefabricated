@@ -16,7 +16,6 @@ import dev.architectury.event.events.common.TickEvent;
 import dev.architectury.networking.NetworkManager;
 //~ }
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -40,7 +39,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //? }
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -168,17 +166,18 @@ public class Common {
 				return;
 			}
 			//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
-			sendDimensionPacket(player, player.serverLevel().dimension());
+			sendDimensionPacket(player, player.serverLevel());
 		});
 		PlayerEvent.CHANGE_DIMENSION.register((player, oldLevel, newLevel) -> {
-			sendDimensionPacket(player, newLevel);
+			//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
+			sendDimensionPacket(player, player.serverLevel());
 		});
 		// respawn ACROSS dimension doesn't trigger CHANGE_DIMENSION event, here fix it.
 		PlayerEvent.PLAYER_CLONE.register(((oldPlayer, newPlayer, wonGame) -> {
 			//~ if > 1.20 '.level' -> '.level()'
 			if (oldPlayer.level() != newPlayer.level())
 				//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
-				sendDimensionPacket(newPlayer, newPlayer.serverLevel().dimension());
+				sendDimensionPacket(newPlayer, newPlayer.serverLevel());
 		}));
 		PlayerEvent.PLAYER_QUIT.register(player -> playersWithSfcr.remove(player.getUUID()));
 
@@ -232,15 +231,14 @@ public class Common {
 	}
 
 	// Dimension Packet Sender
-	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+	private static void sendDimensionPacket(ServerPlayer player, ServerLevel level) {
 		MinecraftServer server = player.getServer();
 		// Always send config to host whatever isEnable, to prevent function shutdown when read a config which enabled is not.
 		boolean isHost = server != null && server.isSingleplayerOwner(player.getGameProfile());
 		if (! isHost && (! CONFIG.isEnableServer() || ! playersWithSfcr.contains(player.getUUID())))
 			return;
-		String name = key.location().toString();
-		//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
-		DimensionData data = loadDimensionData(player.serverLevel());
+		String name = level.dimension().location().toString();
+		DimensionData data = loadDimensionData(level);
 		//? if < 1.21 {
 		/*NetworkManager.sendToPlayer(player, PACKET_DIMENSION, new FriendlyByteBuf(Unpooled.buffer())
 				.writeUtf(name)

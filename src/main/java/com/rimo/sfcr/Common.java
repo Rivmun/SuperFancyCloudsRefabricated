@@ -175,6 +175,7 @@ public class Common {
 		});
 		// respawn ACROSS dimension doesn't trigger CHANGE_DIMENSION event, here fix it.
 		PlayerEvent.PLAYER_CLONE.register(((oldPlayer, newPlayer, wonGame) -> {
+			//~ if > 1.20 '.level' -> '.level()'
 			if (oldPlayer.level() != newPlayer.level())
 				//~ if > 1.20 '.getLevel()' -> '.serverLevel()'
 				sendDimensionPacket(newPlayer, newPlayer.serverLevel().dimension());
@@ -190,11 +191,11 @@ public class Common {
 			if (DATA.updateWeather(level) && CONFIG.isEnableServer()) {  // always update
 				Data.Weather nextWeather = DATA.getNextWeather();
 				//? if < 1.21 {
-				/*playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayers(
+				/*playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayer(
 						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),
 						PACKET_WEATHER,
 						new FriendlyByteBuf(Unpooled.buffer()).writeEnum(nextWeather)
-				);
+				));
 				*///? } else {
 				playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayer(
 						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),

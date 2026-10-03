@@ -49,9 +49,11 @@ public class Client {
 				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
 		});
 		ClientPlayerEvent.CLIENT_PLAYER_RESPAWN.register((oldPlayer, newPlayer) -> {
+			//~ if > 1.20 '.level' -> '.level()' {
 			Level level = newPlayer.level();
 			if (oldPlayer.level() == level)
 				return;
+			//~ }
 			Sampler sampler = CloudData.sampler.setLevel(level);  //always refresh level reference.
 			String dimensionName = level.dimension().location().toString();
 			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.

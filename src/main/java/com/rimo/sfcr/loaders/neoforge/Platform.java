@@ -105,13 +105,13 @@ public class Platform {
 	@SubscribeEvent
 	public static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
 		if (event.getEntity() instanceof ServerPlayer player)
-			Common.onPlayerChangedDimension(player, event.getTo());
+			Common.onPlayerChangedDimension(player, player.level());
 	}
 	// on neoforge, respawn ACROSS dimension does not trigger ChangedDimensionEvent, here fix it.
 	@SubscribeEvent
 	public static void onRespawn(PlayerEvent.Clone event) {
 		if (event.getEntity() instanceof ServerPlayer newPlayer && newPlayer.level() != event.getOriginal().level())
-			Common.onPlayerChangedDimension(newPlayer, newPlayer.level().dimension());
+			Common.onPlayerChangedDimension(newPlayer, newPlayer.level());
 	}
 	@SubscribeEvent
 	public static void onQuit(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -157,14 +157,15 @@ public class Platform {
 		}
 		@SubscribeEvent
 		public static void onJoin(ClientPlayerNetworkEvent.LoggingIn event) {
-			Client.onLevelLoad(event.getPlayer().level());
+			Client.onJoin();
+			Client.onLevelChanged(event.getPlayer().level());  // CLONE event no trigger when player first join a level
 		}
 		// PlayerChangedDimensionEvent only trigger on logical side, when logical side is remote, that event will never trigger on client.
 		// ClientPlayerNetworkEvent.Clone trigger both change dimension & respawn ACROSS dimension, here must use it.
 		@SubscribeEvent
 		public static void onChangedDimension(ClientPlayerNetworkEvent.Clone event) {
 			if (event.getOldPlayer().level() != event.getNewPlayer().level())  // filter out respawn in same dimension...
-				Client.onLevelLoad(event.getNewPlayer().level());
+				Client.onLevelChanged(event.getNewPlayer().level());
 		}
 		@SubscribeEvent
 		public static void onClientTick(ClientTickEvent.Post event) {

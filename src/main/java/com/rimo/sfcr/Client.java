@@ -38,13 +38,19 @@ public class Client {
 		RENDERER = CONFIG.isEnableDHCompat() ? new RendererDHCompat() : new Renderer();
 	}
 
-	public static void onLevelLoad(Level level) {
+	public static void onJoin() {
+		if (! hasServer)
+			Renderer.sampler.setSeed(new Random().nextLong());  //get a random seed before server sent.
+	}
+	public static void onLevelChanged(Level level) {
+		if (level == null)
+			return;
 		Sampler sampler = Renderer.sampler.setLevel(level);   //always refresh level reference.
 		String dimensionName = level.dimension().identifier().toString();
 		if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
 			isCustomDimensionConfig = CONFIG.load(dimensionName);
 			isConfigHasBeenOverride = false;
-			sampler.setConfig(CONFIG).setSeed(new Random().nextLong());  //get a random seed if server doesn't exist.
+			sampler.setConfig(CONFIG);
 		}
 		if (seasonHandler != null)
 			Renderer.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));

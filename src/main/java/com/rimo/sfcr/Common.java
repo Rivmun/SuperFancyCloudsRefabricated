@@ -8,7 +8,6 @@ import com.rimo.sfcr.core.Data;
 import com.rimo.sfcr.core.Sampler;
 import com.rimo.sfcr.mixin.Plugin;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -98,10 +97,10 @@ public class Common {
 		} else {
 			return;
 		}
-		sendDimensionPacket(player, player.level().dimension());
+		sendDimensionPacket(player, player.level());
 	}
 
-	public static void onPlayerChangedDimension(ServerPlayer player, ResourceKey<Level> destination) {
+	public static void onPlayerChangedDimension(ServerPlayer player, ServerLevel destination) {
 		sendDimensionPacket(player, destination);
 	}
 
@@ -147,13 +146,13 @@ public class Common {
 	}
 
 	// Dimension Packet Sender
-	private static void sendDimensionPacket(ServerPlayer player, ResourceKey<Level> key) {
+	private static void sendDimensionPacket(ServerPlayer player, ServerLevel level) {
 		MinecraftServer server = player.level().getServer();
 		boolean isHost = ! server.isSingleplayerOwner(new NameAndId(player.getGameProfile()));
 		if (! isHost && (! CONFIG.isEnableServer() || ! playerWithSfcr.contains(player.getUUID())))
 			return;
-		String name = key.identifier().toString();
-		DimensionData data = loadDimensionData(player.level());
+		String name = level.dimension().identifier().toString();
+		DimensionData data = loadDimensionData(level);
 		PLATFORM.sendToPlayer(player, new DimensionPayload(
 				name,
 				data.configJson,

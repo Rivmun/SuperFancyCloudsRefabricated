@@ -82,8 +82,8 @@ public class Platform implements ModInitializer {
 		ServerPlayerEvents.JOIN.register(Common::onPlayerJoin);
 		//~ if = 1.21.11 'ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL' -> 'ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD'
 		ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, oldLevel, newLevel) -> {
-			// NOTICE that this event will trigger when player respawn ACROSS dimension, but neoforge / forge does NOT.
-			Common.onPlayerChangedDimension(player, newLevel.dimension());
+			// NOTICE: this event will trigger when player respawn ACROSS dimension, but neoforge / forge does NOT.
+			Common.onPlayerChangedDimension(player, newLevel);
 		});
 		ServerPlayerEvents.LEAVE.register(Common::onPlayerQuit);
 	}
@@ -110,8 +110,10 @@ public class Platform implements ModInitializer {
 					Client.handleUploadRequestPayload()
 			);
 
+			ClientPlayConnectionEvents.JOIN.register((listener, sender, client) -> Client.onJoin());
+			// AFTER_CLIENT_LEVEL_CHANGE trigger when Minecraft#setLevel() invoked, contain both player join & changed dimension.
 			//~ if = 1.21.11 'ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE' -> 'ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE'
-			ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> Client.onLevelLoad(level));  //this event can be invoked both on player join & changed dimension.
+			ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> Client.onLevelChanged(level));
 			ClientTickEvents.END_CLIENT_TICK.register(Client::onTick);
 			ClientPlayConnectionEvents.DISCONNECT.register((listener, client) -> Client.onQuit(client.player));
 		}

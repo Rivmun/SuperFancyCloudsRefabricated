@@ -47,6 +47,8 @@ public class Client {
 		ClientPlayerEvent.CLIENT_PLAYER_JOIN.register(player -> {
 			if (! hasServer)
 				CloudData.sampler.setSeed(new Random().nextLong());  //get a random seed before server send
+			//~ if > 1.20 '.level' -> '.level()'
+			onLevelChanged(player.level());
 		});
 		ClientPlayerEvent.CLIENT_PLAYER_RESPAWN.register((oldPlayer, newPlayer) -> {
 			//~ if > 1.20 '.level' -> '.level()' {
@@ -54,15 +56,7 @@ public class Client {
 			if (oldPlayer.level() == level)
 				return;
 			//~ }
-			Sampler sampler = CloudData.sampler.setLevel(level);  //always refresh level reference.
-			String dimensionName = level.dimension().location().toString();
-			if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
-				isCustomDimensionConfig = CONFIG.load(dimensionName);
-				isConfigHasBeenOverride = false;
-				sampler.setConfig(CONFIG);
-			}
-			if (seasonHandler != null)
-				CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
+			onLevelChanged(level);
 		});
 
 		// Update data
@@ -181,6 +175,18 @@ public class Client {
 			if (CONFIG.isEnableDebug())
 				LOGGER.info("{} send current config to server", MOD_ID);
 		});
+	}
+
+	private static void onLevelChanged(Level level) {
+		Sampler sampler = CloudData.sampler.setLevel(level);  //always refresh level reference.
+		String dimensionName = level.dimension().location().toString();
+		if (! hasServer || ! CONFIG.isEnableServer()) {  //if not sfcr server or disabled server config, read config by client itself.
+			isCustomDimensionConfig = CONFIG.load(dimensionName);
+			isConfigHasBeenOverride = false;
+			sampler.setConfig(CONFIG);
+		}
+		if (seasonHandler != null)
+			CloudData.sampler.setDensityBySeason(seasonHandler.getSeasonDensityPercent(level));
 	}
 
 	public static void handleDimensionPayload(String name, String configJson, long seed) {

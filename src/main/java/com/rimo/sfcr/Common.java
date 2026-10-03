@@ -190,18 +190,20 @@ public class Common {
 			// Sender
 			if (DATA.updateWeather(level) && CONFIG.isEnableServer()) {  // always update
 				Data.Weather nextWeather = DATA.getNextWeather();
-				//? if < 1.21 {
-				/*playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayer(
-						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),
-						PACKET_WEATHER,
-						new FriendlyByteBuf(Unpooled.buffer()).writeEnum(nextWeather)
-				));
-				*///? } else {
-				playersWithSfcr.forEach(uuid -> NetworkManager.sendToPlayer(
-						Objects.requireNonNull(server.getPlayerList().getPlayer(uuid)),
-						new WeatherPayload(nextWeather)
-				));
-				//? }
+				playersWithSfcr.forEach(uuid -> {
+					ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+					if (player == null)
+						return;
+					NetworkManager.sendToPlayer(
+							player,
+							//? if < 1.21 {
+							/*PACKET_WEATHER,
+							new FriendlyByteBuf(Unpooled.buffer()).writeEnum(nextWeather)
+							*///? } else {
+							new WeatherPayload(nextWeather)
+							//? }
+					);
+				});
 				if (CONFIG.isEnableDebug())
 					LOGGER.info("{} broadcast next weather: {}", MOD_ID, nextWeather);
 			}

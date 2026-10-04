@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mc_versions:
-        description: 'input MC versions (mergeable: 26.1,26.2,26.3; 1.21.11 publishes per-loader)'
+        description: 'input MC versions (mergeable: 26.1,26.2,26.3; 1.21.11 auto-splits into fabric+neoforge, or push a single loader via 1.21.11-fabric / 1.21.11-neoforge)'
         required: true
         type: string
         default: '26.3'
@@ -15,9 +15,27 @@ jobs:
     outputs:
       versions: ${{ steps.set-matrix.outputs.versions }}
     steps:
+      # 拆分输入：26.x 保持为单个混合版本；裸 1.21.11 拆成 1.21.11-fabric + 1.21.11-neoforge 两个独立任务；
+      # 已带 loader 后缀（1.21.11-fabric / 1.21.11-neoforge）则原样保留，便于单独推送。
       - id: set-matrix
         run: |
-          VERSIONS='["'$(echo '${{ github.event.inputs.mc_versions }}' | sed 's/,/","/g')'"]'
+          raw='${{ github.event.inputs.mc_versions }}'
+          expanded=()
+          IFS=',' read -ra parts <<< "$raw"
+          for p in "${parts[@]}"; do
+            p="$(echo "$p" | xargs)"
+            [ -z "$p" ] && continue
+            if [ "$p" = "1.21.11" ]; then
+              expanded+=("1.21.11-fabric" "1.21.11-neoforge")
+            else
+              expanded+=("$p")
+            fi
+          done
+          if [ ${#expanded[@]} -eq 0 ]; then
+            echo "no valid version input"
+            exit 1
+          fi
+          VERSIONS=$(printf '%s\n' "${expanded[@]}" | jq -R . | jq -sc .)
           echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
           echo "Ready to release：$VERSIONS"
 
@@ -27,6 +45,7 @@ jobs:
     strategy:
       matrix:
         mc: ${{ fromJson(needs.prepare-matrix.outputs.versions) }}
+      # 每个版本/loader 为独立任务：一个推送失败不影响其他任务继续
       fail-fast: false
     steps:
       - name: Checkout Repository
@@ -48,30 +67,31 @@ jobs:
 
       - run: chmod +x gradlew
 
-      - name: Get version from gradle.properties
+      # 版本号取自 stonecutter.properties.toml 顶层属性（mod.version="x.y.z"）
+      # 注意：全新 checkout 时根 gradle.properties 不含版本，versions/*/gradle.properties 也尚未由 stonecutter 生成
+      - name: Get version
         id: get_version
         run: |
-          VERSION=$(grep "^mod.version=" gradle.properties | cut -d'=' -f2)
+          VERSION=$(grep '^mod\.version=' stonecutter.properties.toml | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
           if [ -z "$VERSION" ]; then
-            VERSION=$(grep "^mod_version=" gradle.properties | cut -d'=' -f2)
-          fi
-          if [ -z "$VERSION" ]; then
-            VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
-          fi
-          if [ -z "$VERSION" ]; then
-            echo "Version not found in gradle.properties"
+            echo "mod.version not found in stonecutter.properties.toml"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      # 真实游戏版本号取自子工程 deps.minecraft（如 26.1 -> 26.1.2）
+      # 真实游戏版本号取自 stonecutter.properties.toml 中对应子工程 section 的 deps.minecraft（如 26.1 -> 26.1.2）
+      # 仅混合版本（无 loader 后缀）需要；1.21.11 每-loader 任务直接使用固定游戏版本 1.21.11
       - name: Resolve real MC version
         id: mc_version
+        if: ${{ !contains(matrix.mc, '-') }}
         run: |
-          REAL_MC=$(grep "^deps.minecraft=" versions/${{ matrix.mc }}-fabric/gradle.properties | cut -d'=' -f2)
+          REAL_MC=$(awk -v sec="\"${{ matrix.mc }}-fabric\"" '
+            /^\[/ { insec = ($0 == "[" sec "]") }
+            insec && /^deps\.minecraft=/ { v = substr($0, index($0, "=") + 1); gsub(/"/, "", v); print v; exit }
+          ' stonecutter.properties.toml | xargs)
           if [ -z "$REAL_MC" ]; then
-            echo "deps.minecraft not found for ${{ matrix.mc }}"
+            echo "deps.minecraft not found for ${{ matrix.mc }} in stonecutter.properties.toml"
             exit 1
           fi
           echo "real_mc=$REAL_MC" >> $GITHUB_OUTPUT
@@ -86,11 +106,11 @@ jobs:
 
       # ---------- 无混淆 26.x：Forgix 合并为单个跨 loader 产物 ----------
       - name: Merge build ${{ matrix.mc }} (forgix)
-        if: matrix.mc != '1.21.11'
+        if: ${{ !contains(matrix.mc, '-') }}
         run: ./gradlew mergeJars -Pforgix.mc=${{ matrix.mc }} --no-daemon
 
       - name: Publish merged ${{ matrix.mc }} to Modrinth & CurseForge
-        if: matrix.mc != '1.21.11'
+        if: ${{ !contains(matrix.mc, '-') }}
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: Hoop89kN
@@ -101,17 +121,26 @@ jobs:
           files: build/merged/*.jar
           name: ${{ steps.get_version.outputs.version }} for ${{ matrix.mc }}
           version: ${{ steps.get_version.outputs.version }}+${{ matrix.mc }}
-          loaders: fabric,neoforge
+          # mc-publish 的数组分隔符是空白/换行（separator=/\s+/），不是逗号！
+          # 若写成 "fabric,neoforge" 会被当成单个不存在的 loader → loaderIds 解析为空 →
+          # CurseForge 上传逻辑走 else 分支只发 game_versions（丢掉 environment 组），
+          # 触发 2026-07-15 起强制的 environment 校验报错 1021。
+          loaders: |
+            fabric
+            neoforge
+          # 不要显式设置 environment：
+          # - CurseForge 侧：createVersion 在 request.environment 为空时会回退到 ALL 并拼入 Client/Server（前提是上面 loaders 解析成功），无需手动声明；
+          # - Modrinth 侧：mc-publish 会把 environment 转成 client_and_server 发给 Modrinth 版本创建接口，导致 400 "expected value at line 1 column 1"。
           game-versions: ${{ steps.mc_version.outputs.real_mc }}
           changelog-file: temp-changelog.md
 
-      # ---------- 1.21.11 仍混淆：每-loader 单独产物，不走 Forgix ----------
-      - name: Build 1.21.11 per-loader
-        if: matrix.mc == '1.21.11'
-        run: ./gradlew 1.21.11-fabric:build 1.21.11-neoforge:build --no-daemon
+      # ---------- 1.21.11 仍混淆：每-loader 独立任务，各自独立推送，互不影响 ----------
+      - name: Build ${{ matrix.mc }}
+        if: ${{ contains(matrix.mc, '-') }}
+        run: ./gradlew ${{ matrix.mc }}:build --no-daemon
 
-      - name: Publish 1.21.11-fabric to Modrinth & CurseForge
-        if: matrix.mc == '1.21.11'
+      - name: Publish ${{ matrix.mc }} to Modrinth & CurseForge
+        if: ${{ contains(matrix.mc, '-') }}
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: Hoop89kN
@@ -119,25 +148,9 @@ jobs:
           curseforge-id: 820317
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           github-enabled: false
-          files: versions/1.21.11-fabric/build/libs/*.jar
-          name: ${{ steps.get_version.outputs.version }} for 1.21.11-fabric
-          version: ${{ steps.get_version.outputs.version }}+1.21.11-fabric
-          loaders: fabric
-          game-versions: 1.21.11
-          changelog-file: temp-changelog.md
-
-      - name: Publish 1.21.11-neoforge to Modrinth & CurseForge
-        if: matrix.mc == '1.21.11'
-        uses: Kir-Antipov/mc-publish@v3.3
-        with:
-          modrinth-id: Hoop89kN
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-          curseforge-id: 820317
-          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          github-enabled: false
-          files: versions/1.21.11-neoforge/build/libs/*.jar
-          name: ${{ steps.get_version.outputs.version }} for 1.21.11-neoforge
-          version: ${{ steps.get_version.outputs.version }}+1.21.11-neoforge
-          loaders: neoforge
+          files: versions/${{ matrix.mc }}/build/libs/*.jar
+          name: ${{ steps.get_version.outputs.version }} for ${{ matrix.mc }}
+          version: ${{ steps.get_version.outputs.version }}+${{ matrix.mc }}
+          loaders: ${{ endsWith(matrix.mc, '-neoforge') && 'neoforge' || 'fabric' }}
           game-versions: 1.21.11
           changelog-file: temp-changelog.md

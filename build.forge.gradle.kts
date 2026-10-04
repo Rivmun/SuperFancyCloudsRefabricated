@@ -20,13 +20,6 @@ loom {
     }
 }
 
-sourceSets.main {
-    resources {
-        // Oh, my dear arch-loom, why you change this dir...
-        setSrcDirs(listOf(rootProject.file("src/main/resources")))
-    }
-}
-
 tasks.named<ProcessResources>("processResources") {
 
     fun prop(name: String) = project.property(name) as String

@@ -36,18 +36,14 @@ jobs:
 
       - run: chmod +x gradlew
 
-      - name: Get version from gradle.properties
+      # 版本号取自 stonecutter.properties.toml 顶层属性（mod.version="x.y.z"）
+      # 注意：已完成 gradle.properties -> stonecutter.properties.toml 迁移，根 gradle.properties 不含版本
+      - name: Get version
         id: get_version
         run: |
-          VERSION=$(grep "^mod.version=" gradle.properties | cut -d'=' -f2)
+          VERSION=$(grep '^mod\.version=' stonecutter.properties.toml | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
           if [ -z "$VERSION" ]; then
-            VERSION=$(grep "^mod_version=" gradle.properties | cut -d'=' -f2)
-          fi
-          if [ -z "$VERSION" ]; then
-            VERSION=$(grep "^version=" gradle.properties | cut -d'=' -f2)
-          fi
-          if [ -z "$VERSION" ]; then
-            echo "Version not found in gradle.properties"
+            echo "mod.version not found in stonecutter.properties.toml"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT

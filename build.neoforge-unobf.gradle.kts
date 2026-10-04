@@ -18,13 +18,6 @@ loom {
     //accessWidenerPath = rootProject.file("src/main/resources/${property("mod.id")}.unobf.accesswidener")
 }
 
-sourceSets.main {
-    resources {
-        // Oh, my dear arch-loom, why you change src dir only for forge-like platform...
-        setSrcDirs(listOf(rootProject.file("src/main/resources")))
-    }
-}
-
 tasks.named<ProcessResources>("processResources") {
     fun prop(name: String) = project.property(name) as String
 

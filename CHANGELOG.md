@@ -8,6 +8,7 @@ Critical fix about custom dimension config function. (Thanks to @rpfurlong)
 - Fix client did nothing after player change dimension or respawn on NeoForge remote server.
   - Cloud sampler keep sampling the old (unloaded) level, breaks biome/rain-based dynamic features.
   - And per-dimension config self-load was also skipped when enableServer is disabled.
+- Critical fix for 1.21.11-neoforge startup crash causing shader compile error that bundled incorrect shader file.
 - Impl Forgix again to mergeJar. Now fabric & neoforge was compressed into single file for 26.x version.
   - Optimize code structure to get a high compression level.
 - Add a simple screen to notify player install Cloth Config instead of red config button.

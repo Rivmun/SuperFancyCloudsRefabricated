@@ -1,3 +1,6 @@
+# 1.9.5.1
+- Hotfix startup crash causing by sfcr.mixins.json lost `refmap` value on 1.18.2-forge & 1.19.2-forge.
+
 # 1.9.5
 Critical fix about custom dimension config function. (Thanks to @rpfurlong)
 - Fix config cannot back to default when player leave custom dimension.

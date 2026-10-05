@@ -4,6 +4,12 @@ plugins {
 
 val minecraft = property("deps.minecraft") as String
 
+// Name of the reference map produced by the legacy Mixin AP (Forge < 1.20).
+// Pinned so the packaged mixin config can reference it deterministically,
+// independent of Arch Loom's jar-time refmap injection (which may be skipped
+// when remapJar is reused from an up-to-date / build-cache state).
+val legacyRefmapName = "${property("mod.id")}-${minecraft}-forge-refmap.json"
+
 loom {
     silentMojangMappingsLicense()
 //    accessWidenerPath = rootProject.file("src/main/resources/sfcr.accesswidener")
@@ -17,6 +23,7 @@ loom {
 
     if (sc.current.parsed < "1.20") {
         mixin.useLegacyMixinAp = true
+        mixin.defaultRefmapName = legacyRefmapName
     }
 }
 
@@ -58,6 +65,34 @@ tasks.named<ProcessResources>("processResources") {
 
     filesMatching(listOf("META-INF/mods.toml", "${prop("mod.id")}.mixins.json")) {
         expand(props)
+    }
+
+    // Forge < 1.20 relies on the legacy Mixin AP + refmap, but the mixin config in
+    // build/resources/main never carries the "refmap" field itself - Arch Loom only
+    // adds it during the (remap)Jar step, and that step can be skipped when its
+    // outputs are reused, leaving the packaged config without a refmap pointer and
+    // crashing at runtime with unresolved mixin targets. Write the pointer here so
+    // it is always present and matches the pinned legacyRefmapName above.
+    if (sc.current.parsed < "1.20") {
+        // Copy into task-local vals so the doLast closure captures only serializable
+        // values (File/String) and not the Gradle script object itself (config cache).
+        val refmapName: String = legacyRefmapName
+        val mixinsFileName: String = "${prop("mod.id")}.mixins.json"
+        val resourcesMainDir: File = layout.buildDirectory.dir("resources/main").get().asFile
+        doLast {
+            val mixinsFile = resourcesMainDir.resolve(mixinsFileName)
+            if (mixinsFile.isFile) {
+                val text = mixinsFile.readText()
+                if (!text.contains("\"refmap\"")) {
+                    val cut = text.lastIndexOf('}')
+                    if (cut > 0) {
+                        mixinsFile.writeText(
+                            text.substring(0, cut).trimEnd() + ",\n  \"refmap\": \"$refmapName\"\n}\n"
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

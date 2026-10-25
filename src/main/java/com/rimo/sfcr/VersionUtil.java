@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Player;
 
 import static com.rimo.sfcr.Common.MOD_ID;
 
-public class VersionUtil {
+public final class VersionUtil {
 	public static ResourceLocation getId(String path) {
 		//? if <= 1.20.1 {
 		/*return new ResourceLocation(MOD_ID, path);

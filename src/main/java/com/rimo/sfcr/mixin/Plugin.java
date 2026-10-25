@@ -24,6 +24,7 @@ public class Plugin implements IMixinConfigPlugin {
 	public void onLoad(String mixinPackage) {
 		//? if forge
 		//MixinExtrasBootstrap.init();
+
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("sfcr.mixins.json")) {
 			if (is != null) {
 				JsonObject config = new JsonParser().parse(new InputStreamReader(is)).getAsJsonObject();

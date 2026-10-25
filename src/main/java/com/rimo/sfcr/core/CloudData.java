@@ -65,17 +65,17 @@ public class CloudData {
 		};
 	}
 
-	protected static boolean isInCloudLayer(int layerGridY) {
-		return layerGridY >= 0 && layerGridY < CONFIG.getCloudLayerThickness();
+	protected boolean isInCloudLayer(int layerGridY) {
+		return layerGridY >= 0 && layerGridY < height;
 	}
 
-	protected static boolean isInCloudGrid(int x, int z, int gridWidth) {
-		return x >= 0 && x < gridWidth && z >= 0 && z < gridWidth;
+	protected boolean isInCloudGrid(int x, int z) {
+		return x >= 0 && x < width && z >= 0 && z < width;
 	}
 
 	boolean isCloudCovered(double x, double y, double z) {
 		int[] pos = transformToGridPos(x, y, z);
-		if (! isInCloudGrid(pos[0], pos[2], width) || pos[1] > CONFIG.getCloudLayerThickness())
+		if (! isInCloudGrid(pos[0], pos[2]) || pos[1] > height)
 			return false;
 		for (int i = height - 1; i >= 0; i --) {
 			if (_cloudData[pos[0]][i][pos[2]])
@@ -86,7 +86,7 @@ public class CloudData {
 
 	boolean isCloud(double x, double y, double z) {
 		int[] pos = transformToGridPos(x, y, z);
-		if (! isInCloudGrid(pos[0], pos[2], width) || ! isInCloudLayer(pos[1]))
+		if (! isInCloudGrid(pos[0], pos[2]) || ! isInCloudLayer(pos[1]))
 			return false;
 		return _cloudData[pos[0]][pos[1]][pos[2]];
 	}

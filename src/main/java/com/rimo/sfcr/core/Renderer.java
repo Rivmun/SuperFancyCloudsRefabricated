@@ -328,6 +328,10 @@ public class Renderer {
 		this.rebuildTimer = 99;
 	}
 
+	public void markForResample() {
+		this.resamplingTimer = 99;
+	}
+
 	public void stop() {
 		cloudDataGroup.forEach(CloudData::stop);
 		try {

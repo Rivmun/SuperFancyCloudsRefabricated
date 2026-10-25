@@ -218,6 +218,7 @@ public class Client {
 			RENDERER.stop();
 		}
 		CloudData.sampler.setConfig(CONFIG);
+		RENDERER.markForResample();
 	}
 
 	/**

@@ -3,6 +3,8 @@ package com.rimo.sfcr.mixin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+//? if forge
+//import com.llamalad7.mixinextras.MixinExtrasBootstrap;
 import com.rimo.sfcr.Common;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -20,6 +22,8 @@ public class Plugin implements IMixinConfigPlugin {
 
 	@Override
 	public void onLoad(String mixinPackage) {
+		//? if forge
+		//MixinExtrasBootstrap.init();
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("sfcr.mixins.json")) {
 			if (is != null) {
 				JsonObject config = new JsonParser().parse(new InputStreamReader(is)).getAsJsonObject();

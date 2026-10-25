@@ -1,14 +1,10 @@
+import java.util.zip.ZipFile
+
 plugins {
     id("dev.architectury.loom")
 }
 
 val minecraft = property("deps.minecraft") as String
-
-// Name of the reference map produced by the legacy Mixin AP (Forge < 1.20).
-// Pinned so the packaged mixin config can reference it deterministically,
-// independent of Arch Loom's jar-time refmap injection (which may be skipped
-// when remapJar is reused from an up-to-date / build-cache state).
-val legacyRefmapName = "${property("mod.id")}-${minecraft}-forge-refmap.json"
 
 loom {
     silentMojangMappingsLicense()
@@ -22,8 +18,7 @@ loom {
     }
 
     if (sc.current.parsed < "1.20") {
-        mixin.useLegacyMixinAp = true
-        mixin.defaultRefmapName = legacyRefmapName
+        mixin.useLegacyMixinAp = false
     }
 }
 
@@ -66,34 +61,6 @@ tasks.named<ProcessResources>("processResources") {
     filesMatching(listOf("META-INF/mods.toml", "${prop("mod.id")}.mixins.json")) {
         expand(props)
     }
-
-    // Forge < 1.20 relies on the legacy Mixin AP + refmap, but the mixin config in
-    // build/resources/main never carries the "refmap" field itself - Arch Loom only
-    // adds it during the (remap)Jar step, and that step can be skipped when its
-    // outputs are reused, leaving the packaged config without a refmap pointer and
-    // crashing at runtime with unresolved mixin targets. Write the pointer here so
-    // it is always present and matches the pinned legacyRefmapName above.
-    if (sc.current.parsed < "1.20") {
-        // Copy into task-local vals so the doLast closure captures only serializable
-        // values (File/String) and not the Gradle script object itself (config cache).
-        val refmapName: String = legacyRefmapName
-        val mixinsFileName: String = "${prop("mod.id")}.mixins.json"
-        val resourcesMainDir: File = layout.buildDirectory.dir("resources/main").get().asFile
-        doLast {
-            val mixinsFile = resourcesMainDir.resolve(mixinsFileName)
-            if (mixinsFile.isFile) {
-                val text = mixinsFile.readText()
-                if (!text.contains("\"refmap\"")) {
-                    val cut = text.lastIndexOf('}')
-                    if (cut > 0) {
-                        mixinsFile.writeText(
-                            text.substring(0, cut).trimEnd() + ",\n  \"refmap\": \"$refmapName\"\n}\n"
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 version = "${property("mod.version")}+${minecraft}-forge"
@@ -112,9 +79,10 @@ dependencies {
     mappings(loom.officialMojangMappings())
     forge("net.minecraftforge:forge:${property("deps.forge")}")
 
-    if (sc.current.parsed < "1.20") {
-        annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
-    }
+    // disable mixin processor to let tiny mapper remapped mixin class reference automatically, and no refmap file created.
+//    if (sc.current.parsed < "1.20") {
+//        annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+//    }
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${property("deps.mixinextras")}")!!)
     if (sc.current.parsed > "1.17") {
         implementation(include("io.github.llamalad7:mixinextras-forge:${property("deps.mixinextras")}")) {}
@@ -143,7 +111,7 @@ dependencies {
         modCompileOnly("maven.modrinth:particle-rain:${property("deps.particlerain")}")
     }
     //serene seasons
-//    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
+    modCompileOnly("maven.modrinth:serene-seasons:${property("deps.sereneseasons")}")
 }
 
 tasks {
@@ -162,61 +130,67 @@ tasks {
         manifest.attributes["MixinConfigs"] = "${project.property("mod.id")}.mixins.json"
     }
 
-    // resolve 1.16.5 mixinextras classDefNotFound / JIJ load failure issue, powered by https://www.doubao.com/
-    // Merged .class with mixinextras...
+    // resolve 1.16.5 mixinextras classDefNotFound / JIJ load failure issue.
     if (sc.current.parsed < "1.17") {
-        // 用lazy延迟解析outerJar，避免配置阶段触发报错
-        val outerJar by lazy {
-            configurations.runtimeClasspath.get().files.first {
-                it.name.startsWith("mixinextras-forge-${project.property("deps.mixinextras")}")
-            }
+        val mixinExtrasVersion = property("deps.mixinextras").toString()
+
+        // 专用可解析配置：制品由 Gradle 缓存保证存在，不依赖任何任务输出
+        val mixinExtrasArtifacts = configurations.create("mixinExtrasArtifacts") {
+            isCanBeConsumed = false
+            isCanBeResolved = true
+            description = "MixinExtras artifacts unpacked into our own jar on 1.16.5"
+        }
+        project.dependencies.add(mixinExtrasArtifacts.name, "io.github.llamalad7:mixinextras-common:$mixinExtrasVersion")
+        project.dependencies.add(mixinExtrasArtifacts.name, "io.github.llamalad7:mixinextras-forge:$mixinExtrasVersion")
+
+        val mixinExtrasClassesDir = layout.buildDirectory.dir("classes/java/main").get().asFile
+
+        // 用 Property<File> 传递制品路径：
+        // - 不能在配置期立即解析（会撞上 Loom 的 remapped_mods 仓库初始化）
+        // - 也不能在任务动作里捕获 Configuration（配置缓存不支持序列化）
+        val mixinExtrasCoreJar = objects.fileProperty()
+        val mixinExtrasWrapperJar = objects.fileProperty()
+        project.afterEvaluate {
+            val files = mixinExtrasArtifacts.files
+            mixinExtrasCoreJar.set(files.first { it.name.startsWith("mixinextras-common-") })
+            mixinExtrasWrapperJar.set(files.first { it.name.startsWith("mixinextras-forge-") })
         }
 
-        val copyMixinExtras = register("copyMixinExtras", Copy::class) {
+        // 把核心类摊进 main classes 目录（Mixin 运行时能加载到，也会被 jar 任务打进产物）
+        val copyMixinExtras = register("copyMixinExtras") {
             group = "build"
-            description = "Copy MixinExtras classes (from nested jar) to compile directory"
-
-            dependsOn(configurations.runtimeClasspath)
-
-            // 1. 直接用lazy的outerJar（不再重复查找）
-            // 2. 先解压外层jar，提取内层的核心jar（MixinExtras-0.x.x.jar）
-            val tempDir = file("$buildDir/tmp/mixinextras")
-            delete(tempDir) // 清理旧的临时文件
-            copy {
-                from(zipTree(outerJar)) {
-                    include("META-INF/jars/MixinExtras-${project.property("deps.mixinextras")}.jar") // 只提取内层核心jar
-                }
-                into(tempDir) // 解压到临时目录
-            }
-
-            // 3. 解压内层核心jar，拿到所有核心类
-            val innerJar = file("$tempDir/META-INF/jars/MixinExtras-${project.property("deps.mixinextras")}.jar")
-            from(zipTree(innerJar)) {
-                include("com/**") // 核心类全在这个路径下
-                exclude("module-info.class")
-            }
-
-            // 4. 复制到编译目录（Mixin能找到）
-            into("$buildDir/classes/java/main")
-
-            // 清理临时文件（可选，避免冗余）
+            description = "Unpack MixinExtras core classes into the main classes directory"
+            inputs.file(mixinExtrasCoreJar).withPropertyName("mixinExtrasCoreJar")
+            outputs.dir(mixinExtrasClassesDir.resolve("com/llamalad7/mixinextras"))
             doLast {
-                delete(tempDir)
+                ZipFile(mixinExtrasCoreJar.get().asFile).use { zip ->
+                    for (entry in zip.entries()) {
+                        val name = entry.name
+                        if (entry.isDirectory || !name.startsWith("com/") || name == "module-info.class") continue
+                        val out = mixinExtrasClassesDir.resolve(name)
+                        out.parentFile.mkdirs()
+                        zip.getInputStream(entry).use { input -> out.outputStream().use { input.copyTo(it) } }
+                    }
+                }
             }
-
-            notCompatibleWithConfigurationCache("Copy MixinExtras classes from nested jar")
         }
 
-        // 复制MixinExtras的LICENSE文件到模组jar
-        val copyMixinExtrasLicense = register("copyMixinExtrasLicense", Copy::class) {
-            dependsOn(configurations.runtimeClasspath)
-
-            from(zipTree(outerJar)) {
-                include("LICENSE_MixinExtras")
+        // MixinExtras 的 LICENSE 只在 mixinextras-forge 包装 jar 里，一并复制进产物
+        val copyMixinExtrasLicense = register("copyMixinExtrasLicense") {
+            group = "build"
+            description = "Copy the MixinExtras license into the mod jar"
+            val licenseDir = mixinExtrasClassesDir.resolve("META-INF/licenses/mixinextras")
+            inputs.file(mixinExtrasWrapperJar).withPropertyName("mixinExtrasWrapperJar")
+            outputs.dir(licenseDir)
+            doLast {
+                ZipFile(mixinExtrasWrapperJar.get().asFile).use { zip ->
+                    val entry = zip.getEntry("LICENSE_MixinExtras") ?: return@use
+                    licenseDir.mkdirs()
+                    zip.getInputStream(entry).use { input ->
+                        licenseDir.resolve("LICENSE_MixinExtras").outputStream().use { input.copyTo(it) }
+                    }
+                }
             }
-            into("$buildDir/classes/java/main/META-INF/licenses/mixinextras")
-
-            notCompatibleWithConfigurationCache("Copy MixinExtras LICENSE file")
         }
 
         jar {

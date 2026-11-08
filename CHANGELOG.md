@@ -1,3 +1,12 @@
+# 1.9.5.2
+- Fix a crash when player change cloudLayerThickness while standing above near cloudLayer.
+  - Cloud now refresh instantly when config was changed.
+- Improved compatibility of SereneSeasons.
+  - Fix mixinExtra not be activated that leads NCNR function not works on Forge, if you're not installed other mod which activated mixinExtras.
+  - Fix a mixin crash when you installed SereneSeasons and other mod which activate mixinExtra.
+- Remove refmap file.
+- Fix fabric-api id.
+
 # 1.9.5.1
 - Hotfix startup crash causing by sfcr.mixins.json lost `refmap` value on 1.18.2-forge & 1.19.2-forge.
 

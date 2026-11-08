@@ -2,6 +2,7 @@ package com.rimo.sfcr;
 
 import com.google.gson.JsonSyntaxException;
 import com.rimo.sfcr.config.Config;
+//? if ! 1.16.5
 import com.rimo.sfcr.config.ConfigScreen;
 import com.rimo.sfcr.core.*;
 //~ if < 1.18 'dev.architectury' -> 'me.shedaniel.architectury' {
@@ -218,6 +219,7 @@ public class Client {
 			RENDERER.stop();
 		}
 		CloudData.sampler.setConfig(CONFIG);
+		RENDERER.markForResample();
 	}
 
 	/**

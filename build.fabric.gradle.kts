@@ -31,6 +31,7 @@ tasks.named<ProcessResources>("processResources") {
         this["version_range"] = prop("version_range")
         this["arch_api"] =      prop("deps.arch-api")
         this["cloth"] =         prop("deps.cloth")
+        this["fabric_id"] = if (sc.current.parsed.eq("1.16.5")) "fabric" else "fabric-api"
         this["distanthorizons_min_version"] = prop("distanthorizons_min_version")
         this["fabricseasons_min_version"] = prop("fabricseasons_min_version")
 

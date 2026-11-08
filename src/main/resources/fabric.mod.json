@@ -36,7 +36,7 @@
     "${mod_id}.mixins.json"
   ],
   "depends": {
-    "fabric": "*",
+    "${fabric_id}": "*",
     "minecraft": "${version_range}",
     "architectury": ">=${arch_api}"
   },

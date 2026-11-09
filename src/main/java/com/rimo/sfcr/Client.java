@@ -147,6 +147,7 @@ public class Client {
 			} catch (Exception ignore) {}
 		}
 		Renderer.sampler.setConfig(CONFIG);
+		RENDERER.markForResampling();
 	}
 
 	public static void openConfigScreen() {

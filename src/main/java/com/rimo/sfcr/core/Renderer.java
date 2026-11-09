@@ -245,6 +245,10 @@ public class Renderer {
 		return resamplingTimer > DATA.getResamplingInterval();
 	}
 
+	public void markForResampling() {
+		resamplingTimer = 99;
+	}
+
 	public void stop() {
 		try {
 			if (resamplingThread != null)

@@ -142,18 +142,18 @@ public class Renderer {
 	}
 	//? }
 
+	private final int[] pos = new int[3];
+
 	// return cloudGrid index that the pos pointing at, NOTE that they maybe outOfBound...
-	private int[] transformToGridPos(CloudGrid cloudGrid, double x, double y, double z) {
+	private void transformToGridPos(CloudGrid cloudGrid, double x, double y, double z) {
 		//~ if < 26.2 '.mainCamera()' -> '.getMainCamera()'
 		Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
 		Vec3 camPos = camera.position();
 		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.5F) * cloudBlockWidth);  // trans to cloud relative...
 		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.5F) * cloudBlockWidth);
-		return new int[]{  // measure in cloudBlockSize...
-				(int) (cloudGrid.width() / 2F - x / cloudBlockWidth),  // offset by grid zero point...
-				(int) (cloudGrid.width() / 2F - z / cloudBlockWidth),
-				(int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight)
-		};
+		pos[0] = (int) (cloudGrid.width() / 2F - x / cloudBlockWidth);  // measure in cloudBlockSize...
+		pos[1] = (int) (cloudGrid.width() / 2F - z / cloudBlockWidth);  // offset by grid zero point...
+		pos[2] = (int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight);
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
@@ -161,7 +161,7 @@ public class Renderer {
 		if (cloudGrid == null)
 			return false;
 
-		int[] pos = transformToGridPos(cloudGrid, x, y, z);
+		transformToGridPos(cloudGrid, x, y, z);
 		if (! cloudGrid.isInCloudGrid(pos[0], pos[1]) || pos[2] > cloudGrid.height())
 			return false;
 
@@ -177,7 +177,7 @@ public class Renderer {
 		if (cloudGrid == null)
 			return false;
 
-		int[] pos = transformToGridPos(cloudGrid, x, y, z);
+		transformToGridPos(cloudGrid, x, y, z);
 		if (! cloudGrid.isInCloudGrid(pos[0], pos[1]) || ! cloudGrid.isInCloudLayer(pos[2]))
 			return false;
 

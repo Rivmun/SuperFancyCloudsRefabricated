@@ -342,6 +342,8 @@ public class Renderer {
 		}
 	}
 
+	protected final int[][] vertexList = new int[4][3];
+
 	// Building mesh
 	//? if > 1.21 {
 	private @Nullable MeshData rebuildCloudMesh(Tesselator tesselator, Vec3 cloudColor, double offset, float cloudHeight) {
@@ -395,7 +397,6 @@ public class Renderer {
 		int cloudBlockSize = CONFIG.getCloudBlockSize();
 		int minCullDistSqr = cloudBlockSize * 2 * cloudBlockSize * 2;
 		boolean enableBottomDim = CONFIG.isEnableBottomDim();
-		boolean isDebug = CONFIG.isEnableDebug();
 		try {
 			for (CloudData data : cloudDataGroup) {
 				float cloudAlphaByType = cloudAlpha;
@@ -406,7 +407,7 @@ public class Renderer {
 				}
 
 				for (CloudData.CompressedFace face : data.meshData) {  //make a snapshot to prevent concurrent violate
-					int[][] vertexList = face.getVertexList();
+					face.getVertexList(vertexList);
 
 					if (enableCulling) {
 						boolean isDrawn = false;

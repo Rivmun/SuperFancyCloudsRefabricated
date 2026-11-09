@@ -117,71 +117,71 @@ public class RendererDHCompat extends Renderer {
 					Mth.clamp((255 - face.getThickness() * 8) / 255f, 0f, 1f) :
 					1F
 			);
-			int[][] vertex = face.getVertexList();
+			face.getVertexList(vertexList);
 
 			if (scale != 0) {  //if only has inner face, scale it to prevent DH culling.
 				switch (face.getFacing()) {
 					case EAST:
-						vertex[0][0] -= scale;  //push out along facing axis
-						vertex[0][1] -= scale;  //scale on other axis
-						vertex[0][2] -= scale;
-						vertex[2][0] -= scale;
-						vertex[2][1] += scale;
-						vertex[2][2] += scale;
+						vertexList[0][0] -= scale;  //push out along facing axis
+						vertexList[0][1] -= scale;  //scale on other axis
+						vertexList[0][2] -= scale;
+						vertexList[2][0] -= scale;
+						vertexList[2][1] += scale;
+						vertexList[2][2] += scale;
 						break;
 					case WEST:
-						vertex[0][0] += scale;
-						vertex[0][1] -= scale;
-						vertex[0][2] -= scale;
-						vertex[2][0] += scale;
-						vertex[2][1] += scale;
-						vertex[2][2] += scale;
+						vertexList[0][0] += scale;
+						vertexList[0][1] -= scale;
+						vertexList[0][2] -= scale;
+						vertexList[2][0] += scale;
+						vertexList[2][1] += scale;
+						vertexList[2][2] += scale;
 						break;
 					case TOP:
-						vertex[0][0] -= scale;
-						vertex[0][1] -= scale;
-						vertex[0][2] -= scale;
-						vertex[2][0] += scale;
-						vertex[2][1] -= scale;
-						vertex[2][2] += scale;
+						vertexList[0][0] -= scale;
+						vertexList[0][1] -= scale;
+						vertexList[0][2] -= scale;
+						vertexList[2][0] += scale;
+						vertexList[2][1] -= scale;
+						vertexList[2][2] += scale;
 						break;
 					case BOTTOM:
-						vertex[0][0] -= scale;
-						vertex[0][1] += scale;
-						vertex[0][2] -= scale;
-						vertex[2][0] += scale;
-						vertex[2][1] += scale;
-						vertex[2][2] += scale;
+						vertexList[0][0] -= scale;
+						vertexList[0][1] += scale;
+						vertexList[0][2] -= scale;
+						vertexList[2][0] += scale;
+						vertexList[2][1] += scale;
+						vertexList[2][2] += scale;
 						break;
 					case SOUTH:
-						vertex[0][0] -= scale;
-						vertex[0][1] -= scale;
-						vertex[0][2] -= scale;
-						vertex[2][0] += scale;
-						vertex[2][1] += scale;
-						vertex[2][2] -= scale;
+						vertexList[0][0] -= scale;
+						vertexList[0][1] -= scale;
+						vertexList[0][2] -= scale;
+						vertexList[2][0] += scale;
+						vertexList[2][1] += scale;
+						vertexList[2][2] -= scale;
 						break;
 					case NORTH:
-						vertex[0][0] -= scale;
-						vertex[0][1] -= scale;
-						vertex[0][2] += scale;
-						vertex[2][0] += scale;
-						vertex[2][1] += scale;
-						vertex[2][2] += scale;
+						vertexList[0][0] -= scale;
+						vertexList[0][1] -= scale;
+						vertexList[0][2] += scale;
+						vertexList[2][0] += scale;
+						vertexList[2][1] += scale;
+						vertexList[2][2] += scale;
 						break;
 				}
 			}
 
 			group.add(new DhApiRenderableBox(
 					new DhApiVec3d(
-							(vertex[0][0] - 0.33F) * cloudBlockWidth,
-							vertex[0][1] * cloudBlockHeight,
-							(vertex[0][2] - 0.33F) * cloudBlockWidth
+							(vertexList[0][0] - 0.33F) * cloudBlockWidth,
+							vertexList[0][1] * cloudBlockHeight,
+							(vertexList[0][2] - 0.33F) * cloudBlockWidth
 					),
 					new DhApiVec3d(
-							(vertex[2][0] - 0.33F) * cloudBlockWidth,
-							vertex[2][1] * cloudBlockHeight,
-							(vertex[2][2] - 0.33F) * cloudBlockWidth
+							(vertexList[2][0] - 0.33F) * cloudBlockWidth,
+							vertexList[2][1] * cloudBlockHeight,
+							(vertexList[2][2] - 0.33F) * cloudBlockWidth
 					),
 					new Color((float) newColor.x, (float) newColor.y, (float) newColor.z, alpha),
 					EDhApiBlockMaterial.UNKNOWN

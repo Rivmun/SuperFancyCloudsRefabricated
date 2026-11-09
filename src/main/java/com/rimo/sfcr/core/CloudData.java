@@ -54,15 +54,15 @@ public class CloudData {
 	Type getDataType() {return dataType;}
 	float getLifeTime() {return lifeTime;}
 
+	private final int[] pos = new int[3];
+
 	// return cloudGrid index that the pos pointing at, NOTE that they maybe outOfBound...
-	private int[] transformToGridPos(double x, double y, double z) {
+	private void transformToGridPos(double x, double y, double z) {
 		Vec3 camPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 		int cbSize = CONFIG.getCloudBlockSize();
-		return new int[]{
-				(int) (width / 2F - (camPos.x() - x) / cbSize - 0.166667F),
-				(int) ((y - Client.RENDERER.getCloudHeight()) / cbSize * 2),
-				(int) (width / 2F - (camPos.z() - z) / cbSize - 0.166667F)
-		};
+		pos[0] = (int) (width / 2F - (camPos.x() - x) / cbSize - 0.166667F);
+		pos[1] = (int) ((y - Client.RENDERER.getCloudHeight()) / cbSize * 2);
+		pos[2] = (int) (width / 2F - (camPos.z() - z) / cbSize - 0.166667F);
 	}
 
 	protected boolean isInCloudLayer(int layerGridY) {
@@ -74,7 +74,7 @@ public class CloudData {
 	}
 
 	boolean isCloudCovered(double x, double y, double z) {
-		int[] pos = transformToGridPos(x, y, z);
+		transformToGridPos(x, y, z);
 		if (! isInCloudGrid(pos[0], pos[2]) || pos[1] > height)
 			return false;
 		for (int i = height - 1; i >= 0; i --) {
@@ -85,7 +85,7 @@ public class CloudData {
 	}
 
 	boolean isCloud(double x, double y, double z) {
-		int[] pos = transformToGridPos(x, y, z);
+		transformToGridPos(x, y, z);
 		if (! isInCloudGrid(pos[0], pos[2]) || ! isInCloudLayer(pos[1]))
 			return false;
 		return _cloudData[pos[0]][pos[1]][pos[2]];
@@ -192,7 +192,7 @@ public class CloudData {
 			return data >>> 25;
 		}
 
-		int[][] getVertexList() {
+		void getVertexList(int[][] vertex) {
 			int x = (data << 7 & Integer.MIN_VALUE) == 0 ?  //is positive?
 					data >> 8 & 255 :
 					(data >> 8 & 255) - 256;  // -256 equals to | 0xFFFFFF00;
@@ -204,13 +204,11 @@ public class CloudData {
 
 			int[][] offset = OFFSET_MAP.get(facing);
 
-			int[][] vertex = new int[4][3];
 			for (int i = 0; i < 4; i++) {
 				vertex[i][0] = x + offset[i][0];
 				vertex[i][1] = y + offset[i][1];
 				vertex[i][2] = z + offset[i][2];
 			}
-			return vertex;
 		}
 	}
 

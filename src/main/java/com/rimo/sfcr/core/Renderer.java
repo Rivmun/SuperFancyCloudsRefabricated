@@ -69,7 +69,13 @@ public class Renderer {
 	protected double debugBuiltTime = 0;
 	protected double debugSamplingTime = 0;
 
-	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {}
+	protected record CloudGrid(boolean[][][] grids, int centerX, int centerZ) {
+		int width() {return grids.length;}
+		int height() {return grids[0][0].length;}
+		boolean isInCloudLayer(int y) {return y >= 0 && y < height();}
+		boolean isInCloudGrid(int x, int z) {return x >= 0 && z >= 0 && x < width() && z < width();}
+		boolean get(int x, int y, int z) {return grids[x][z][y];}
+	}
 
 	public Renderer() {}
 
@@ -144,19 +150,10 @@ public class Renderer {
 		x = camPos.x - x - (xOffset + (gridX - cloudGrid.centerX - 0.5F) * cloudBlockWidth);  // trans to cloud relative...
 		z = camPos.z - z - (zOffset + (gridZ - cloudGrid.centerZ - 0.5F) * cloudBlockWidth);
 		return new int[]{  // measure in cloudBlockSize...
-				(int) (cloudGrid.grids.length / 2F - x / cloudBlockWidth),  // offset by grid zero point...
-				(int) (cloudGrid.grids.length / 2F - z / cloudBlockWidth),
+				(int) (cloudGrid.width() / 2F - x / cloudBlockWidth),  // offset by grid zero point...
+				(int) (cloudGrid.width() / 2F - z / cloudBlockWidth),
 				(int) ((y - camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_HEIGHT, VersionUtil.getLastFrameDuration())) / cloudBlockHeight)
 		};
-	}
-
-	// whether the given cloud-grid layer index lies inside the actual cloud thickness [0, layerThickness)
-	protected static boolean isInCloudLayer(int layerGridY) {
-		return layerGridY >= 0 && layerGridY < CONFIG.getCloudLayerThickness();
-	}
-
-	protected static boolean isInCloudGrid(int x, int z, int gridWidth) {
-		return x >= 0 && x < gridWidth && z >= 0 && z < gridWidth;
 	}
 
 	public boolean isCloudCovered(double x, double y, double z) {
@@ -165,10 +162,10 @@ public class Renderer {
 			return false;
 
 		int[] pos = transformToGridPos(cloudGrid, x, y, z);
-		if (! isInCloudGrid(pos[0], pos[1], cloudGrid.grids.length) || pos[2] > CONFIG.getCloudLayerThickness())
+		if (! cloudGrid.isInCloudGrid(pos[0], pos[1]) || pos[2] > cloudGrid.height())
 			return false;
 
-		for (int i = 0; i < cloudGrid.grids[0][0].length; i++) {
+		for (int i = 0; i < cloudGrid.height(); i++) {
 			if (cloudGrid.grids[pos[0]][pos[1]][i])
 				return pos[2] <= i;
 		}
@@ -181,7 +178,7 @@ public class Renderer {
 			return false;
 
 		int[] pos = transformToGridPos(cloudGrid, x, y, z);
-		if (! isInCloudGrid(pos[0], pos[1], cloudGrid.grids.length) || ! isInCloudLayer(pos[2]))
+		if (! cloudGrid.isInCloudGrid(pos[0], pos[1]) || ! cloudGrid.isInCloudLayer(pos[2]))
 			return false;
 
 		return cloudGrid.grids[pos[0]][pos[1]][pos[2]];
@@ -311,10 +308,11 @@ public class Renderer {
 		RenderPipeline renderPipeline = CONFIG.isEnableBottomDim() ? SUPER_FANCY_CLOUDS : SUPER_FANCY_CLOUDS_NOTHICKNESS;
 		// rebuild check
 		boolean enableCulling = CONFIG.getEnableViewCulling();
+		CloudGrid cloudGrid = this.cloudGrid;
 		if (! Minecraft.getInstance().isPaused() && (
 				(enableCulling ? ++ rebuildTick > CONFIG.getRebuildInterval() : rebuildTick >= 999) ||
 				gridX != this.gridX || gridZ != this.gridZ ||
-				(this.gridY != gridY && (isInCloudLayer(gridY) || isInCloudLayer(this.gridY)))
+				(this.gridY != gridY && (cloudGrid.isInCloudLayer(gridY) || cloudGrid.isInCloudLayer(this.gridY)))
 		)) {
 			rebuildTick = 0;
 			this.gridX = gridX;
@@ -393,7 +391,7 @@ public class Renderer {
 		debugCullCounter = 0;
 		debugBuiltTime = System.nanoTime();
 
-		if (isInCloudLayer(gridY) && cloudGrid.grids()[renderRange][renderRange][gridY]) {  //inner face check
+		if (cloudGrid.isInCloudLayer(gridY) && cloudGrid.get(renderRange, renderRange, gridY)) {  //inner face check
 			int thickness = 0;
 			for(int h = cloudGrid.grids()[0][0].length - 1; h > gridY; h--) {
 				if (cloudGrid.grids()[renderRange][renderRange][h]) {

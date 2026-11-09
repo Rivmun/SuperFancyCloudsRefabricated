@@ -1,3 +1,9 @@
+# 2.9.5.2
+- Fix a crash when player change cloudLayerThickness while standing above near cloudLayer.
+  - Cloud now refresh instantly when config was changed.
+- Improved mixin compatibility of NCNR function for other mods.
+- Small internal improved.
+
 # 2.9.5
 Critical fix about custom dimension config function. (Thanks to @rpfurlong)
 - Fix config cannot back to default when player leave custom dimension.

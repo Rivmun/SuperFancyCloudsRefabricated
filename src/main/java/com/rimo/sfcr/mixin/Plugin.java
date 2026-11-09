@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,23 +17,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Plugin implements IMixinConfigPlugin {
 	// Manually debug whether mixin inject success or failure
 	public static Set<String> MIXINS = ConcurrentHashMap.newKeySet();
+	private static boolean isIrisLoaded;
+	private static boolean isParticleRainLoaded;
 
 	@Override
 	public void onLoad(String mixinPackage) {
 		try (InputStream is = getClass().getClassLoader().getResourceAsStream("sfcr.mixins.json")) {
 			if (is != null) {
 				JsonObject config = JsonParser.parseReader(new InputStreamReader(is)).getAsJsonObject();
-				String head = config.get("package").getAsString() + ".";
 
 				JsonArray mixins = config.getAsJsonArray("mixins");
 				if (mixins != null)
-					mixins.forEach(e -> MIXINS.add(head + e.getAsString()));
+					mixins.forEach(e -> MIXINS.add(mixinPackage + "." + e.getAsString()));
 
 				JsonArray client = config.getAsJsonArray("client");
 				if (client != null)
-					client.forEach(e -> MIXINS.add(head + e.getAsString()));
+					client.forEach(e -> MIXINS.add(mixinPackage + "." + e.getAsString()));
 			}
 		} catch (Exception ignored) {}
+
+		isIrisLoaded = getClass().getClassLoader().getResource("mixins.iris.json") != null;
+		isParticleRainLoaded = getClass().getClassLoader().getResource("particlerain.mixins.json") != null;
 	}
 
 	@Override
@@ -44,6 +47,9 @@ public class Plugin implements IMixinConfigPlugin {
 
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+		// excluded compatibility mixin when target mod doesn't exist to prevent meaningless warn log out.
+		if (! isIrisLoaded && mixinClassName.contains("iris.")) return false;
+		if (! isParticleRainLoaded && mixinClassName.contains("particlerain.")) return false;
 		return true;
 	}
 
@@ -52,54 +58,9 @@ public class Plugin implements IMixinConfigPlugin {
 		//
 	}
 
-	/**
-	 * Third-party mod's mixin applied when the target mod loaded,
-	 * Otherwise that mixin will pollute the logs during game loading.
-	 */
 	@Override
 	public List<String> getMixins() {
-		List<String> conditional = new ArrayList<>();
-		// Must NOT use Class.forName here: getMixins runs during mixin prepare, loading the
-		// @Mixin target class too early triggers MixinTargetAlreadyLoadedException.
-		// Query the loader mod registry instead (no class loading, no cross-loader compile dep).
-		if (isModLoaded("particlerain")) {
-			conditional.add("particlerain.ParticleSpawnerMixin");
-		} else {
-			MIXINS.add("~ParticleRainMixin");
-		}
-		if (isModLoaded("iris")) {
-			conditional.add("iris.IrisConfigMixin");
-			conditional.add("iris.IrisPipelinesMixin");
-			conditional.add("iris.TransformPatcherMixin");
-			conditional.add("iris.VanillaTransformerMixin");
-		} else {
-			MIXINS.add("~IrisMixins");
-		}
-		return conditional.isEmpty() ? null : conditional;
-	}
-
-	/**
-	 * Detect a mod by registry query via reflection, trying Fabric first then NeoForge/Forge,
-	 * so this shared plugin class keeps no compile-time dependency on any single loader API.
-	 */
-	private static boolean isModLoaded(String modId) {
-		// Fabric: FabricLoader.getInstance().isModLoaded(id)
-		try {
-			Object loader = Class.forName("net.fabricmc.loader.api.FabricLoader")
-					.getMethod("getInstance").invoke(null);
-			return (boolean) loader.getClass().getMethod("isModLoaded", String.class)
-					.invoke(loader, modId);
-		} catch (Throwable ignored) {
-		}
-		// NeoForge/Forge: ModList.get().isLoaded(id)
-		try {
-			Object modList = Class.forName("net.neoforged.fml.ModList")
-					.getMethod("get").invoke(null);
-			return (boolean) modList.getClass().getMethod("isLoaded", String.class)
-					.invoke(modList, modId);
-		} catch (Throwable ignored) {
-		}
-		return false;
+		return null;
 	}
 
 	@Override

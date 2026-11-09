@@ -74,10 +74,11 @@ public class RendererDHCompat extends Renderer {
 
 	@Override
 	protected void _render(int gridX, int gridY, int gridZ, MappableRingBuffer faceBuffer, MappableRingBuffer infoBuffer, int renderRange, int cloudColor, float offsetX, float offsetY, float offsetZ) {
+		CloudGrid cloudGrid = this.cloudGrid;
 		if (! Minecraft.getInstance().isPaused() && ! isRemeshing && (
 				rebuildTick >= 999 ||
 				gridX != this.gridX || gridZ != this.gridZ ||
-				(this.gridY != gridY && (isInCloudLayer(gridY) || isInCloudLayer(this.gridY)))
+				(this.gridY != gridY && (cloudGrid.isInCloudLayer(gridY) || cloudGrid.isInCloudLayer(this.gridY)))
 		)) {
 			isRemeshing = true;
 			rebuildTick = 0;
@@ -110,7 +111,7 @@ public class RendererDHCompat extends Renderer {
 		long debugTime = System.nanoTime();
 		//transform grid to boxes
 		List<DhApiRenderableBox> boxList = new ArrayList<>();
-		if (isInCloudLayer(gridY) && cloudGrid.grids()[renderRange][renderRange][gridY]) {  //inner faces check
+		if (cloudGrid.isInCloudLayer(gridY) && cloudGrid.get(renderRange, renderRange, gridY)) {  //inner faces check
 			for (Direction direction : Direction.values()) {
 				addBox(boxList, 0, gridY, 0, direction, 16, color, alpha);
 			}

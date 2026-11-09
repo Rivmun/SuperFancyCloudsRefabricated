@@ -12,6 +12,12 @@ import java.nio.file.Path;
 public final class PlatformUtil {
 	private PlatformUtil() {}
 
+	/*
+	 * Something learned from Iris: use ServiceLoader.load(PlatformUtil.IPlatform).findFirst.get() can autoload
+	 * an implementation class of IPlatform from META-INF/services/<full-class-namepath> at the early load of beginning.
+	 * But it's a platform specific way that must write the impl class full namepath will conflict with Forgix merging.
+	 * So keep instantiate it by loaders entrypoint naturally.
+	 */
 	/**
 	 * Must init at the beginning of each loader's entrypoint initialization.
 	 */

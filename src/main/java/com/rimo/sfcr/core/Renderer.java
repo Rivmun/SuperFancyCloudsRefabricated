@@ -395,10 +395,10 @@ public class Renderer {
 		debugCullCounter = 0;
 		debugBuiltTime = System.nanoTime();
 
-		if (cloudGrid.isInCloudLayer(gridY) && cloudGrid.get(renderRange, renderRange, gridY)) {  //inner face check
+		if (cloudGrid.isInCloudLayer(gridY) && cloudGrid.get(renderRange, gridY, renderRange)) {  //inner face check
 			int thickness = 0;
-			for(int h = cloudGrid.grids()[0][0].length - 1; h > gridY; h--) {
-				if (cloudGrid.grids()[renderRange][renderRange][h]) {
+			for(int h = cloudGrid.height() - 1; h > gridY; h--) {
+				if (cloudGrid.get(renderRange, h, renderRange)) {
 					thickness++;
 				} else {
 					if (thickness > 0)

@@ -19,7 +19,6 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 *///? } else {
 //? if = 26.2
@@ -37,6 +36,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -388,6 +388,10 @@ public class Renderer {
 		}
 	}
 
+	// culling calculation cache...
+	private final Vector3f look = new Vector3f(), up = new Vector3f(), left = new Vector3f();
+	private double tanHalfFov = 0, tanHalfFovHorizontal = 0;
+
 	private void buildMesh(ByteBuffer byteBuffer, CloudGrid cloudGrid, int renderRange) {
 		if (cloudGrid == null)
 			return;
@@ -409,15 +413,13 @@ public class Renderer {
 				encodeFace(byteBuffer, 0, gridY, 0, direction, 16, thickness);
 			}
 		} else {
-			Vec3 look = null, up = null, left = null;
-			double tanHalfFov = 0, tanHalfFovHorizontal = 0;
 			if (CONFIG.getEnableViewCulling()) {
 				Minecraft client = Minecraft.getInstance();
 				//~ if <26.2 '.mainCamera()' -> '.getMainCamera()'
 				Camera cam = client.gameRenderer.mainCamera();
-				look = new Vec3(cam.forwardVector());
-				up = new Vec3(cam.upVector());
-				left = new Vec3(cam.leftVector());
+				look.set(cam.forwardVector());
+				up.set(cam.upVector());
+				left.set(cam.leftVector());
 				float multiplier = CONFIG.getCullRadianMultiplier();
 				if (client.player != null)
 					multiplier *= client.player.getFieldOfViewModifier(true, VersionUtil.getLastFrameDuration());
@@ -430,11 +432,9 @@ public class Renderer {
 					int zOffset = l - Math.abs(xOffset);
 					if (zOffset >= 0 && zOffset <= renderRange && xOffset * xOffset + zOffset * zOffset <= renderRange * renderRange) {
 						if (zOffset != 0) {
-							tryBuildCellProxy(byteBuffer, xOffset, - zOffset, renderRange, cloudGrid,
-									look, up, left, tanHalfFov, tanHalfFovHorizontal);
+							tryBuildCell(byteBuffer, xOffset, - zOffset, renderRange, cloudGrid);
 						}
-						tryBuildCellProxy(byteBuffer, xOffset, zOffset, renderRange, cloudGrid,
-								look, up, left, tanHalfFov, tanHalfFovHorizontal);
+						tryBuildCell(byteBuffer, xOffset, zOffset, renderRange, cloudGrid);
 					}
 				}
 			}
@@ -442,57 +442,58 @@ public class Renderer {
 		debugBuiltTime = (System.nanoTime() - debugBuiltTime) / 1000000F;
 	}
 
-	private void tryBuildCellProxy(ByteBuffer byteBuffer, int xOffset, int zOffset, int renderDistance, CloudGrid cloudGrid,
-	                               Vec3 look, Vec3 up, Vec3 left, double tanHalfFov, double tanHalfFovHorizontal) {
+	private void tryBuildCell(ByteBuffer byteBuffer, int xOffset, int zOffset, int renderDistance, CloudGrid cloudGrid) {
 		int thickness = 0;
 		int x = xOffset + renderDistance + gridX - cloudGrid.centerX;  //transform to grids index
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ;
+		boolean enableViewCulling = CONFIG.getEnableViewCulling();
 		for (int h = cloudGrid.grids[0][0].length - 1; h >= 0; h--) {
 			if (byteBuffer.remaining() < 30)
 				return;  //java.nio.BufferOverflow Check, it must have 30 bytes (.put() amount x 6 faces in encodeFaces()).
 			if (x < 0 || x >= cloudGrid.grids.length || z < 0 || z >= cloudGrid.grids.length || h >= cloudGrid.grids[x][z].length)   //check bound
 				continue;
+
 			if (! cloudGrid.grids[x][z][h]) {  //jumping empty cell
 				if (thickness > 0)
 					thickness --;
 				continue;
 			}
-			if (look != null && ! isInView(xOffset, h, zOffset, look, up, left, tanHalfFov, tanHalfFovHorizontal)) {
+			thickness ++;
+
+			int cellState = getCellNeighbor(cloudGrid, x, h, z);
+			if (cellState == 0)
+				continue;  // jump inner cells
+
+			if (enableViewCulling && ! isInView(xOffset, h, zOffset)) {
 				debugCullCounter++;
 				continue;
 			}
-			tryBuildCell(byteBuffer, x, h, z, renderDistance, thickness, cloudGrid);
-			thickness ++;
+
+			cellState |= (thickness << 6);
+			buildExtrudedCell(byteBuffer, xOffset, h, zOffset, cellState);
 		}
 	}
 
-	// view culling (on block, not accurate)
-	// call stack is too deep, I'm lazy to do culling on face...
-	private boolean isInView(int x, int y, int z, Vec3 look, Vec3 up, Vec3 left, double tanHalfFov, double tanHalfFovHorizontal) {
-		x *= cloudBlockWidth;
-		y = (int) ((y - gridY) * cloudBlockHeight);
-		z *= cloudBlockWidth;
-		Vec3 cloudVec = new Vec3(x, y, z);
-		double depth = look.dot(cloudVec);
-		return depth > 0.05F &&
-				(Math.abs(up.dot(cloudVec)) / depth < tanHalfFov) &&
-				(Math.abs(left.dot(cloudVec)) / depth < tanHalfFovHorizontal);
-	}
-
-	private void tryBuildCell(ByteBuffer byteBuffer, int x, int h, int z, int renderDistance, int thickness, CloudGrid cloudGrid) {
-		//check neighbor and push it to next
+	protected int getCellNeighbor(CloudGrid cloudGrid, int x, int h, int z) {
 		boolean borderTop    = !(h + 1 <  cloudGrid.grids[x][z].length && cloudGrid.grids[x][z][h + 1]);  //outOfBound || Not has neighbor -> built border
 		boolean borderBottom = !(h - 1 >= 0                            && cloudGrid.grids[x][z][h - 1]);
 		boolean borderEast   = !(x + 1 <  cloudGrid.grids.length       && cloudGrid.grids[x + 1][z][h]);
 		boolean borderWest   = !(x - 1 >= 0                            && cloudGrid.grids[x - 1][z][h]);
 		boolean borderSouth  = !(z + 1 <  cloudGrid.grids.length       && cloudGrid.grids[x][z + 1][h]);
 		boolean borderNorth  = !(z - 1 >= 0                            && cloudGrid.grids[x][z - 1][h]);
-		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
+		return ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
+	}
 
-		cellState |= (thickness << 6);
-		x -= renderDistance + gridX - cloudGrid.centerX;  //transform to relative pos
-		z -= renderDistance + gridZ - cloudGrid.centerZ;
-		this.buildExtrudedCell(byteBuffer, x, h, z, cellState);
+	// view culling (on block, not accurate)
+	// call stack is too deep, I'm lazy to do culling on face...
+	private boolean isInView(int x, int y, int z) {
+		x *= cloudBlockWidth;
+		y = (int) ((y - gridY) * cloudBlockHeight);
+		z *= cloudBlockWidth;
+		double depth = look.dot(x, y, z);
+		return depth > 0.05F &&
+				(Math.abs(up.dot(x, y, z)) < depth * tanHalfFov) &&
+				(Math.abs(left.dot(x, y, z)) < depth * tanHalfFovHorizontal);
 	}
 
 	/*

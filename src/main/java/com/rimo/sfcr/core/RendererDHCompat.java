@@ -121,9 +121,9 @@ public class RendererDHCompat extends Renderer {
 					int zOffset = l - Math.abs(xOffset);
 					if (zOffset >= 0 && zOffset <= renderRange && xOffset * xOffset + zOffset * zOffset <= renderRange * renderRange) {
 						if (zOffset != 0) {
-							tryBuildCellProxy(boxList, xOffset, - zOffset, renderRange, cloudGrid, color, alpha);
+							tryBuildCell(boxList, xOffset, - zOffset, renderRange, cloudGrid, color, alpha);
 						}
-						tryBuildCellProxy(boxList, xOffset, zOffset, renderRange, cloudGrid, color, alpha);
+						tryBuildCell(boxList, xOffset, zOffset, renderRange, cloudGrid, color, alpha);
 					}
 				}
 			}
@@ -154,7 +154,7 @@ public class RendererDHCompat extends Renderer {
 		group = newGroup;
 	}
 
-	private void tryBuildCellProxy(List<DhApiRenderableBox> group, int xOffset, int zOffset, int renderDistance, CloudGrid cloudGrid, Vec3 color, float alpha) {
+	private void tryBuildCell(List<DhApiRenderableBox> group, int xOffset, int zOffset, int renderDistance, CloudGrid cloudGrid, Vec3 color, float alpha) {
 		int x = xOffset + renderDistance + gridX - cloudGrid.centerX();  //transform to grids index
 		int z = zOffset + renderDistance + gridZ - cloudGrid.centerZ();
 		boolean[][][] grids = cloudGrid.grids();
@@ -171,29 +171,17 @@ public class RendererDHCompat extends Renderer {
 					thickness --;
 				continue;  //jumping empty cell
 			}
+			thickness++;
+			int cellState = getCellNeighbor(cloudGrid, x, y, z);
+			if (cellState == 0)
+				continue;  // jump inner cells
 
 			Vec3 newColor = color.scale(enableBottomDim ?
 					Mth.clamp((255 - thickness * 8) / 255f, 0f, 1f) :
 					1F
 			);
-			tryBuildCell(group, x, y, z, renderDistance, grids, newColor, alpha);
-			thickness++;
+			buildExtrudedCell(group, xOffset, y, zOffset, cellState, newColor, alpha);
 		}
-	}
-
-	private void tryBuildCell(List<DhApiRenderableBox> group, int x, int y, int z, int renderDistance, boolean[][][] grids, Vec3 color, float alpha) {
-		//check neighbor and push it to next
-		boolean borderTop    = !(y + 1 <  grids[x][z].length && grids[x][z][y + 1]);  //outOfBound || Not has neighbor -> built border
-		boolean borderBottom = !(y - 1 >= 0                  && grids[x][z][y - 1]);
-		boolean borderEast   = !(x + 1 <  grids.length       && grids[x + 1][z][y]);
-		boolean borderWest   = !(x - 1 >= 0                  && grids[x - 1][z][y]);
-		boolean borderSouth  = !(z + 1 <  grids.length       && grids[x][z + 1][y]);
-		boolean borderNorth  = !(z - 1 >= 0                  && grids[x][z - 1][y]);
-		int cellState = ((borderTop?1:0)<<5) | ((borderBottom?1:0)<<4) | ((borderEast?1:0)<<3) | ((borderWest?1:0)<<2) | ((borderSouth?1:0)<<1) | ((borderNorth?1:0)<<0);
-
-		x -= renderDistance + gridX - cloudGrid.centerX();  //transform to relative pos
-		z -= renderDistance + gridZ - cloudGrid.centerZ();
-		buildExtrudedCell(group, x, y, z, cellState, color, alpha);
 	}
 
 	private void buildExtrudedCell(List<DhApiRenderableBox> group, int x, int y, int z, int cellState, Vec3 color, float alpha) {

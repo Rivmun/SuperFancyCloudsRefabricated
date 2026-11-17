@@ -1,3 +1,7 @@
+# 2.9.5.3
+- Fix a indexOutOfBound crash when move into cloudLayer.
+- Improved culling performance (but still less efficiency).
+
 # 2.9.5.2
 - Fix a crash when player change cloudLayerThickness while standing above near cloudLayer.
   - Cloud now refresh instantly when config was changed.
